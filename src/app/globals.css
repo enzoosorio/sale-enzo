@@ -1,0 +1,91 @@
+@import "tailwindcss";
+@import '@fontsource/prata';
+@import '@fontsource/nanum-myeongjo';
+@import '@fontsource/inria-serif';
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-inria : 'Inria Serif', serif;
+  --font-prata: 'Prata', serif;
+  --font-nanum: 'Nanum Myeongjo', serif;
+}
+
+.overlay-element {
+  backdrop-filter: blur(1.8px);
+  will-change: backdrop-filter;
+  transition: all 0.4s;
+  transition-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+}
+
+.linkk {
+  position: relative; /* Essential for positioning the pseudo-element */
+  display: inline-block; /* Or block, depending on layout */
+}
+
+.linkk::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px; /* Underline thickness */
+  bottom: 0;
+  left: 0;
+  background-color: #000;
+  transform: scaleX(0);
+  transform-origin: bottom left;
+  transition: transform 0.25s ease-out; 
+}
+
+.linkk:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom right;
+}
+
+
+/* hacer la misma animacion de gsap para no utilizar  */
+.logo-text{
+  animation: logoAnimation 0.8s;
+  animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);;
+}
+
+@keyframes logoAnimation {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* .overlay-active{ 
+  backdrop-filter: blur(1.8px);
+  transition: all 0.4s;
+  transition-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+} */
+
+.bottom-part{
+  will-change: backdrop-filter;
+  clip-path: polygon(50% 58%, 0% 100%, 100% 100%);
+}
+
+.right-part{
+  will-change: backdrop-filter;
+  clip-path: polygon(50% 0, 100% 0%, 100% 100%, 51% 55%);
+}
+
+.left-part{
+  will-change: backdrop-filter;
+  clip-path: polygon(50% 0, 0 0, 0 100%, 49% 55%);
+}
+
+.overlay-active{
+  background-color: rgba(0, 0, 0, 0.15);
+  z-index: 20;
+}
