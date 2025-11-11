@@ -88,4 +88,10 @@
 .overlay-active{
   background-color: rgba(0, 0, 0, 0.15);
   z-index: 20;
+  pointer-events: none;
+  backdrop-filter: blur(1.8px);
+}
+
+.audio-tag{
+  visibility: hidden;
 }
