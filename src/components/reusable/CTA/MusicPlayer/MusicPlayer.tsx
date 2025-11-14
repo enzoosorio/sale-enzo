@@ -1,9 +1,12 @@
 // MusicPlayer.tsx
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { BottomPart, LeftPart, RightPart } from "../OverlayForMusicPlayer";
+import { BottomPart, LeftPart, RightPart } from "../../OverlayForMusicPlayer";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { ViniloSkeleton } from "@/components/reusable/CTA/MusicPlayer/ViniloSkeleton";
+import { Hamburguer } from "@/components/reusable/svgs/Hamburguer";
+import { Song, songsBlank } from "@/lib/songs-blank";
 
 gsap.registerPlugin(useGSAP);
 export const MusicPlayer = () => {
@@ -14,8 +17,13 @@ export const MusicPlayer = () => {
 
   const audioRef = useRef<HTMLAudioElement>(null!);
   const containerUIAudioRef = useRef<HTMLDivElement>(null!);
+  const buttonMenuRef = useRef<HTMLButtonElement>(null!);
+  const menuRef = useRef<HTMLUListElement>(null!);
 
-  const [activeSong, setActiveSong] = useState<string>("/songs/alita-comp.mp3");
+  const [activeSong, setActiveSong] = useState<Song>(songsBlank[0]);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [firstSongLoaded, setFirstSongLoaded] = useState<boolean>(false);
+  const [isMenuSongsOpen, setIsMenuSongsOpen] = useState<boolean>(false);
 
   // estado visual (solo para render)
   const [activeZone, setActiveZone] = useState<
@@ -28,7 +36,57 @@ export const MusicPlayer = () => {
   const rafRef = useRef<number | null>(null);
   const posRef = useRef({ left: 0, top: 0 }); // posición actual en px (sin transform)
 
-  // Animaciones GSAP según activeZone 
+  useGSAP(() => {
+    let tl = gsap.timeline();
+
+    const audiobox = audioBoxRef.current;
+
+    gsap.set(audiobox, {
+      bottom: isMenuSongsOpen ? "0rem" : "-16rem",
+    });
+
+    if (isMenuSongsOpen) {
+      tl.to(
+        audioBoxRef.current,
+        {
+          clipPath: "inset(0 0 0% 0)",
+          // ease: "power2.out",
+          duration: 0,
+        },
+        0
+      );
+      tl.to(
+        audioBoxRef.current,
+        {
+          bottom: "0rem",
+          ease: "power2.out",
+          duration: 0.4,
+        },
+        0.4
+      );
+    } else {
+      tl.to(
+        audioBoxRef.current,
+        {
+          clipPath: "inset(0 0 80% 0)",
+          ease: "power2.out",
+          duration: 0.2,
+        },
+        0
+      );
+      tl.to(
+        audioBoxRef.current,
+        {
+          bottom: "-16rem",
+          ease: "power2.out",
+          duration: 0.2,
+        },
+        0.2
+      );
+    }
+  }, [isMenuSongsOpen]);
+
+  // Animaciones GSAP según activeZone
   useGSAP(() => {
     let tl = gsap.timeline();
 
@@ -36,9 +94,8 @@ export const MusicPlayer = () => {
       tl.to(
         ".content-wrapper",
         {
-          x: -5 ,
+          x: -5,
           duration: 0.01,
-          
         },
         0.2
       );
@@ -47,17 +104,19 @@ export const MusicPlayer = () => {
         {
           opacity: 1,
           duration: 0.1,
-          
         },
         0.3
       );
-      tl.to(audioBoxRef.current, {
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        borderBottomRightRadius: 0,
-        borderBottomLeftRadius: 0,
-
-      },0)
+      tl.to(
+        audioBoxRef.current,
+        {
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          borderBottomRightRadius: 0,
+          borderBottomLeftRadius: 0,
+        },
+        0
+      );
       tl.to(
         ".image-side-audio-box",
         {
@@ -68,12 +127,11 @@ export const MusicPlayer = () => {
       tl.to(
         ".music-player-container",
         {
-          minWidth: '240px',
+          minWidth: "240px",
           width: "auto",
         },
         0.15
       );
-
     } else if (activeZone === "left") {
       tl.to(
         ".content-wrapper",
@@ -81,17 +139,19 @@ export const MusicPlayer = () => {
           opacity: 0,
           x: -300,
           duration: 0.1,
-          
         },
         0
       );
-      tl.to(audioBoxRef.current, {
-        borderTopLeftRadius: 0,
-        borderBottomRightRadius: 16,
-        borderTopRightRadius: 16,
-        borderBottomLeftRadius: 0,
-
-      },0)
+      tl.to(
+        audioBoxRef.current,
+        {
+          borderTopLeftRadius: 0,
+          borderBottomRightRadius: 16,
+          borderTopRightRadius: 16,
+          borderBottomLeftRadius: 0,
+        },
+        0
+      );
       tl.to(
         ".image-side-audio-box",
         {
@@ -114,17 +174,19 @@ export const MusicPlayer = () => {
           opacity: 0,
           x: 300,
           duration: 0.1,
-          
         },
         0
       );
-      tl.to(audioBoxRef.current, {
-        borderTopLeftRadius: 16,
-        borderBottomRightRadius: 0,
-        borderTopRightRadius: 0,
-        borderBottomLeftRadius: 16,
-
-      },0)
+      tl.to(
+        audioBoxRef.current,
+        {
+          borderTopLeftRadius: 16,
+          borderBottomRightRadius: 0,
+          borderTopRightRadius: 0,
+          borderBottomLeftRadius: 16,
+        },
+        0
+      );
       tl.to(
         ".image-side-audio-box",
         {
@@ -142,20 +204,6 @@ export const MusicPlayer = () => {
       );
     }
   }, [activeZone]);
-
-  // Cuando initializamos, centramos en bottom
-  useEffect(() => {
-    const box = audioBoxRef.current;
-    if (!box) return;
-    // Inicial: centrar en bottom (igual que tu estilo inicial)
-    const rect = box.getBoundingClientRect();
-    const initLeft = window.innerWidth / 2 - rect.width / 2;
-    const initTop = window.innerHeight - rect.height;
-    posRef.current = { left: initLeft, top: initTop };
-    box.style.left = `${initLeft}px`;
-    box.style.top = `${initTop}px`;
-    box.style.transform = ""; // usar left/top absolutos
-  }, []);
 
   useEffect(() => {
     const box = audioBoxRef.current;
@@ -214,9 +262,14 @@ export const MusicPlayer = () => {
     // start drag
     const startDrag = (e: MouseEvent | TouchEvent) => {
       const uiContentClick = containerUIAudioRef.current;
+      const buttonMenuClick = buttonMenuRef.current;
+      const menuClick = menuRef.current;
       // evitar drag si el click es sobre el contenido interactivo
-      if (uiContentClick && uiContentClick.contains(e.target as Node)) {
-        console.log('drag en el uicontent')
+      if (
+        (uiContentClick && uiContentClick.contains(e.target as Node)) ||
+        (buttonMenuClick && buttonMenuClick.contains(e.target as Node)) ||
+        (menuClick && menuClick.contains(e.target as Node))
+      ) {
         return;
       }
       e.preventDefault();
@@ -376,6 +429,14 @@ export const MusicPlayer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeZone]); // activeZone watched only to trigger UI updates; core logic uses refs
 
+  useEffect(() => {
+    //simular carga primera canción
+    const timer = setTimeout(() => {
+      setFirstSongLoaded(true);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const playAudio = () => audioRef.current?.play();
   const pauseAudio = () => audioRef.current?.pause();
@@ -384,50 +445,119 @@ export const MusicPlayer = () => {
     <>
       <div
         ref={audioBoxRef}
-        className="music-player-container cursor-grab overflow-hidden fixed bottom-0 left-1/2 min-w-60 w-auto h-20 bg-white rounded-tl-2xl rounded-tr-2xl shadow-lg flex items-center justify-start gap-2 select-none touch-none transition-all"
-        style={{
-          left: "50%", // initial fallback; the effect will compute absolute left/top
-          transform: "translateX(-50%)",
-          bottom: "0px",
-          backfaceVisibility: "hidden",
-          perspective: 1000,
-        }}
+        className={`music-player-container w-96  cursor-grab overflow-hidden 
+          fixed left-1/2 -translate-x-1/2 gradial-radient 
+          shadow-2xl rounded-tl-lg rounded-tr-lg select-none touch-none transition-all`}
       >
-        {/* <div> */}
-          <div className="image-side-audio-box w-[40%] h-full flex items-center justify-center">
-            <div 
-            onMouseDown={() => {
-              console.log('mouse down')
-            }}
-            onClick={(e) => {
-              console.log('clic')
-              e.stopPropagation();
-              if (audioRef.current?.paused) playAudio();
-              else pauseAudio();
-            }}
-            ref={containerUIAudioRef}
-            className="cursor-pointer relative w-3/4 h-3/4 rounded-xl overflow-hidden">
+        {/* primer container con clippy-path mostrando solo main cancion (primera carga) */}
+        <div className="main-box-player flex items-center justify-start w-full gap-2">
+          {/* parte de la imagen container*/}
+          <div className="image-side-audio-box w-20 h-full flex items-center justify-center">
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                if (audioRef.current?.paused) playAudio();
+                else pauseAudio();
+                setIsPlaying(!isPlaying);
+              }}
+              ref={containerUIAudioRef}
+              className="cursor-pointer w-20 relative flex items-center justify-center  overflow-hidden"
+            >
               <img
-                src="/images/zara-music.webp"
+                src={activeSong.cover}
                 alt="zara"
-                className="w-full h-full rounded-xl object-cover"
+                className={`${
+                  firstSongLoaded
+                    ? "opacity-100 z-0 fade-in"
+                    : "opacity-0 -z-20"
+                } absolute rounded-full inset-0 w-full h-full rounded-tl-xl p-2 object-cover song-cover transition-all playing ${
+                  isPlaying ? "resume-spin" : "paused"
+                } `}
               />
-              <audio 
-              ref={audioRef}
-              src={activeSong}
-              autoPlay
-              preload="none"
-              className="audio-tag"
+              <div
+                className={`absolute ${
+                  isMenuSongsOpen
+                    ? "overlay-fade-drop-menu-active"
+                    : "overlay-fade-drop"
+                } w-20 h-16 left-0 top-0 `}
               />
-              <div className="bg-black/30 absolute inset-0 rounded-xl" />
+              <ViniloSkeleton
+                className={`transition-all w-16 p-1 ${
+                  firstSongLoaded
+                    ? "opacity-0 -z-20 fill-black/15 paused"
+                    : "opacity-100 z-0 fill-none resume-spin"
+                } playing`}
+              />
+              <audio
+                ref={audioRef}
+                src={activeSong.audio}
+                autoPlay
+                preload="none"
+                className="audio-tag"
+              />
             </div>
           </div>
-          <div className="content-wrapper absolute left-[43%] top-0  w-full h-full flex font-nanum flex-col items-start justify-center gap-0.5">
-            <p className="title-audio-box text-base">Zara house mix 1</p>
-            <p className="author-audio-box text-xs text-black/65">
-              Lewierzoren
+          {/* texto de contenido -- titulo y autor */}
+          <div className="content-wrapper flex flex-col items-start w-full justify-start gap-0.5">
+            <p className="title-audio-box text-sm">{activeSong.title}</p>
+            <p className="author-audio-box font-prata text-[10px] text-black/75">
+              {activeSong.artist}
             </p>
           </div>
+          {/* boton para abrir el resto del contenido (distintas canciones) */}
+          <button
+            ref={buttonMenuRef}
+            className={`cursor-pointer ${
+              isMenuSongsOpen
+                ? "overlay-fade-drop-menu-active"
+                : "overlay-fade-drop"
+            } w-20 h-16 px-4 flex items-center justify-center `}
+            onClick={(e) => {
+              console.log("clic");
+              e.stopPropagation();
+              setIsMenuSongsOpen(!isMenuSongsOpen);
+            }}
+          >
+            <Hamburguer
+              className={` ${isMenuSongsOpen ? "-rotate-90" : "rotate-0"}`}
+            />
+          </button>
+        </div>
+        {/* lista de caniones restantes*/}
+        <ul
+          ref={menuRef}
+          onClick={(e) => e.stopPropagation()}
+          className="music-menu-scrollbar flex flex-col max-h-64 overflow-auto justify-start w-full pr-1"
+        >
+          {songsBlank.map((song) => (
+            <li
+              key={song.id}
+              className="relative w-full cursor-pointer group min-h-16 py-8 flex shadow-[0px_-0.2px_1px_1px_rgba(0,0,0,0.1)] items-center justify-start gap-2"
+            >
+              <div className="bg-black/0 absolute inset-0 w-full h-full group-hover:bg-black/10 transition-colors " />
+              <div className="cursor-pointer w-20 relative flex items-center justify-center  overflow-hidden">
+                <img
+                  src={song.cover}
+                  alt={song.title}
+                  className="w-12 h-12 object-cover rounded"
+                />
+              </div>
+              <div className="flex flex-col items-start justify-start gap-0.5">
+                <p className="title-audio-box text-sm">{song.title}</p>
+                <p className="author-audio-box font-prata text-[10px] text-black/75">
+                  {song.artist}
+                </p>
+              </div>
+              <button 
+              onClick={() => {
+                setActiveSong(song)
+                playAudio();
+                setIsPlaying(true);
+              }}
+              className="absolute inset-0 z-30 bg-transparent w-full h-full"/>
+            </li>
+          ))}
+        </ul>
         {/* </div> */}
       </div>
 
