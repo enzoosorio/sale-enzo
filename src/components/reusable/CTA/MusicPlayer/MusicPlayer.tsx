@@ -7,6 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { ViniloSkeleton } from "@/components/reusable/CTA/MusicPlayer/ViniloSkeleton";
 import { Hamburguer } from "@/components/reusable/svgs/Hamburguer";
 import { Song, songsBlank } from "@/lib/songs-blank";
+import { MouseWheel } from "../../svgs/MouseWheel";
 
 gsap.registerPlugin(useGSAP);
 export const MusicPlayer = () => {
@@ -29,6 +30,7 @@ export const MusicPlayer = () => {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isDraggingProgress, setIsDraggingProgress] = useState<boolean>(false);
+  const [isFirstTimeSidesZones, setIsFirstTimeSidesZones] = useState<boolean>(true);
 
   // estado visual (solo para render)
   const [activeZone, setActiveZone] = useState<
@@ -45,102 +47,136 @@ export const MusicPlayer = () => {
     let tl = gsap.timeline();
     const audiobox = audioBoxRef.current;
     const mainBoxPlayer = mainBoxPlayerRef.current;
-    const audioBoxHeight = audiobox?.offsetHeight || 100;
-    const mainBoxHeight = mainBoxPlayer?.offsetHeight || 100;
-    const heightToMove = audioBoxHeight - mainBoxHeight;
+    const menuList = menuRef.current;
 
-    if (!audiobox) return;
+    if (!audiobox || !mainBoxPlayer) return;
 
-    // Solo animar clipPath, no posición
-    // La posición se maneja con top/left en el drag system
-    if (isMenuSongsOpen) {
+    const mainBoxHeight = mainBoxPlayer.offsetHeight; // Altura del main-box-player
+    const menuHeight = 256; // max-h-64 = 256px
+
+    // Calcular altura total cuando el menú está abierto
+    const fullHeight = mainBoxHeight + menuHeight;
+
+    if (isMenuSongsOpen && activeZone === "bottom") {
+      // Abrir menú: expandir altura y mover hacia arriba
       tl.to(
         audiobox,
         {
-          clipPath: "inset(0 0 0% 0)",
-          duration: 0.2,
-          ease: "linear",
+          height: fullHeight,
+          ease: "power2.out",
+          duration: 0.4,
         },
         0
       );
-      if (activeZone === "bottom") {
-        tl.to(
-          audioBoxRef.current,
-          {
-            y: `-${heightToMove}px`,
-            ease: "linear",
-            duration: 0.2,
-          },
-          0.2
-        );
-      }
+      tl.to(
+        audiobox,
+        {
+          y: `-${menuHeight}px`,
+          ease: "power2.out",
+          duration: 0.4,
+        },
+        0
+      );
     } else {
-      if(activeZone === "bottom") {
-        tl.to(
+      // Cerrar menú: colapsar a altura del main-box-player
+      tl.to(
         audiobox,
         {
-          // clipPath: "inset(0 0 73% 0)",
-          duration: 0.2,
-          ease: "linear",
+          height: mainBoxHeight,
+          marginBottom: 150,
+          ease: "power2.out",
+          duration: 0.4,
         },
         0
       );
       tl.to(
-          audioBoxRef.current,
-          {
-            y: 0,
-            ease: "linear",
-            duration: 0.2,
-          },
-          0.2
-        );
-      }
-      else if(activeZone === "right" || activeZone === "left"){
-        tl.to(
-        audiobox,
+        mainBoxPlayer,
         {
-          minHeight: `${mainBoxHeight}px`,
-          // clipPath: "inset(0 0 30% 0)",
-          duration: 0.2,
-          ease: "linear",
+          paddingBottom: 24,
+          ease: "power2.out",
+          duration: 0.4,
         },
         0
       );
       tl.to(
-          audioBoxRef.current,
-          {
-            y: 0,
-            ease: "linear",
-            duration: 0.2,
-          },
-          0.2
-        );
-      }
+        audiobox,
+        {
+          y: 0,
+          ease: "power2.out",
+          duration: 0.4,
+        },
+        0
+      );
     }
-  }, [isMenuSongsOpen]);
+  }, [isMenuSongsOpen, activeZone]);
+
+  useGSAP(() => {
+    // Solo mostrar overlay cuando esté en sides y sea la primera vez
+    if (activeZone !== "left" && activeZone !== "right") return;
+    if (!isFirstTimeSidesZones) return;
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        // Después de la animación, marcar como ya visto
+        setIsFirstTimeSidesZones(false);
+      }
+    });
+
+    // Fade in: mostrar overlay
+    tl.to('.overlay-wheel', {
+      opacity: 1, 
+      zIndex: 20,
+      duration: 0.4,
+      ease: "power2.out",
+    }, 0);
+
+    // Esperar 2 segundos para que el usuario vea el indicador
+    tl.to('.overlay-wheel', {
+      opacity: 1,
+    }, "+=2");
+
+    // Fade out: ocultar overlay
+    tl.to('.overlay-wheel', {
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.in",
+    });
+
+    // Cambiar z-index después del fade out
+    tl.to('.overlay-wheel', {
+      zIndex: -20,
+      duration: 0,
+    });
+
+  }, [activeZone, isFirstTimeSidesZones])
 
   // Animaciones GSAP según activeZone
   useGSAP(() => {
     const box = audioBoxRef.current;
-    const menu = menuRef.current;
-    const sideAudioImage = box.querySelector(".image-side-audio-box") as HTMLElement; 
+    const mainBoxPlayer = mainBoxPlayerRef.current;
+    const sideAudioImage = box?.querySelector(".image-side-audio-box") as HTMLElement;
 
-    if (!box) return;
+    if (!box || !mainBoxPlayer) return;
+
+    const mainBoxHeight = mainBoxPlayer.offsetHeight; // Altura fija del main-box
+    const imageWidth = 80; // w-20 = 80px
+    const fullWidth = 384; // 24rem = 384px
 
     let tl = gsap.timeline();
 
     if (activeZone === "bottom") {
-      // Bottom: mostrar contenido, border radius arriba
+      // Bottom: mostrar contenido completo, border radius arriba
       tl.to(
         box,
         {
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
-          borderBottomRightRadius: isMenuSongsOpen ? 0 : 16,
-          borderBottomLeftRadius: isMenuSongsOpen ? 0 : 16,
-          width: "24rem", // 384px = w-96
-          height: 'auto',
+          borderBottomRightRadius: 0,
+          borderBottomLeftRadius: 0,
+          width: fullWidth,
+          height: isMenuSongsOpen ? mainBoxHeight + 256 : mainBoxHeight,
           duration: 0.3,
+          ease: "power2.out",
         },
         0
       );
@@ -152,39 +188,24 @@ export const MusicPlayer = () => {
         },
         0
       );
-    } else if (activeZone === "left") {
-      // Left: ocultar contenido, border radius derecho
+    } else if (activeZone === "left" || activeZone === "right") {
+      // Sides: minimizar a tamaño de imagen, border radius visible
+      // Cerrar menú automáticamente en zonas laterales
+      if (isMenuSongsOpen) {
+        setIsMenuSongsOpen(false);
+      }
+
       tl.to(
         box,
         {
-          borderTopLeftRadius: 0,
-          borderBottomRightRadius: isMenuSongsOpen ? 0 : 16,
-          borderTopRightRadius: 16,
-          borderBottomLeftRadius: 0,
-          width: sideAudioImage.offsetWidth + 16 + "px", // ancho de la imagen + padding
+          borderTopLeftRadius: activeZone === "left" ? 0 : 16,
+          borderBottomRightRadius: activeZone === "left" ? 16 : 0,
+          borderTopRightRadius: activeZone === "right" ? 0 : 16,
+          borderBottomLeftRadius: activeZone === "right" ? 16 : 0,
+          width: imageWidth,
+          height: mainBoxHeight,
           duration: 0.3,
-        },
-        0
-      );
-      tl.to(
-        ".image-side-audio-box",
-        {
-          width: "100%",
-          duration: 0.3,
-        },
-        0
-      );
-    } else if (activeZone === "right") {
-      // Right: ocultar contenido, border radius izquierdo
-      tl.to(
-        box,
-        {
-          borderTopLeftRadius: 16,
-          borderBottomRightRadius: 0,
-          borderTopRightRadius: 0,
-          borderBottomLeftRadius: isMenuSongsOpen ? 0 : 16,
-          width: sideAudioImage.offsetWidth + 16 + "px", // ancho de la imagen + padding
-          duration: 0.3,
+          ease: "power2.out",
         },
         0
       );
@@ -584,8 +605,6 @@ export const MusicPlayer = () => {
       e.stopPropagation();
 
       const currentIndex = songsBlank.findIndex(song => song.id === activeSong.id);
-        const delta = e.deltaY;
-        console.log({delta})
       // deltaY > 0 = scroll down = next song
       // deltaY < 0 = scroll up = previous song
       if (e.deltaY > 0) {
@@ -606,23 +625,34 @@ export const MusicPlayer = () => {
     };
   }, [activeZone, activeSong]);
 
+  useEffect(() => {
+console.log({activeZone})
+  }, [activeZone])
+
   return (
     <>
       <div
         ref={audioBoxRef}
         className={`music-player-container w-96 cursor-grab overflow-hidden 
           fixed gradial-radient 
-          shadow-2xl rounded-tl-lg rounded-tr-lg select-none touch-none transition-all`}
+          shadow-2xl select-none touch-none transition-all`}
+        style={{ borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}
       >
         {/* primer container con clippy-path mostrando solo main cancion (primera carga) */}
         <div
           ref={mainBoxPlayerRef}
-          className="main-box-player flex flex-col items-start justify-start w-full gap-1 pb-2"
+          className="relative main-box-player flex flex-col items-start justify-start w-full gap-1 pb-2"
         >
           {/* Row 1: Image + Info + Menu Button */}
           <div className="flex items-center justify-start w-full gap-2">
             {/* parte de la imagen container*/}
-            <div className="image-side-audio-box bg-amber-500  w-20 h-16 flex items-start justify-center">
+            <div className="relative image-side-audio-box  w-20 h-16 flex items-start justify-center">
+              {activeZone !== 'bottom' && isFirstTimeSidesZones && (
+            <div className="overlay-wheel absolute inset-0 w-full bg-black/30 h-full pointer-events-none" style={{ opacity: 0, zIndex: -20 }}>
+                <MouseWheel className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 animate-pulse text-white/80" />
+            </div>
+          )}
+
               <div
                 onClick={(e) => {
                   e.stopPropagation();
@@ -667,7 +697,6 @@ export const MusicPlayer = () => {
                 <audio
                   ref={audioRef}
                   src={activeSong.audio}
-                  autoPlay
                   preload="none"
                   className="audio-tag"
                 />
@@ -676,8 +705,8 @@ export const MusicPlayer = () => {
             {/* texto de contenido -- titulo y autor */}
             <div
               className={`content-wrapper transition-all duration-300 ${
-                activeZone === "bottom" || activeZone === null ? "flex" : "hidden"
-              } flex-col items-start flex-1 justify-start gap-0.5`}
+                activeZone === "bottom" ? "flex" : "hidden"
+              } flex-col items-start flex-1 justify-start gap-0.5 pl-1`}
             >
               <p className="title-audio-box text-sm truncate max-w-full">{activeSong.title}</p>
               <p className="author-audio-box font-prata text-[10px] text-black/75 truncate max-w-full">
@@ -691,7 +720,7 @@ export const MusicPlayer = () => {
                 isMenuSongsOpen
                   ? "overlay-fade-drop-menu-active"
                   : "overlay-fade-drop"
-              } w-20 h-16 px-4 items-center justify-center ${
+              } w-18 h-16 px-4 items-center justify-center ${
                 activeZone === "bottom" || activeZone === null ? "flex" : "hidden"
               }`}
               onClick={(e) => {
@@ -705,7 +734,7 @@ export const MusicPlayer = () => {
                 } transition-all  absolute inset-0`}
               />
               <Hamburguer
-                className={`transition-transform duration-300 ${
+                className={`transition-transform duration-300 mx-auto ${
                   isMenuSongsOpen ? "-rotate-90" : "rotate-0"
                 }`}
               />
@@ -715,15 +744,15 @@ export const MusicPlayer = () => {
           {/* Row 2: Progress Bar */}
           <div
             ref={musicProgressRef}
-            className={`w-full px-2 items-center gap-2 cursor-default transition-all duration-300 ${
-              activeZone === "bottom" || activeZone === null ? "flex" : "hidden"
+            className={`w-full px-4 mt-2 bg items-center gap-2 cursor-default transition-all duration-300 ${
+              activeZone === "bottom" ? "flex" : "hidden"
             }`}
           >
-            <span className="text-[10px] font-prata text-black/60 min-w-8">
+            <span className="text-[10px] font-prata text-black/60 ">
               {formatTime(currentTime)}
             </span>
             <div
-              className="flex-1 h-1.5 bg-black/10 rounded-full cursor-pointer relative group"
+              className="flex-1 h-1.5 bg-black/10 rounded-full cursor-pointer mx-2 relative group"
               onClick={handleProgressClick}
               onMouseDown={() => setIsDraggingProgress(true)}
               onMouseMove={handleProgressDrag}
@@ -750,7 +779,7 @@ export const MusicPlayer = () => {
         <ul
           ref={menuRef}
           onClick={(e) => e.stopPropagation()}
-          className={`music-menu-scrollbar flex flex-col max-h-64 ${isMenuSongsOpen ? "overflow-auto" : "overflow-hidden"} justify-start w-full pr-1`}
+          className={`music-menu-scrollbar flex flex-col max-h-64 overflow-auto justify-start w-full pr-1`}
         >
           {songsBlank.map((song) => (
             <li
