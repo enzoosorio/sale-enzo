@@ -552,8 +552,41 @@ export const MusicPlayer = () => {
     };
   }, [isDraggingProgress]);
 
-  const playAudio = () => audioRef.current?.play();
+  const playAudio = async () => {
+    try {
+      await audioRef.current?.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  };
+  
   const pauseAudio = () => audioRef.current?.pause();
+
+  // Auto-play cuando cambia la canción activa
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleCanPlay = async () => {
+      if (isPlaying) {
+        try {
+          await audio.play();
+        } catch (error) {
+          console.error('Error playing audio:', error);
+        }
+      }
+    };
+
+    // Esperar a que el audio esté listo para reproducir
+    audio.addEventListener('canplaythrough', handleCanPlay);
+    
+    // Forzar carga del nuevo audio
+    audio.load();
+
+    return () => {
+      audio.removeEventListener('canplaythrough', handleCanPlay);
+    };
+  }, [activeSong, isPlaying]);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
@@ -611,10 +644,12 @@ export const MusicPlayer = () => {
         // Next song
         const nextIndex = (currentIndex + 1) % songsBlank.length;
         setActiveSong(songsBlank[nextIndex]);
+        setIsPlaying(true);
       } else if (e.deltaY < 0) {
         // Previous song
         const prevIndex = currentIndex === 0 ? songsBlank.length - 1 : currentIndex - 1;
         setActiveSong(songsBlank[prevIndex]);
+        setIsPlaying(true);
       }
     };
 
@@ -815,7 +850,6 @@ console.log({activeZone})
               <button
                 onClick={() => {
                   setActiveSong(song);
-                  playAudio();
                   setIsPlaying(true);
                 }}
                 className="absolute inset-0 z-30 cursor-pointer bg-transparent w-full h-full"
