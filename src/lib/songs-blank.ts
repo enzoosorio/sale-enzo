@@ -17,7 +17,7 @@ export const songsBlank : Song[] = [
     {
         id: 1,
         title: "Poison",
-        cover: "/images/songs/poison-klaus.jpg",
+        cover: "/images/songs/poison-klaus-1.png",
         audio: "/songs/poison-comp.mp3",
         artist: "Klaus"
     },
@@ -31,7 +31,7 @@ export const songsBlank : Song[] = [
     {
         id: 3,
         title: "Poison",
-        cover: "/images/songs/poison-klaus.jpg",
+        cover: "/images/songs/poison-klaus-1.png",
         audio: "/songs/poison-comp.mp3",
         artist: "Klaus"
     },
@@ -45,7 +45,7 @@ export const songsBlank : Song[] = [
     {
         id: 5,
         title: "Poison",
-        cover: "/images/songs/poison-klaus.jpg",
+        cover: "/images/songs/poison-klaus-1.png",
         audio: "/songs/poison-comp.mp3",
         artist: "Klaus"
     }
