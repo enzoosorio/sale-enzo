@@ -1,11 +1,13 @@
 import Image from "next/image"
-import { PrimaryButton } from "../reusable/CTA/Button"
+import { PrimaryButton } from "../../reusable/CTA/Button"
 import { Bag } from "@/components/reusable/svgs/Bag"
 import { Favoritos } from "@/components/reusable/svgs/Favoritos"
 import Link from "next/link"
 import { Logo } from "./Logo"
+import { CategoriesButton } from "./Categories/CategoriesButtonLayout"
 
 export const HeaderBar = () => {
+
   return (
     <header className="w-full min-h-[100px] flex items-center justify-center ">
         <nav className="relative p-2 px-16 xl:px-20 w-full h-full flex items-center justify-between">
@@ -16,10 +18,8 @@ export const HeaderBar = () => {
                 Contacto
                 </a>
                </li> 
-               <li className="cursor-pointer">
-                <Link href="/categorias" className="linkk font-prata">
-                Categorías
-                </Link>
+               <li className="cursor-pointer linkk font-prata">
+                <CategoriesButton/>
                </li> 
             </ul>
             {/* "intento de logo" */}

@@ -552,6 +552,33 @@ export const MusicPlayer = () => {
     };
   }, [isDraggingProgress]);
 
+  // Auto-play next song when current track ends
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleEnded = () => {
+      const currentIndex = songsBlank.findIndex(song => song.id === activeSong.id);
+      
+      // Si no es la última canción, pasar a la siguiente
+      if (currentIndex < songsBlank.length - 1) {
+        const nextIndex = currentIndex + 1;
+        setActiveSong(songsBlank[nextIndex]);
+        setIsPlaying(true);
+      } else {
+        // Si es la última canción, volver al inicio (loop)
+        setActiveSong(songsBlank[0]);
+        setIsPlaying(true);
+      }
+    };
+
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [activeSong]);
+
   const playAudio = async () => {
     try {
       await audioRef.current?.play();
@@ -567,8 +594,11 @@ export const MusicPlayer = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Guardar el estado de isPlaying en el momento de la carga
+    const shouldPlay = isPlaying;
+
     const handleCanPlay = async () => {
-      if (isPlaying) {
+      if (shouldPlay) {
         try {
           await audio.play();
         } catch (error) {
@@ -578,7 +608,7 @@ export const MusicPlayer = () => {
     };
 
     // Esperar a que el audio esté listo para reproducir
-    audio.addEventListener('canplaythrough', handleCanPlay);
+    audio.addEventListener('canplaythrough', handleCanPlay, { once: true });
     
     // Forzar carga del nuevo audio
     audio.load();
@@ -586,7 +616,7 @@ export const MusicPlayer = () => {
     return () => {
       audio.removeEventListener('canplaythrough', handleCanPlay);
     };
-  }, [activeSong, isPlaying]);
+  }, [activeSong]);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
@@ -660,9 +690,6 @@ export const MusicPlayer = () => {
     };
   }, [activeZone, activeSong]);
 
-  useEffect(() => {
-console.log({activeZone})
-  }, [activeZone])
 
   return (
     <>

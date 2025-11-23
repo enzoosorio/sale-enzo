@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Prata, Nanum_Myeongjo, Inria_Serif } from "next/font/google";
 import "./globals.css";
-import { HeaderBar } from "@/components/main/HeaderBar";
+import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { MusicPlayer } from "@/components/reusable/CTA/MusicPlayer/MusicPlayer";
 
 const prata = Prata({
