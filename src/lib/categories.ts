@@ -5,72 +5,216 @@ export const categories : Categories[] = [
         id: 1,
         name: 'POLOS',
         referenceImages:[
-            '/categories/technology1.jpg',
-            '/categories/technology2.jpg',
-            '/categories/technology3.jpg',
+            {
+                src: '/images/categories/polos/polos-1.png',
+                alt: 'Polo 1',
+            },
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     },
     {
         id: 2,
         name: 'CAMISAS',
-        referenceImages:[
-            '/categories/fashion1.jpg',
-            '/categories/fashion2.jpg',
-            '/categories/fashion3.jpg',
+         referenceImages:[
+            {
+                src: '/images/categories/polos/polos-1.png',
+                alt: 'Polo 1',
+            },
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     },
     {
         id: 3,
         name: 'PANTALONES',
-        referenceImages:[
-            '/categories/home1.jpg',
-            '/categories/home2.jpg',
-            '/categories/home3.jpg',
+         referenceImages:[
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     },
     {
         id: 4,
         name: 'ZAPATILLAS',
         referenceImages:[
-            '/categories/sports1.jpg',
-            '/categories/sports2.jpg',
-            '/categories/sports3.jpg',
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     },
     {
         id: 5,
         name: 'ACCESORIOS',
-        referenceImages:[
-            '/categories/accessories1.jpg',
-            '/categories/accessories2.jpg',
-            '/categories/accessories3.jpg',
+         referenceImages:[
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     },
     {
         id: 6,
         name: 'SHORTS',
-        referenceImages:[
-            '/categories/health1.jpg',
-            '/categories/health2.jpg',
-            '/categories/health3.jpg',
+         referenceImages:[
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     },
     {
         id: 7,
         name: 'POLERAS',
-        referenceImages:[
-            '/categories/automotive1.jpg',
-            '/categories/automotive2.jpg',
-            '/categories/automotive3.jpg',
+         referenceImages:[
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     },
     {
         id: 8,
         name: 'RANDOM',
-        referenceImages:[
-            '/categories/food1.jpg',
-            '/categories/food2.jpg',
-            '/categories/food3.jpg',
+         referenceImages:[
+            {
+                src: '/images/categories/polos/polos-2.png',
+                alt: 'Polo 2',
+            },
+            {
+                src: '/images/categories/polos/polos-3.png',
+                alt: 'Polo 3',
+            },
+            {
+                src: '/images/categories/polos/polos-4.png',
+                alt: 'Polo 4',
+            },
+            {
+                src: '/images/categories/polos/polos-5.png',
+                alt: 'Polo 5',
+            },
+            {
+                src: '/images/categories/polos/polos-6.png',
+                alt: 'Polo 6',
+            },
         ]
     }
 ];

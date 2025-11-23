@@ -13,6 +13,7 @@ export const InfiniteScrollCategories = (props: Props) => {
   const [isMobile, setIsMobile] = useState(false);
   const [speedDrag, setSpeedDrag] = useState(1.2);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [reviewSelected, setReviewSelected] = useState<Categories | null>(null);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -233,17 +234,22 @@ export const InfiniteScrollCategories = (props: Props) => {
     };
   }, [categories.length]);
 
+
+  
   return (
-    <div className="card-infinite-scroll  flex flex-col h-full items-center justify-center gap-12  px-4 lg:px-8 w-[95%] sm:w-6/12">
-      {/* boton para mostrar todas las categorias de nuevo */}
+   <>
+   {/* boton para mostrar todas las categorias de nuevo */}
       <button
         onClick={() => {
           setIsAnimating(false);
         }}
-        className="opacity-0 -z-10 back-button absolute top-1/2 -translate-y-1/2 left-0 cursor-pointer "
+        className="opacity-0 -z-10 back-button absolute left-10 top-1/2 -translate-y-1/2  cursor-pointer "
       >
         <BackButton className="w-10 rotate-180" />
       </button>
+
+    <div className="card-infinite-scroll  flex flex-col h-full items-center justify-center gap-12  px-4 lg:px-8 w-[95%] sm:w-6/12">
+      
       <div className="relative w-full pt-14 h-dvh rounded-2xl py-4 overflow-hidden">
         <div className="flechitas-container absolute right-[10%] top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-10">
           {/* flechita arriba */}
@@ -280,11 +286,14 @@ export const InfiniteScrollCategories = (props: Props) => {
                 menuRef={menuRef}
                 isAnimating={isAnimating}
                 setIsAnimating={setIsAnimating}
+                reviewSelected={reviewSelected}
+                setReviewSelected={setReviewSelected}
               />
             </li>
           ))}
         </ul>
       </div>
     </div>
+   </>
   );
 };

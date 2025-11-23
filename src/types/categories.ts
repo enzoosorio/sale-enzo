@@ -1,7 +1,12 @@
+export interface Images{
+    src: string;
+    alt: string;
+}
+
 export interface Categories{
     id: number;
     name: string;
-    referenceImages: string[];
+    referenceImages: Images[];
     filters?: Filters;
 }
 
