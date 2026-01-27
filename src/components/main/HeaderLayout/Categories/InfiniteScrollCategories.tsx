@@ -4,16 +4,19 @@ import { categories } from "@/lib/categories";
 import { Categories } from "@/types/categories";
 import { IndividualCategory } from "./IndividualCategory";
 import { BackButton } from "@/components/reusable/svgs/BackButton";
+import { AsideCategoriesFilter } from "./AsideCategories/Filters/AsideProduct&Filters";
 
-type Props = {};
+interface InfiniteScrollCategoriesProps {
+  isAnimating: boolean;
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
-export const InfiniteScrollCategories = (props: Props) => {
+export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating }: InfiniteScrollCategoriesProps) => {
   const menuRef = useRef<HTMLUListElement>(null);
   const itemsRef = useRef<(HTMLLIElement | null)[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [speedDrag, setSpeedDrag] = useState(1.2);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [reviewSelected, setReviewSelected] = useState<Categories | null>(null);
+  const [categorySelected, setCategorySelected] = useState<Categories | null>(null);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -250,7 +253,7 @@ export const InfiniteScrollCategories = (props: Props) => {
 
     <div className="card-infinite-scroll  flex flex-col h-full items-center justify-center gap-12  px-4 lg:px-8 w-[95%] sm:w-6/12">
       
-      <div className="relative w-full pt-14 h-dvh rounded-2xl py-4 overflow-hidden">
+      <div className="relative w-full pt-14 h-dvh rounded-2xl py-4 ">
         <div className="flechitas-container absolute right-[10%] top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-10">
           {/* flechita arriba */}
           <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
@@ -286,12 +289,13 @@ export const InfiniteScrollCategories = (props: Props) => {
                 menuRef={menuRef}
                 isAnimating={isAnimating}
                 setIsAnimating={setIsAnimating}
-                reviewSelected={reviewSelected}
-                setReviewSelected={setReviewSelected}
+                categorySelected={categorySelected}
+                setCategorySelected={setCategorySelected}
               />
             </li>
           ))}
         </ul>
+        <AsideCategoriesFilter categorySelected={categorySelected?.name || null} />
       </div>
     </div>
    </>

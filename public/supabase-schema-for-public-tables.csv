@@ -1,0 +1,118 @@
+table_name,column_name,data_type,is_nullable,udt_name
+cart_items,user_id,uuid,NO,uuid
+cart_items,variant_id,uuid,NO,uuid
+cart_items,quantity,integer,NO,int4
+cart_items,created_at,timestamp with time zone,YES,timestamptz
+favorites,user_id,uuid,NO,uuid
+favorites,variant_id,uuid,NO,uuid
+favorites,created_at,timestamp with time zone,YES,timestamptz
+order_items,id,uuid,NO,uuid
+order_items,order_id,uuid,YES,uuid
+order_items,variant_id,uuid,YES,uuid
+order_items,price,numeric,NO,numeric
+order_items,quantity,integer,NO,int4
+order_items,created_at,timestamp with time zone,YES,timestamptz
+orders,id,uuid,NO,uuid
+orders,user_id,uuid,YES,uuid
+orders,shipping_address,jsonb,YES,jsonb
+orders,billing_address,jsonb,YES,jsonb
+orders,payment_provider_id,uuid,YES,uuid
+orders,payment_status,text,YES,text
+orders,metadata,jsonb,YES,jsonb
+orders,status,text,NO,text
+orders,total,numeric,NO,numeric
+orders,created_at,timestamp with time zone,YES,timestamptz
+payment_provider,id,uuid,NO,uuid
+payment_provider,name,text,YES,text
+product_categories,id,uuid,NO,uuid
+product_categories,name,text,NO,text
+product_categories,slug,text,NO,text
+product_categories,created_at,timestamp with time zone,YES,timestamptz
+product_categories,parent_id,uuid,YES,uuid
+product_items,id,uuid,NO,uuid
+product_items,variant_id,uuid,YES,uuid
+product_items,condition,text,YES,text
+product_items,price,numeric,NO,numeric
+product_items,sku,text,YES,text
+product_items,stock,integer,YES,int4
+product_items,seller_id,uuid,YES,uuid
+product_items,status,text,YES,text
+product_items,created_at,timestamp with time zone,YES,timestamptz
+product_rag_profiles,product_item_id,uuid,NO,uuid
+product_rag_profiles,content,text,NO,text
+product_rag_profiles,embedding,USER-DEFINED,YES,vector
+product_rag_profiles,created_at,timestamp with time zone,YES,timestamptz
+product_rag_profiles,updated_at,timestamp with time zone,YES,timestamptz
+product_rag_profiles,version,integer,YES,int4
+product_variants,id,uuid,NO,uuid
+product_variants,product_id,uuid,YES,uuid
+product_variants,size,text,YES,text
+product_variants,metadata,jsonb,YES,jsonb
+product_variants,created_at,timestamp with time zone,YES,timestamptz
+product_variants,main_color_hex,text,YES,text
+product_variants,main_color_category_id,uuid,YES,uuid
+product_variants,main_img_url,text,NO,text
+product_variants,gender,text,YES,text
+product_variants,fit,text,YES,text
+products,id,uuid,NO,uuid
+products,name,text,NO,text
+products,description,text,YES,text
+products,brand,text,YES,text
+products,category_id,uuid,YES,uuid
+products,is_active,boolean,YES,bool
+products,created_at,timestamp with time zone,YES,timestamptz
+products,updated_at,timestamp with time zone,YES,timestamptz
+tags,id,uuid,NO,uuid
+tags,created_at,timestamp with time zone,NO,timestamptz
+tags,name,text,NO,text
+tags,slug,text,NO,text
+user_features,user_id,uuid,NO,uuid
+user_features,persona,jsonb,YES,jsonb
+user_features,preferences,jsonb,YES,jsonb
+user_features,affinities,jsonb,YES,jsonb
+user_features,behavioral_signals,jsonb,YES,jsonb
+user_features,updated_at,timestamp with time zone,YES,timestamptz
+user_interactions,id,uuid,NO,uuid
+user_interactions,user_id,uuid,YES,uuid
+user_interactions,product_id,uuid,YES,uuid
+user_interactions,variant_id,uuid,YES,uuid
+user_interactions,interaction_type,text,YES,text
+user_interactions,metadata,jsonb,YES,jsonb
+user_interactions,created_at,timestamp with time zone,YES,timestamptz
+user_rag_profiles,user_id,uuid,NO,uuid
+user_rag_profiles,summary_text,text,NO,text
+user_rag_profiles,embedding,USER-DEFINED,YES,vector
+user_rag_profiles,version,integer,YES,int4
+user_rag_profiles,updated_at,timestamp with time zone,YES,timestamptz
+users,id,uuid,NO,uuid
+users,email,text,YES,text
+users,avatar_url,text,YES,text
+users,phone,text,YES,text
+users,created_at,timestamp with time zone,YES,timestamptz
+users,first_name,text,YES,text
+users,last_name,text,YES,text
+users,verified_email,boolean,YES,bool
+users,updated_at,timestamp with time zone,YES,timestamptz
+variant_color_categories,id,uuid,NO,uuid
+variant_color_categories,centroid_l,double precision,NO,float8
+variant_color_categories,centroid_a,double precision,NO,float8
+variant_color_categories,centroid_b,double precision,NO,float8
+variant_color_categories,representative_hex,character varying,NO,varchar
+variant_color_categories,created_at,timestamp without time zone,YES,timestamp
+variant_color_categories,updated_at,timestamp without time zone,YES,timestamp
+variant_colors,id,uuid,NO,uuid
+variant_colors,variant_id,uuid,NO,uuid
+variant_colors,color_category_id,uuid,NO,uuid
+variant_colors,original_hex,character varying,NO,varchar
+variant_colors,l,double precision,NO,float8
+variant_colors,a,double precision,NO,float8
+variant_colors,b,double precision,NO,float8
+variant_colors,created_at,timestamp without time zone,YES,timestamp
+variant_images,id,uuid,NO,uuid
+variant_images,variant_id,uuid,YES,uuid
+variant_images,image_url,text,NO,text
+variant_images,created_at,timestamp with time zone,YES,timestamptz
+variant_images,position,bigint,YES,int8
+variant_tags,variant_id,uuid,NO,uuid
+variant_tags,tag_id,uuid,NO,uuid
+variant_tags,created_at,timestamp with time zone,YES,timestamptz

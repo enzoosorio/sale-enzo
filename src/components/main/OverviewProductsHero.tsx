@@ -1,4 +1,4 @@
-import { Product } from "@/types/product";
+import { Product } from "@/types/products/products";
 import Link from "next/link";
 
 interface OverviewProductsHeroProps {

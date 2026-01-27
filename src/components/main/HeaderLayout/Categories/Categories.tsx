@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { CloseButtonSVG } from "@/components/reusable/svgs/CloseButtonSVG";
@@ -29,7 +29,8 @@ export const Categories = ({
   showCategories,
 }: CategoriesProps) => {
   const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
-  
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
+
   useGSAP(() => {
     let tl = gsap.timeline();
 
@@ -114,13 +115,17 @@ export const Categories = ({
       className="categories-section cursor-auto fixed inset-0 w-full bg-off-white z-20 flex flex-col items-center justify-center overflow-hidden"
       style={{ height: "0vh" }}
     >
-      <InfiniteScrollCategories />
+      <InfiniteScrollCategories
+        isAnimating={isAnimating}
+        setIsAnimating={setIsAnimating}
+      />
       {/* boton de cerrar el section */}
       <button
-        className=" absolute top-[10%] right-[10%] cursor-pointer "
+        className=" absolute top-[10%] right-[10%] z-50 cursor-pointer "
         onClick={() => {
           setShowCategories && setShowCategories(false);
           document.body.style.overflow = "auto";
+          setIsAnimating(false);
         }}
       >
         <CloseButtonSVG className="w-7 h-7 hover:rotate-90 transition-transform hover:scale-105" />
@@ -130,7 +135,7 @@ export const Categories = ({
       <div className="images-wrapper fixed inset-0 z-10 select-none pointer-events-none bg-amber-0 w-full h-full">
         {imagesByCategory.map((image, index) => (
           <div
-            className="image-container h-max w-max bg-amber-400"
+            className="image-container h-max w-max overflow-hidden bg-amber-400"
             key={index}
           >
             <img

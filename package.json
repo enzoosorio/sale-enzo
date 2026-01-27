@@ -6,17 +6,36 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "rag:init": "tsx src/lib/rag/scripts/init.ts",
+    "rag:ingest": "tsx src/lib/rag/scripts/ingest.ts",
+    "rag:ingest:sample": "tsx src/lib/rag/scripts/ingest.ts src/lib/rag/data/**/*.{txt,md}",
+    "rag:query": "tsx src/lib/rag/scripts/query.ts",
+    "rag:query:demo": "tsx src/lib/rag/scripts/query.ts --demo",
+    "rag:stats": "tsx -e \"import { getStats } from './src/lib/rag/index'; getStats().then(s => console.log(JSON.stringify(s, null, 2)))\"",
+    "rag:reset": "tsx -e \"import { dropRagTables, initializeDatabase } from './src/lib/rag/database/schema'; dropRagTables().then(() => initializeDatabase())\""
   },
   "dependencies": {
     "@fontsource/inria-serif": "^5.2.8",
     "@fontsource/nanum-myeongjo": "^5.2.11",
     "@fontsource/prata": "^5.2.7",
     "@gsap/react": "^2.1.2",
+    "@langchain/core": "^1.1.4",
+    "@langchain/ollama": "^1.0.3",
+    "@langchain/openai": "^1.1.3",
+    "@langchain/textsplitters": "^1.0.1",
+    "@libsql/client": "^0.15.15",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.86.0",
+    "dotenv": "^17.2.3",
     "gsap": "^3.13.0",
+    "langchain": "^1.1.5",
     "next": "16.0.1",
+    "openai": "^6.10.0",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "zod": "^4.1.13",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
@@ -27,6 +46,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
+    "tsx": "^4.19.0",
     "typescript": "^5"
   }
 }

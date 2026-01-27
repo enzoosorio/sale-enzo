@@ -11,8 +11,8 @@ interface IndividualCategoryProps {
   menuRef: React.RefObject<HTMLUListElement | null>;
   isAnimating: boolean;
   setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
-  reviewSelected: Categories | null;
-  setReviewSelected: React.Dispatch<React.SetStateAction<Categories | null>>;
+  categorySelected: Categories | null;
+  setCategorySelected: React.Dispatch<React.SetStateAction<Categories | null>>;
 }
 
 export const IndividualCategory = ({
@@ -20,8 +20,8 @@ export const IndividualCategory = ({
   menuRef,
   isAnimating,
   setIsAnimating,
-  reviewSelected,
-  setReviewSelected,
+  categorySelected,
+  setCategorySelected,
 }: IndividualCategoryProps) => {
   const [splitInstance, setSplitInstance] = useState<SplitText | null>(null);
   const [selectedWord, setSelectedWord] = useState<HTMLElement | null>(null);
@@ -39,7 +39,7 @@ export const IndividualCategory = ({
       pointerEvents: "none",
     });
 
-    if (reviewSelected && reviewSelected.name === category.name) {
+    if (categorySelected && categorySelected.name === category.name) {
       if (isAnimating) {
         // Revertir SplitText anterior si existe
         if (splitInstance) {
@@ -99,22 +99,23 @@ export const IndividualCategory = ({
           0.3
         );
         tl.to(
-          ".card-infinite-scroll",
+          ".infinite-menu-items",
           {
-            x: "-120%",
-            duration: 0.2,
+            x: "-100%",
+            width: "390px",
+            duration: 0.3,
             ease: "power2.in",
           },
           0.5
         );
         tl.to(
-          ".card-infinite-scroll",
+          ".aside-filters",
           {
-            width: "420px",
-            duration: 0.2,
-            ease: "power2.in",
+            zIndex: 10,
+            opacity: 1,
+            ease: "power2.out",
           },
-          0.5
+          0.6
         );
         tl.to(
           ".back-button",
@@ -124,6 +125,7 @@ export const IndividualCategory = ({
             cursor: "pointer",
             pointerEvents: "auto",
             opacity: 1,
+            ease: "power2.out",
           },
           0.6
         );
@@ -181,19 +183,11 @@ export const IndividualCategory = ({
           0.6
         );
         tl.to(
-          ".card-infinite-scroll",
+          ".infinite-menu-items",
           {
             x: "0%",
-            duration: 0.2,
-            ease: "power2.out",
-          },
-          0.5
-        );
-        tl.to(
-          ".card-infinite-scroll",
-          {
-            width: "50%",
-            duration: 0.2,
+            width: "100%",
+            duration: 0.3,
             ease: "power2.out",
           },
           0.5
@@ -209,19 +203,29 @@ export const IndividualCategory = ({
           },
           0.2
         );
+        tl.to(
+          ".aside-filters",
+          {
+            zIndex: -1,
+            opacity: 0,
+          },
+          0.2
+        );
 
         selectedWord?.classList.add("no-animate");
         selectedWord?.classList.add("individual-category");
         setSelectedWord(null);
-        setReviewSelected(null);
+        setTimeout(() => {
+          setCategorySelected(null);
+        }, 300);
       }
     }
-  }, [reviewSelected, isAnimating]);
+  }, [categorySelected, isAnimating]);
 
   return (
       <p
         onMouseEnter={() => {
-          if(reviewSelected) return;
+          if(categorySelected) return;
 
           setTimeout(() => {
             if (exitImagesByCategory) {
@@ -237,7 +241,7 @@ export const IndividualCategory = ({
         onClick={(e) => {
           e.stopPropagation();
           setIsAnimating(true);
-          setReviewSelected(category);
+          setCategorySelected(category);
           setSelectedWord(e.currentTarget);
           e.currentTarget.classList.remove("no-animate");
           e.currentTarget.classList.remove("individual-category");
@@ -247,13 +251,13 @@ export const IndividualCategory = ({
           e.stopPropagation();
           // Check if the parent menu is dragging, if not, it's a tap
           if (menuRef && !menuRef.current?.classList.contains("is-dragging")) {
-            setReviewSelected(category);
+            setCategorySelected(category);
           }
         }}
         className={`
           p-tag
           ${
-          reviewSelected?.name !== category.name
+          categorySelected?.name !== category.name
             ? " no-animate individual-category "
             : ""
         } font-nanum font-light text-5xl cursor-pointer text-center px-4 py-1 transition-all touch-manipulation`}
