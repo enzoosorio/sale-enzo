@@ -1,8 +1,8 @@
-import { Product } from "@/types/products/products";
+import { WholeProductStructure } from "@/types/products/products";
 import Link from "next/link";
 
 interface OverviewProductsHeroProps {
-  products: Product[];
+  products: WholeProductStructure[];
 }
 
 export const OverviewProductsHero = ({
@@ -21,7 +21,7 @@ export const OverviewProductsHero = ({
               >
                 <Link href={`/products/${product.id}`} className="flex flex-col items-center justify-center gap-2">
                 <img
-                  src={product.imageUrl}
+                  src={product.variant.main_img_url || '/images/products/polo-1.png'}
                   alt={product.name}
                   className="object-cover w-full h-full"
                 />

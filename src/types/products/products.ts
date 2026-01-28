@@ -1,4 +1,6 @@
 import { Timestamp, UUID } from "../shared-types"
+import { ProductItemRow } from "./product_items"
+import { ProductVariantRow } from "./product_variants"
 
 /** Producto base, no vendible directamente */
 export interface ProductRow {
@@ -21,3 +23,9 @@ export type ProductUpdate = Partial<ProductInsert>
 
 export type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 export type Colors = 'Red' | 'Blue' | 'Green' | 'Black' | 'White' | 'Yellow' | 'Purple' | 'Gray';
+
+
+export interface WholeProductStructure extends ProductRow {
+  variant : ProductVariantRow,
+  item : ProductItemRow
+}

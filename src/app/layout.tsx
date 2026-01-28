@@ -37,9 +37,7 @@ export default function RootLayout({
       <body
         className={`${prata.className} ${nanum.className} ${inria_serif.className} antialiased`}
       >
-        <HeaderBar />
-        {children}  
-        <MusicPlayer/>
+        {children}   
       </body>
     </html>
   );

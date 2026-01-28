@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { PrimaryButton } from "../../reusable/CTA/Button"
+import { PrimaryButton } from "../../reusable/CTA/buttons/Button"
 import { Bag } from "@/components/reusable/svgs/Bag"
 import { Favoritos } from "@/components/reusable/svgs/Favoritos"
 import Link from "next/link"
@@ -23,15 +23,19 @@ export const HeaderBar = () => {
                </li> 
             </ul>
             {/* "intento de logo" */}
-            <Logo/>
+            <Link className="w-max h-max" href={'/home'}>
+                <Logo/>
+            </Link>
             <ul className="flex items-center justify-center gap-8">
                 <div className="flex items-center justify-center gap-4">
                   <Bag/>
                   <Favoritos/>
                 </div>
-                <PrimaryButton>
-                    Iniciar sesión
-                </PrimaryButton>
+                <Link className="w-max h-max" href={'/login'}>
+                    <PrimaryButton>
+                        Iniciar sesión
+                    </PrimaryButton>
+                </Link>
                 {/* parte del bot */}
                 <div className=" h-8 flex items-center justify-center">
                 <Image
