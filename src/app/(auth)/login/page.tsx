@@ -4,16 +4,17 @@ import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <section className="relative overflow-auto h-screen  flex items-center justify-center p-4">
+    <section className="min-h-full flex flex-col items-start justify-start p-4 pl-[200px] py-8">
+      {/* Espaciador visual para efecto de "respiración" */}
+      <div className="h-2 shrink-0" />
+      
       {/* Login Card */}
-      <div className="block bg-amber-400/0 h-[140%] w-20"/>
       <div className={`
-      absolute top-1/2 -translate-y-1/2 left-[200px]
-      w-full min-w-[320px] xl:min-w-[600px] 
+        w-full min-w-[320px] xl:min-w-[600px] 
         max-w-md bg-[rgba(12,12,12,0.1)] backdrop-blur-[5px] 
         flex flex-col items-start justify-start 
         border border-white/20
-        rounded-md shadow-lg p-8 py-14 mt-4 gap-8`}>
+        rounded-md shadow-lg p-8 gap-8`}>
         <div className="flex flex-col items-start justify-start gap-2">
           {/* Title */}
           <h1 className="font-prata text-2xl text-center  text-foreground">

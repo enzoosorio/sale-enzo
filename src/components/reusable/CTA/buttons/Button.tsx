@@ -5,8 +5,10 @@ export type CTAButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 export const PrimaryButton = ({ className, ...props}: CTAButtonProps) => {
+  
   return (
-    <button className={`font-prata cursor-pointer bg-black text-white min-h-10 px-14 xl:px-20 text-lg primary-button ${className}`} {...props}>
+    <button 
+    className={`font-prata cursor-pointer bg-black text-white min-h-10 px-14 xl:px-20 text-lg primary-button ${className}`} {...props}>
         {props.children}
     </button>
   )

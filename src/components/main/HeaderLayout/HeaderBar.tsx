@@ -1,11 +1,11 @@
+
 import Image from "next/image"
 import { PrimaryButton } from "../../reusable/CTA/buttons/Button"
 import { Bag } from "@/components/reusable/svgs/Bag"
 import { Favoritos } from "@/components/reusable/svgs/Favoritos"
-import Link from "next/link"
 import { Logo } from "./Logo"
 import { CategoriesButton } from "./Categories/CategoriesButtonLayout"
-
+import Link from "next/link"
 export const HeaderBar = () => {
 
   return (
@@ -14,9 +14,9 @@ export const HeaderBar = () => {
             <ul className="flex items-center text-lg justify-center gap-6 font-prata">
                <li className="cursor-pointer">
                 {/* todo: agregar el contacto */}
-                <a href="#" className="linkk font-prata">
+                <Link href="#" className="linkk font-prata">
                 Contacto
-                </a>
+                </Link>
                </li> 
                <li className="cursor-pointer linkk font-prata">
                 <CategoriesButton/>
