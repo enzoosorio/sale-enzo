@@ -55,12 +55,21 @@ export default function RegisterPage() {
 
       if (response.status === "success") {
         showToast(response.message, "success");
-        // Redirigir al login o home después de registro exitoso
+        
+        // Si hay redirect sugerido, usarlo; sino ir a login por defecto
+        const redirectTo = response.redirect || "/login";
         setTimeout(() => {
-          router.push("/login");
+          router.push(redirectTo);
         }, 1500);
       } else {
         showToast(response.message, "error");
+        
+        // Si hay redirect en error (ej: "ya registrado, ir a login")
+        if (response.redirect) {
+          setTimeout(() => {
+            router.push(response.redirect!);
+          }, 2000);
+        }
       }
     } catch (error) {
       showToast("Error inesperado. Por favor intenta de nuevo.", "error");

@@ -1,38 +1,38 @@
 "use server";
 
+import { assertEmailState } from "@/lib/auth/assertEmailState";
+import { getUserByEmail } from "@/lib/auth/getUserByEmail";
+import { isPhoneAvailable } from "@/lib/auth/isPhoneAvailable";
 import { registerSchema, type AuthResponse } from "@/lib/auth/schemas";
+import { createClient } from "@/utils/supabase/server";
 
 /**
  * Server Action para registro de usuario
  * 
- * Esta función está preparada para conectarse con Supabase Auth.
+ * FLUJO:
+ * 1. Validar datos con Zod
+ * 2. Verificar si el email ya existe
+ * 3. Verificar si el teléfono está disponible
+ * 4. Crear usuario en Supabase Auth (esto dispara el trigger)
+ * 5. El trigger copia id, email, avatar_url a public.users
+ * 6. Actualizar campos adicionales (first_name, last_name, phone, verified_email)
  * 
- * PRÓXIMOS PASOS PARA IMPLEMENTACIÓN COMPLETA:
- * 1. Descomentar imports de Supabase
- * 2. Configurar variables de entorno:
- *    - NEXT_PUBLIC_SUPABASE_URL
- *    - NEXT_PUBLIC_SUPABASE_ANON_KEY
- * 3. Implementar lógica de creación de usuario en Supabase Auth
- * 4. Insertar datos adicionales en tabla 'users' (first_name, last_name, phone)
- * 
- * @param formData - Datos del formulario de registro
+ * @param formData - Datos del formulario
  * @returns AuthResponse con status y mensaje
  */
 export async function registerUser(
   formData: FormData
 ): Promise<AuthResponse> {
   try {
-    // Extraer datos del FormData
     const rawData = {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
       confirmPassword: formData.get("confirmPassword") as string,
-      first_name: formData.get("first_name") as string | undefined,
-      last_name: formData.get("last_name") as string | undefined,
-      phone: formData.get("phone") as string | undefined,
+      first_name: (formData.get("first_name") as string) || undefined,
+      last_name: (formData.get("last_name") as string) || undefined,
+      phone: (formData.get("phone") as string) || undefined,
     };
 
-    // Validar datos con Zod
     const validationResult = registerSchema.safeParse(rawData);
 
     if (!validationResult.success) {
@@ -48,66 +48,106 @@ export async function registerUser(
 
     const validatedData = validationResult.data;
 
-    // TODO: Implementar registro con Supabase
-    // 
-    // import { createClient } from '@/utils/supabase/server';
-    // 
-    // const supabase = createClient();
-    // 
-    // // 1. Crear usuario en Supabase Auth
-    // const { data: authData, error: authError } = await supabase.auth.signUp({
-    //   email: validatedData.email,
-    //   password: validatedData.password,
-    //   options: {
-    //     data: {
-    //       first_name: validatedData.first_name,
-    //       last_name: validatedData.last_name,
-    //       phone: validatedData.phone,
-    //     }
-    //   }
-    // });
-    // 
-    // if (authError) {
-    //   return {
-    //     status: "error",
-    //     message: authError.message,
-    //   };
-    // }
-    // 
-    // // 2. Insertar datos adicionales en tabla 'users' si es necesario
-    // if (authData.user) {
-    //   const { error: dbError } = await supabase
-    //     .from('users')
-    //     .insert({
-    //       id: authData.user.id,
-    //       email: validatedData.email,
-    //       first_name: validatedData.first_name || null,
-    //       last_name: validatedData.last_name || null,
-    //       phone: validatedData.phone || null,
-    //       verified_email: false,
-    //     });
-    //   
-    //   if (dbError) {
-    //     console.error('Error insertando en tabla users:', dbError);
-    //   }
-    // }
+    // ============================================
+    // 2. VERIFICAR SI EL EMAIL YA EXISTE
+    // ============================================
+    const existingUser = await getUserByEmail(validatedData.email);
+    
+    if (existingUser) {
+      const emailState = assertEmailState(existingUser);
+      
+      // Si el email existe pero no está verificado
+      if (emailState.state === "not-verified") {
+        return {
+          status: "error",
+          message: `El email ${validatedData.email} ya está registrado pero no verificado. Por favor revisa tu correo para verificar tu cuenta.`,
+        };
+      }
+      
+      // Si el email existe y está verificado
+      if (emailState.state === "verified") {
+        return {
+          status: "error",
+          message: `El email ${validatedData.email} ya está registrado. ¿Deseas iniciar sesión?`,
+        };
+      }
+    }
 
-    // Simulación temporal hasta implementar Supabase
-    console.log("Datos de registro validados:", {
+    // ============================================
+    // 3. VERIFICAR SI EL TELÉFONO ESTÁ DISPONIBLE
+    // ============================================
+    if (validatedData.phone) {
+      const phoneAvailable = await isPhoneAvailable(validatedData.phone);
+      
+      if (!phoneAvailable) {
+        return {
+          status: "error",
+          message: `El teléfono ${validatedData.phone} ya está en uso por otra cuenta.`,
+        };
+      }
+    }
+
+    // ============================================
+    // 4. CREAR USUARIO EN SUPABASE AUTH
+    // ============================================
+    const supabase = await createClient();
+    
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedData.email,
-      first_name: validatedData.first_name,
-      last_name: validatedData.last_name,
-      phone: validatedData.phone,
+      password: validatedData.password,
+      options: {
+        // Estos datos van a auth.users.raw_user_meta_data
+        // pero NO se copian automáticamente a public.users
+        data: {
+          first_name: validatedData.first_name,
+          last_name: validatedData.last_name,
+          phone: validatedData.phone,
+        },
+      },
     });
+    
+    if (authError) {
+      console.error("Error en Supabase Auth:", authError);
+      return {
+        status: "error",
+        message: authError.message || "Error al crear la cuenta. Intenta de nuevo.",
+      };
+    }
 
-    // Respuesta temporal de éxito
+    if (!authData.user) {
+      return {
+        status: "error",
+        message: "No se pudo crear el usuario. Intenta de nuevo.",
+      };
+    }
+
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({
+        first_name: validatedData.first_name || null,
+        last_name: validatedData.last_name || null,
+        phone: validatedData.phone || null,
+        verified_email: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", authData.user.id);
+    
+    if (updateError) {
+      console.error("Error actualizando datos adicionales:", updateError);
+      // No retornamos error aquí porque el usuario YA fue creado
+      // Los datos adicionales se pueden agregar después
+    }
+
+    // ============================================
+    // 6. RESPUESTA EXITOSA
+    // ============================================
     return {
       status: "success",
-      message: "¡Registro exitoso! Por favor verifica tu email.",
+      message: "¡Registro exitoso! Por favor verifica tu email para activar tu cuenta.",
     };
 
   } catch (error) {
-    console.error("Error en registerUser:", error);
+    console.error("Error inesperado en registerUser:", error);
     return {
       status: "error",
       message: "Error inesperado durante el registro. Por favor intenta de nuevo.",

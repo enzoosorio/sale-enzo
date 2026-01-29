@@ -1,27 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { handleRouteProtection } from './auth-middleware'
-// import { updateSession } from "@/utils/supabase/middleware"
+import { updateSession } from '@/utils/supabase/supabase-middleware' 
  
 // This function can be marked `async` if using `await` inside
 export async function proxy(request: NextRequest) {
-  // return await updateSession(request)
-
-  // Handle route protection (authentication check)
-  const protectionResponse = handleRouteProtection(request);
-  if (protectionResponse) {
-    return protectionResponse; // Return redirect if user is not authenticated
-  }
-
-  // Redirecting all requests to homepage ('/home') if the user tries to access '/'
-  const url = request.nextUrl.clone()
-  if (url.pathname === '/') {
-    url.pathname = '/home'
-    return NextResponse.redirect(url)
-  }
-
-  // Continue with the request if no special handling is needed
-  return NextResponse.next();
+  return await updateSession(request)
 }
 
 export const config = {

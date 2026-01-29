@@ -76,8 +76,11 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 /**
  * Tipo para la respuesta de las Server Actions de autenticación
+ * 
+ * redirect es opcional - si se proporciona, el cliente debe redirigir a esa ruta
  */
 export type AuthResponse = {
   status: "success" | "error";
   message: string;
+  redirect?: string;
 };
