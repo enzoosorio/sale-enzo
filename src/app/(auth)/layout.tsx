@@ -17,7 +17,9 @@ export default function LoginLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <main className="relative h-screen overflow-hidden flex flex-col">
+    <div className="h-screen">
+    <HeaderBar />
+    <main className="relative overflow-hidden flex flex-col">
       <Toaster position="top-center" />
        {/* sillye svg head - fixed background */}
       <svg width="1077" height="705" viewBox="0 0 1077 705" fill="none"
@@ -76,13 +78,11 @@ export default function LoginLayout({
         </radialGradient>
         </defs>
       </svg>
-      <div className="relative z-10 shrink-0">
-        <HeaderBar />
-      </div>
       {/* Scrollable content area */}
       <div className="relative z-10 flex-1 overflow-auto">
         {children}
       </div>
     </main>
+    </div>
   );
 }

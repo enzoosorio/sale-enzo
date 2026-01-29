@@ -1,12 +1,11 @@
+import { DynamicButton } from "@/components/auth/DynamicButton";
 import { PrimaryButton } from "@/components/reusable/CTA/buttons/Button";
 import { SecondaryButton } from "@/components/reusable/CTA/buttons/SecondaryButton";
 import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <section className="min-h-full flex flex-col items-start justify-start p-4 pl-[200px] py-8">
-      {/* Espaciador visual para efecto de "respiración" */}
-      <div className="h-2 shrink-0" />
+    <section className="flex flex-col items-start justify-start p-4 pl-[200px] py-8">
       
       {/* Login Card */}
       <div className={`
@@ -84,9 +83,13 @@ export default function LoginPage() {
           {/* Register Link */}
           <p className="text-center font-inria text-sm text-foreground">
             ¿No tienes cuenta?{" "}
-            <Link href="/register" className="text-foreground border-b border-b-black/70 font-semibold hover:underline">
-              Regístrate
+            <Link 
+              href="/register" 
+              className="text-foreground border-b border-b-black/70 font-semibold hover:underline"
+            >
+              Regístrate aquí
             </Link>
+            
           </p>
         </div>
       </div>

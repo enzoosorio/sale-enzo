@@ -10,7 +10,7 @@ export function isAuthenticated(request: NextRequest): boolean {
 }
 
 // Public routes that don't require authentication
-export const publicRoutes = ['/', '/login', '/register', '/home'];
+export const publicRoutes = ['/', '/login', '/register', '/test', '/home'];
 
 // Route protection middleware logic
 export function handleRouteProtection(request: NextRequest) {

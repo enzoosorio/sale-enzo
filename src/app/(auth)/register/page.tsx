@@ -71,9 +71,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <section className="min-h-full flex flex-col items-start justify-start p-4 pl-[200px] py-8">
+    <section className={`h-auto 
+    flex flex-col items-start justify-start p-4 pl-[200px] py-8`}>
       {/* Espaciador visual para efecto de "respiración" */}
-      <div className="h-2 shrink-0" />
       
       {/* Register Card */}
       <div className={`
