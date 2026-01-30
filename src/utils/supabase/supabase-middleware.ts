@@ -1,4 +1,3 @@
-import { handleRouteProtection } from '@/auth-middleware'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 export async function updateSession(request: NextRequest) {
@@ -35,6 +34,13 @@ export async function updateSession(request: NextRequest) {
 
    const url = request.nextUrl.clone()
   if (url.pathname === '/') {
+    url.pathname = '/home'
+    return NextResponse.redirect(url)
+  }
+
+  // Si el usuario ya está autenticado y intenta acceder a login o register, redirigir a home
+  if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register'))) {
+    const url = request.nextUrl.clone()
     url.pathname = '/home'
     return NextResponse.redirect(url)
   }

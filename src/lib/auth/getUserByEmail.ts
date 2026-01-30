@@ -1,6 +1,5 @@
-import { createClient } from "@/utils/supabase/server";
 import { UserRow } from "@/types/user/users";
-
+import { supabaseAdmin as supabase } from "@/utils/supabase/supabase-admin";
 /**
  * Obtiene un usuario de la tabla pública 'users' por email
  * 
@@ -11,7 +10,7 @@ export async function getUserByEmail(
   email: string
 ): Promise<Partial<UserRow> | null> {
   try {
-    const supabase = await createClient();
+    // const supabase = await createClient();
     
     const { data, error } = await supabase
       .from("users")

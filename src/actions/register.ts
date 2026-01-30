@@ -95,6 +95,7 @@ export async function registerUser(
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedData.email,
       password: validatedData.password,
+      phone: validatedData.phone,
       options: {
         // Estos datos van a auth.users.raw_user_meta_data
         // pero NO se copian automáticamente a public.users
@@ -121,26 +122,6 @@ export async function registerUser(
       };
     }
 
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({
-        first_name: validatedData.first_name || null,
-        last_name: validatedData.last_name || null,
-        phone: validatedData.phone || null,
-        verified_email: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", authData.user.id);
-    
-    if (updateError) {
-      console.error("Error actualizando datos adicionales:", updateError);
-      // No retornamos error aquí porque el usuario YA fue creado
-      // Los datos adicionales se pueden agregar después
-    }
-
-    // ============================================
-    // 6. RESPUESTA EXITOSA
-    // ============================================
     return {
       status: "success",
       message: "¡Registro exitoso! Por favor verifica tu email para activar tu cuenta.",

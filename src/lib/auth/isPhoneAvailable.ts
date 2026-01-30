@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin as supabase } from "@/utils/supabase/supabase-admin";
 
 /**
  * Verifica si un número de teléfono está disponible (no está en uso)
@@ -13,8 +13,6 @@ export async function isPhoneAvailable(
   if (!phone) return true;
 
   try {
-    const supabase = await createClient();
-    
     const { data, error } = await supabase
       .from("users")
       .select("id")

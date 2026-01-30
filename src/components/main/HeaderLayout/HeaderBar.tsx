@@ -6,7 +6,14 @@ import { Favoritos } from "@/components/reusable/svgs/Favoritos"
 import { Logo } from "./Logo"
 import { CategoriesButton } from "./Categories/CategoriesButtonLayout"
 import Link from "next/link"
-export const HeaderBar = () => {
+import { logoutUser } from "@/actions/login"
+import { LogoutButton } from "./LogoutButton"
+
+interface HeaderBarProps {
+    userId? : string | null;
+}
+
+export const HeaderBar = ({ userId }: HeaderBarProps) => {
 
   return (
     <header className="w-full min-h-[100px] flex items-center justify-center ">
@@ -31,13 +38,20 @@ export const HeaderBar = () => {
                   <Bag/>
                   <Favoritos/>
                 </div>
-                <Link className="w-max h-max" href={'/login'}>
+                {
+                    userId ? (
+                    <LogoutButton/>
+                    ) : (
+                        <Link className="w-max h-max" href={'/login'}>
                     <PrimaryButton>
                         Iniciar sesión
                     </PrimaryButton>
                 </Link>
+                    )
+                }
                 {/* parte del bot */}
-                <div className=" h-8 flex items-center justify-center">
+                {userId && (
+                    <div className=" h-8 flex items-center justify-center">
                 <Image
                     src="/images/sillye-head.png"
                     alt="Bot Icon"
@@ -46,6 +60,7 @@ export const HeaderBar = () => {
                     className="w-full h-full"
                 />
                 </div>
+                )}
             </ul>
 
         </nav>

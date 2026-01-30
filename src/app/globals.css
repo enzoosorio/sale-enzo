@@ -12,6 +12,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-off-white: #FAF9F6;
+  --color-light-yellow-white: #F8F6F0;
   --font-inria : 'Inria Serif', serif;
   --font-prata: 'Prata', serif;
   --font-nanum: 'Nanum Myeongjo', serif;
@@ -74,17 +75,17 @@
 
 .bottom-part{
   will-change: backdrop-filter;
-  clip-path: polygon(50% 58%, 0% 100%, 100% 100%);
+  clipPath: polygon(50% 58%, 0% 100%, 100% 100%);
 }
 
 .right-part{
   will-change: backdrop-filter;
-  clip-path: polygon(50% 0, 100% 0%, 100% 100%, 51% 55%);
+  clipPath: polygon(50% 0, 100% 0%, 100% 100%, 51% 55%);
 }
 
 .left-part{
   will-change: backdrop-filter;
-  clip-path: polygon(50% 0, 0 0, 0 100%, 49% 55%);
+  clipPath: polygon(50% 0, 0 0, 0 100%, 49% 55%);
 }
 
 .overlay-active{

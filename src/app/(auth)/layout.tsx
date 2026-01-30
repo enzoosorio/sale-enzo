@@ -1,29 +1,34 @@
 import type { Metadata } from "next";
 
 import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
-import { Logo } from "@/components/main/HeaderLayout/Logo";
-import Link from "next/link";
-import { Toaster } from "react-hot-toast";
-
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "App Layout",
   description: "Layout for the application with header and music player",
 };
 
-export default function LoginLayout({
+export default async function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims;
+
+  if (user) {
+    redirect('/home');
+  }
+
   return (
     <div className="h-screen">
     <HeaderBar />
     <main className="relative overflow-hidden flex flex-col">
-      <Toaster position="top-center" />
        {/* sillye svg head - fixed background */}
       <svg width="1077" height="705" viewBox="0 0 1077 705" fill="none"
-      className="absolute top-40 -right-30 scale-110 pointer-events-none z-0">
+      className="absolute top-40 md:-right-96 xl:-right-72 md:blur-none scale-110 pointer-events-none z-0">
         <g filter="url(#filter0_dii_410_738)">
         <path d="M45.7655 256.424C21.2292 307.457 2.96882 339.798 0.767573 397.651C-1.38618 454.255 9.46173 504.677 33.3229 538.985C67.7564 588.496 94.0491 607.367 143.433 636.832C203.959 672.947 246.315 677.744 315.472 691.192C402.936 708.199 543.361 702.064 543.361 702.064C543.361 702.064 697.265 702.643 792.953 682.544C854.166 669.686 893.63 670.356 946.47 636.832C999.344 603.287 1027.84 571.068 1053.4 517.242C1073.75 474.375 1076.79 445.089 1075.1 397.651C1073.05 339.979 1055.87 306.741 1031.69 256.424C1009.72 210.7 988.726 175.573 946.47 136.833C902.624 96.6351 860.608 60.7691 792.953 38.9854C692.5 6.64117 640.294 -0.660639 542 0.641319C452.717 1.82392 400.12 8.63701 315.472 38.9854C242.732 65.0642 201.322 85.5768 143.433 136.833C98.3007 176.794 71.9038 202.058 45.7655 256.424Z" fill="url(#paint0_radial_410_738)" shapeRendering="crispEdges"/>
         <path d="M45.7655 256.424C21.2292 307.457 2.96882 339.798 0.767573 397.651C-1.38618 454.255 9.46173 504.677 33.3229 538.985C67.7564 588.496 94.0491 607.367 143.433 636.832C203.959 672.947 246.315 677.744 315.472 691.192C402.936 708.199 543.361 702.064 543.361 702.064C543.361 702.064 697.265 702.643 792.953 682.544C854.166 669.686 893.63 670.356 946.47 636.832C999.344 603.287 1027.84 571.068 1053.4 517.242C1073.75 474.375 1076.79 445.089 1075.1 397.651C1073.05 339.979 1055.87 306.741 1031.69 256.424C1009.72 210.7 988.726 175.573 946.47 136.833C902.624 96.6351 860.608 60.7691 792.953 38.9854C692.5 6.64117 640.294 -0.660639 542 0.641319C452.717 1.82392 400.12 8.63701 315.472 38.9854C242.732 65.0642 201.322 85.5768 143.433 136.833C98.3007 176.794 71.9038 202.058 45.7655 256.424Z" fill="url(#paint1_radial_410_738)" shapeRendering="crispEdges"/>

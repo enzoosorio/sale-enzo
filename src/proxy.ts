@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { handleRouteProtection } from './auth-middleware'
 import { updateSession } from '@/utils/supabase/supabase-middleware' 
  
 // This function can be marked `async` if using `await` inside
