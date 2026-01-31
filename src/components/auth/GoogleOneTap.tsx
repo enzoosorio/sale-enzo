@@ -28,7 +28,6 @@ export default function GoogleOneTap() {
   const initializeGoogleOneTap = async () => {
     if (isInitialized) return
     
-    
     // Verificar que el client_id esté configurado
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     if (!clientId) {
@@ -41,12 +40,10 @@ export default function GoogleOneTap() {
     const isAuthPage = authPages.some(page => pathname === page || pathname?.startsWith(page + '/'))
     
     if (isAuthPage) {
-      console.log('Skipping One-Tap on auth pages or root:', pathname)
       return
     }
 
     const [nonce, hashedNonce] = await generateNonce()
-    console.log('Nonce generated for One-Tap')
 
     // Verificar si ya hay una sesión activa
     const { data, error } = await supabase.auth.getSession()
@@ -54,8 +51,46 @@ export default function GoogleOneTap() {
       console.error('Error getting session', error)
     }
     if (data.session) {
-      console.log('User already logged in, skipping One-Tap')
       return
+    }
+
+    // Suprimir logs molestos de Google GSI
+    const originalConsoleError = console.error
+    const originalConsoleLog = console.log
+    const originalConsoleWarn = console.warn
+    
+    console.error = (...args: any[]) => {
+      const message = args[0]?.toString() || ''
+      if (
+        message.includes('[GSI_LOGGER]') ||
+        message.includes('FedCM') ||
+        message.includes('NetworkError') ||
+        message.includes('AbortError')
+      ) {
+        return
+      }
+      originalConsoleError.apply(console, args)
+    }
+
+    console.log = (...args: any[]) => {
+      const message = args[0]?.toString() || ''
+      if (message.includes('[GSI_LOGGER]')) {
+        return
+      }
+      originalConsoleLog.apply(console, args)
+    }
+
+    console.warn = (...args: any[]) => {
+      const message = args[0]?.toString() || ''
+      if (
+        message.includes('[GSI_LOGGER]') ||
+        message.includes('FedCM') ||
+        message.includes('fedcm') ||
+        message.includes('One Tap')
+      ) {
+        return
+      }
+      originalConsoleWarn.apply(console, args)
     }
 
     // Inicializar Google One-Tap
@@ -65,7 +100,10 @@ export default function GoogleOneTap() {
         client_id: clientId,
         callback: async (response: CredentialResponse) => {
           try {
-            console.log('Google One-Tap callback triggered')
+            // Restaurar console para ver errores reales de autenticación
+            console.error = originalConsoleError
+            console.log = originalConsoleLog
+            console.warn = originalConsoleWarn
             
             // Enviar el ID token a Supabase
             const { data, error } = await supabase.auth.signInWithIdToken({
@@ -74,36 +112,52 @@ export default function GoogleOneTap() {
               nonce,
             })
 
-            if (error) throw error
-            
-            console.log('Successfully logged in with Google One Tap')
+            if (error) {
+              console.error('Error al iniciar sesión con Google One-Tap:', error)
+              throw error
+            }
             
             // Redirigir a home después del login exitoso
             router.push('/home')
             router.refresh()
           } catch (error) {
-            console.error('Error logging in with Google One Tap', error)
+            console.error('Error al autenticar con Google One-Tap:', error)
           }
         },
         nonce: hashedNonce,
         // Compatibilidad con la eliminación de cookies de terceros de Chrome
         use_fedcm_for_prompt: true,
-        auto_select: false, // No auto-seleccionar para dar control al usuario
+        auto_select: false,
         cancel_on_tap_outside: true,
       })
       
-      google.accounts.id.prompt((notification) => {
-        console.log('One-Tap prompt notification:', notification)
-        if (notification.isNotDisplayed()) {
-          console.log('One-Tap not displayed:', notification.getNotDisplayedReason())
-        } else if (notification.isSkippedMoment()) {
-          console.log('One-Tap skipped:', notification.getSkippedReason())
-        }
-      })
+      // Según la guía de migración de FedCM, no usar isNotDisplayed() ni isSkippedMoment()
+      // Solo llamar a prompt() sin callback
+      google.accounts.id.prompt()
+      
+      // Restaurar console después de un delay para evitar logs de Google
+      setTimeout(() => {
+        console.error = originalConsoleError
+        console.log = originalConsoleLog
+        console.warn = originalConsoleWarn
+      }, 500)
       
       setIsInitialized(true)
     } catch (error) {
-      console.error('Error initializing Google One-Tap:', error)
+      // Restaurar console en caso de error
+      console.error = originalConsoleError
+      console.log = originalConsoleLog
+      console.warn = originalConsoleWarn
+      
+      // Solo loggear errores que no sean de FedCM/GSI
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (
+        !errorMessage.includes('AbortError') && 
+        !errorMessage.includes('FedCM') &&
+        !errorMessage.includes('NetworkError')
+      ) {
+        console.error('Error initializing Google One-Tap:', error)
+      }
     }
   }
 

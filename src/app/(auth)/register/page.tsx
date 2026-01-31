@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { AuthWrapper } from "@/components/auth/AuthCardWrapper";
+import { createClient } from "@/utils/supabase/client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -78,6 +79,35 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
+  const handleOAuthLogin = async (provider: "google" | "apple" | 'facebook') => {
+      setIsLoading(true);
+      try {
+        const supabase = createClient();
+        const origin = window.location.origin;
+        
+        const { data, error } = await supabase.auth.signInWithOAuth({ 
+          provider,
+          options: {
+            redirectTo: `${origin}/auth/callback`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+          },
+        });
+  
+        if (error) {
+          showToast(`Error al iniciar sesión con ${provider}: ${error.message}`, "error");
+          setIsLoading(false);
+        }
+        // Si no hay error, el usuario será redirigido automáticamente
+      } catch (error) {
+        console.error('OAuth error:', error);
+        showToast("Error inesperado al iniciar sesión", "error");
+        setIsLoading(false);
+      }
+    };
 
   return (
       <AuthWrapper>
@@ -254,6 +284,9 @@ export default function RegisterPage() {
               type="button"
               className="text-sm w-full"
               disabled={isLoading}
+              onClick={() => {
+                handleOAuthLogin('apple')
+              }}
             >
               <div className="flex items-center justify-center gap-2 w-full">
                 {/* apple logo svg */}
@@ -286,6 +319,9 @@ export default function RegisterPage() {
               type="button"
               className="text-sm w-full"
               disabled={isLoading}
+              onClick={() =>{
+                handleOAuthLogin('google')
+              }}
             >
               <div className="flex items-center justify-center gap-2 w-full ">
                 <div>
@@ -314,6 +350,9 @@ export default function RegisterPage() {
               type="button"
               className="text-sm w-full"
               disabled={isLoading}
+              onClick={() => {
+                handleOAuthLogin('facebook')
+              }}
             >
               <div className="flex items-center justify-center gap-2 w-full ">
                 <div>

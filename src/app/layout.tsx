@@ -33,9 +33,10 @@ export default async function RootLayout(props: {
   const { children } = props;
 
   return (
-    <html lang="en">
+    <html lang="en" >
       <body
         className={`${prata.className} ${nanum.className} ${inria_serif.className} antialiased`}
+        
       >
         <Toaster
       position="bottom-right"

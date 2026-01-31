@@ -32,35 +32,45 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-   const url = request.nextUrl.clone()
-  if (url.pathname === '/') {
+  const url = request.nextUrl.clone()
+  const pathname = request.nextUrl.pathname
+
+  // Debug logs
+  console.log('=== MIDDLEWARE DEBUG ===')
+  console.log('Path:', pathname)
+  console.log('User authenticated:', !!user)
+  console.log('User email:', user?.email || 'none')
+
+  // Redirigir raíz a home
+  if (pathname === '/') {
+    console.log('Action: Redirect / → /home')
     url.pathname = '/home'
     return NextResponse.redirect(url)
   }
-
-  //see what route th e user is trying to access
-  const actualUrl = request.nextUrl.pathname
-  console.log({actualUrl})
 
   // Si el usuario ya está autenticado y intenta acceder a login o register, redirigir a home
-  if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register'))) {
-    const url = request.nextUrl.clone()
+  if (user && (pathname.startsWith('/login') || pathname.startsWith('/register'))) {
+    console.log('Action: Authenticated user trying to access auth page, redirecting to /home')
     url.pathname = '/home'
     return NextResponse.redirect(url)
   }
 
+  // Proteger rutas privadas - usuarios no autenticados van a /login
+  // Excepciones: /login, /register, /auth (callback), /home (público)
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/home') &&
-    !request.nextUrl.pathname.startsWith('/register') &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    !pathname.startsWith('/login') &&
+    !pathname.startsWith('/home') &&
+    !pathname.startsWith('/register') &&
+    !pathname.startsWith('/auth')
   ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone()
+    console.log('Action: Unauthenticated user trying to access protected route, redirecting to /login')
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
+
+  console.log('Action: Allow access')
+  console.log('========================')
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:
   // 1. Pass the request in it, like so:
