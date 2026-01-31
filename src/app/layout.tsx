@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Prata, Nanum_Myeongjo, Inria_Serif } from "next/font/google";
 import "./globals.css";
 import {Toaster} from 'react-hot-toast'
+import GoogleOneTap from "@/components/auth/GoogleOneTap";
 const prata = Prata({
   subsets: ["latin"],
   variable: "--font-prata",
@@ -49,6 +50,7 @@ export default async function RootLayout(props: {
     },
   }}
       />
+        <GoogleOneTap />
         {children}   
       </body>
     </html>
