@@ -1,5 +1,8 @@
+'use client';
 import { WholeProductStructure } from "@/types/products/products";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
+import { useEffect } from "react";
 
 interface OverviewProductsHeroProps {
   products: WholeProductStructure[];
@@ -8,6 +11,18 @@ interface OverviewProductsHeroProps {
 export const OverviewProductsHero = ({
   products,
 }: OverviewProductsHeroProps) => {
+
+  useEffect(() => {
+    const fetchUserMetadata = async () => {
+      const supabase = createClient()
+      const user = await supabase.auth.getUser()
+      const metadata = user.data.user?.user_metadata
+      console.log({metadata})
+    };
+
+    fetchUserMetadata();
+  }, [])
+
   return (
     <section className="w-full min-h-60 flex flex-col items-center justify-center py-8 gap-6">
       <div className="w-full max-w-5xl max-h-[520px] overflow-hidden xl:max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-8 flex flex-wrap gap-6 items-center justify-center">

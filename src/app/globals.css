@@ -6,6 +6,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --navbar-height: 5rem;
 }
 
 @theme inline {

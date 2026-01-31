@@ -119,3 +119,23 @@ export async function logoutUser(): Promise<void> {
   await supabase.auth.signOut();
   revalidatePath('/home');
 }
+
+
+export async function signInWithOauthProvider(provider: 'google' | 'facebook' | 'apple'): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOAuth({ 
+        provider,
+         options: {
+        redirectTo: `http://localhost:3000/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+  },
+      });
+  if (error) {
+    console.error(`Error during OAuth sign-in with ${provider}:`, error);
+    throw error;
+  }
+
+}

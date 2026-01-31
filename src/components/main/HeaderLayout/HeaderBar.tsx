@@ -16,7 +16,7 @@ interface HeaderBarProps {
 export const HeaderBar = ({ userId }: HeaderBarProps) => {
 
   return (
-    <header className="w-full min-h-[100px] flex items-center justify-center ">
+    <header className="w-full min-h-(--navbar-height) flex items-center justify-center ">
         <nav className="relative p-2 px-16 xl:px-20 w-full h-full flex items-center justify-between">
             <ul className="flex items-center text-lg justify-center gap-6 font-prata">
                <li className="cursor-pointer">

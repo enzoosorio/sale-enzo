@@ -16,11 +16,6 @@ export default async function AppLayout({
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.getClaims();
-  if (error) {
-    console.error('Error fetching claims:', error);
-  }
-
-  console.log({data})
   const userSub = data?.claims.sub || null;  
 
   return (

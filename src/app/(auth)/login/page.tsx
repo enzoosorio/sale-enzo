@@ -5,10 +5,12 @@ import { SecondaryButton } from "@/components/reusable/CTA/buttons/SecondaryButt
 import { loginSchema, type LoginInput } from "@/lib/auth/schemas";
 import { loginUser } from "@/actions/login";
 import { showToast } from "@/lib/auth/toast";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {AuthWrapper} from "@/components/auth/AuthCardWrapper";
+import { createClient } from "@/utils/supabase/client";
+
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -64,6 +66,37 @@ export default function LoginPage() {
       showToast("Error inesperado. Por favor intenta de nuevo.", "error");
       console.error("Error en handleSubmit:", error);
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+
+  const handleOAuthLogin = async (provider: "google" | "apple" | 'facebook') => {
+    setIsLoading(true);
+    try {
+      const supabase = createClient();
+      const origin = window.location.origin;
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({ 
+        provider,
+        options: {
+          redirectTo: `${origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        showToast(`Error al iniciar sesión con ${provider}: ${error.message}`, "error");
+        setIsLoading(false);
+      }
+      // Si no hay error, el usuario será redirigido automáticamente
+    } catch (error) {
+      console.error('OAuth error:', error);
+      showToast("Error inesperado al iniciar sesión", "error");
       setIsLoading(false);
     }
   };
@@ -166,6 +199,9 @@ export default function LoginPage() {
               type="button"
               className="text-sm w-full"
               disabled={isLoading}
+              onClick={() => {
+                handleOAuthLogin('apple')
+              }}
             >
               <div className="flex items-center justify-center gap-2 w-full">
                 {/* apple logo svg */}
@@ -198,6 +234,9 @@ export default function LoginPage() {
               type="button"
               className="text-sm w-full"
               disabled={isLoading}
+              onClick={() => {
+                handleOAuthLogin('google')
+              }}
             >
               <div className="flex items-center justify-center gap-2 w-full ">
                 <div>
@@ -226,6 +265,9 @@ export default function LoginPage() {
               type="button"
               className="text-sm w-full"
               disabled={isLoading}
+              onClick={() => {
+                handleOAuthLogin('facebook')
+              }}
             >
               <div className="flex items-center justify-center gap-2 w-full ">
                 <div>
@@ -251,7 +293,7 @@ export default function LoginPage() {
                 <span>Iniciar sesión con Facebook</span>
               </div>
             </SecondaryButton>
-          </div>
+          </div>  
 
           {/* Register Link */}
           <p className="text-center font-inria text-sm text-foreground">

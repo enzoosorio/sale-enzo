@@ -37,7 +37,17 @@ export default async function RootLayout(props: {
         className={`${prata.className} ${nanum.className} ${inria_serif.className} antialiased`}
       >
         <Toaster
-      position="top-center"
+      position="bottom-right"
+      
+      toastOptions={{
+    style: {
+      padding: '16px',
+      color: '#FAF9F6',
+      backdropFilter: 'blur(10px)',
+      background: 'rgba(12, 12, 12, 0.40)',
+      border: '0.5px solid rgba(255, 255, 255, 0.2)',
+    },
+  }}
       />
         {children}   
       </body>

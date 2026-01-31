@@ -38,6 +38,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  //see what route th e user is trying to access
+  const actualUrl = request.nextUrl.pathname
+  console.log({actualUrl})
+
   // Si el usuario ya está autenticado y intenta acceder a login o register, redirigir a home
   if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register'))) {
     const url = request.nextUrl.clone()

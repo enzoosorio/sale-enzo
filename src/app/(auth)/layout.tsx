@@ -23,9 +23,9 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="h-screen">
+    <div className="h-[90vh]">
     <HeaderBar />
-    <main className="relative overflow-hidden flex flex-col">
+    <main className="relative overflow-hidden flex flex-col h-[calc(100vh-var(--navbar-height))]">
        {/* sillye svg head - fixed background */}
       <svg width="1077" height="705" viewBox="0 0 1077 705" fill="none"
       className="absolute top-40 md:-right-96 xl:-right-72 md:blur-none scale-110 pointer-events-none z-0">
@@ -84,7 +84,10 @@ export default async function AuthLayout({
         </defs>
       </svg>
       {/* Scrollable content area */}
-      <div className="relative z-10 flex-1 overflow-auto">
+      {/* Altura estatica deberia acoplarse a lo restante del screen (viewport)
+      podria calcularlo dinamicamente (js)
+      */}
+      <div className="relative max-h-[90vh] z-10 overflow-auto pt-1 pb-16 scrollbar-hide">
         {children}
       </div>
     </main>
