@@ -105,12 +105,12 @@ export default function LoginPage() {
       <AuthWrapper>
         <div className="flex flex-col items-start justify-start gap-2">
           {/* Title */}
-          <h1 className="font-prata text-2xl text-center  text-foreground">
+          <h1 className="font-prata text-xl md:text-2xl text-center md:text-left text-foreground">
             INICIAR SESIÓN
           </h1>
 
           {/* Subtitle */}
-          <p className="font-inria text-left text-foreground/70 text-sm w-[55ch] ">
+          <p className="font-inria text-left text-foreground/70 text-xs md:text-sm w-full md:w-[55ch]">
             Inicia sesión para poder comprar, además de aprovechar las
             funcionalidades IA de la página web.
           </p>
@@ -188,12 +188,12 @@ export default function LoginPage() {
           </div>
           {/* Divider with O */}
           <div className="flex items-center w-full ">
-            <span className="font-prata text-foreground/60 w-full text-center text-xl ">
+            <span className="font-prata text-foreground/60 w-full text-center text-base md:text-xl ">
               -------- O --------
             </span>
           </div>
 
-          <div className="flex flex-col items-center justify-center w-full gap-4">
+          <div className="flex flex-col items-center justify-center w-full gap-3 md:gap-4">
             {/* Apple oauth button */}
             <SecondaryButton
               type="button"
@@ -296,7 +296,7 @@ export default function LoginPage() {
           </div>  
 
           {/* Register Link */}
-          <p className="text-center font-inria text-sm text-foreground">
+          <p className="text-center font-inria text-xs md:text-sm text-foreground">
             ¿No tienes cuenta?{" "}
             <Link
               href="/register"
