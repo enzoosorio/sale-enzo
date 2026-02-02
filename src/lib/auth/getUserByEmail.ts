@@ -1,3 +1,4 @@
+'use server';
 import { UserRow } from "@/types/user/users";
 import { supabaseAdmin as supabase } from "@/utils/supabase/supabase-admin";
 /**

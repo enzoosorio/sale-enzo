@@ -1,15 +1,24 @@
 import { z } from 'zod';
 
 /**
+ * Image position types
+ * - front, back, logo, detail: Only ONE image allowed per position
+ * - random: MULTIPLE images allowed
+ */
+export const imagePositionSchema = z.enum(["front", "back", "logo", "detail", "random"]);
+
+export type ImagePosition = z.infer<typeof imagePositionSchema>;
+
+/**
  * Base schema for Variant Image (variant_images table)
  * Additional images for a product variant
  */
 export const variantImageSchema = z.strictObject({
-  id: z.uuid(),
-  variant_id: z.uuid(),
+  id: z.string().uuid(),
+  variant_id: z.string().uuid(),
   image_url: z.string().url(),
-  position: z.number().int().nonnegative().nullable(),
-  created_at: z.iso.datetime(),
+  position: imagePositionSchema.nullable(),
+  created_at: z.string().datetime(),
 });
 
 /**
@@ -17,13 +26,12 @@ export const variantImageSchema = z.strictObject({
  * Omits auto-generated fields: id, created_at
  */
 export const variantImageInsertSchema = z.strictObject({
-  variant_id: z.uuid(),
+  variant_id: z.string().uuid(),
   image_url: z.string()
     .url("Invalid image URL")
     .regex(/\.(jpg|jpeg|png|webp|avif)$/i, "Image must be jpg, png, webp, or avif"),
-  position: z.number()
-    .int()
-    .nonnegative("Position must be a non-negative integer")
+  position: imagePositionSchema
+    .nullable()
     .optional(),
 });
 
@@ -36,9 +44,8 @@ export const variantImageUpdateSchema = z.strictObject({
     .url()
     .regex(/\.(jpg|jpeg|png|webp|avif)$/i)
     .optional(),
-  position: z.number()
-    .int()
-    .nonnegative()
+  position: imagePositionSchema
+    .nullable()
     .optional(),
 });
 
