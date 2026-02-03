@@ -45,6 +45,9 @@ export const OverviewProductsHero = ({
             );
           })}
       </div>
+      <div className="w-10 h-60 bg-amber-200"> 
+        adadawad
+      </div>
       <Link href="/products" className="linkk font-prata">Ver más productos</Link>
     </section>
   );

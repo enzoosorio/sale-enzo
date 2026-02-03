@@ -6,8 +6,8 @@ import { ProductVariantRow } from "./product_variants"
 export interface ProductRow {
   id: UUID
   name: string
-  brand: string
   description: string | null
+  brand: string
   category_id: UUID | null
   is_active: boolean
   created_at: Timestamp

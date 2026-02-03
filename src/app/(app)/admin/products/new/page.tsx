@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardSidebar } from "@/components/admin/DashboardSidebar";
-import { ProductForm } from "@/components/admin/products/ProductForm";
+import { ProductForm } from "@/components/admin/products/ProductFormNew";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 

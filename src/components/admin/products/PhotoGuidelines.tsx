@@ -5,28 +5,28 @@ import { Lightbulb } from "lucide-react";
 export function PhotoGuidelines() {
   const guidelines = [
     {
-      title: "Use Neutral Backgrounds",
-      description: "Plain white or light gray backgrounds work best for product photography"
+      title: "Use Fondos Neutros",
+      description: "Los fondos blancos o grises claros funcionan mejor para fotografía de productos"
     },
     {
-      title: "Ensure Good Lighting",
-      description: "Use natural light or soft, diffused artificial lighting to avoid harsh shadows"
+      title: "Asegure Buena Iluminación",
+      description: "Use luz natural o luz artificial difusa suave para evitar sombras duras"
     },
     {
-      title: "Center the Product",
-      description: "Keep the product centered and fill most of the frame for consistency"
+      title: "Centre el Producto",
+      description: "Mantenga el producto centrado y llene la mayor parte del marco para consistencia"
     },
     {
-      title: "Avoid Harsh Shadows",
-      description: "Use soft, even lighting from multiple angles to minimize shadows"
+      title: "Evite Sombras Duras",
+      description: "Use iluminación suave y uniforme desde múltiples ángulos para minimizar sombras"
     },
     {
-      title: "Consistent Framing",
-      description: "Maintain similar angles, distance, and composition across all product images"
+      title: "Encuadre Consistente",
+      description: "Mantenga ángulos, distancia y composición similares en todas las imágenes"
     },
     {
-      title: "High Resolution",
-      description: "Use high-quality images (at least 1000x1000px) for best results"
+      title: "Alta Resolución",
+      description: "Use imágenes de alta calidad (al menos 1000x1000px) para mejores resultados"
     }
   ];
 
@@ -36,10 +36,10 @@ export function PhotoGuidelines() {
         <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
         <div>
           <h3 className="text-lg font-semibold text-blue-900 mb-1">
-            Photo Best Practices
+            Mejores Prácticas para Fotografía
           </h3>
           <p className="text-sm text-blue-700">
-            Follow these guidelines for professional-looking product images
+            Siga estas pautas para imágenes de productos con aspecto profesional
           </p>
         </div>
       </div>

@@ -19,7 +19,7 @@ export default async function AppLayout({
   const userSub = data?.claims.sub || null;  
 
   return (
-    <main>
+    <main className="relative ">
         <HeaderBar userId={userSub} />
         {children}  
         <MusicPlayer/>

@@ -5,7 +5,7 @@ import { Favoritos } from "@/components/reusable/svgs/Favoritos"
 import { CategoriesButton } from "./Categories/CategoriesButtonLayout"
 import Link from "next/link"
 import { LogoutButton } from "./LogoutButton"
-import { MainLogo } from "@/components/reusable/MainLogo"
+import { MainLogo } from "@/components/reusable/svgs/MainLogo"
 import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
 
@@ -19,7 +19,8 @@ export const HeaderBar = async ({ userId }: HeaderBarProps) => {
 
   return (
     <>
-    <header className="w-full bg-black/15 backdrop-blur-md min-h-(--navbar-height) flex items-center justify-center ">
+    {/* todo: mejorar la apariencia del radial gradient */}
+    <header className="w-full sticky gradial-radient backdrop-blur-md min-h-(--navbar-height) flex items-center justify-center ">
         <nav className="relative p-2 bg-transparent px-4 md:px-16 xl:px-20 w-full h-full flex items-center justify-between">
             {/* Desktop Navigation - Hidden on mobile */}
             <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata">

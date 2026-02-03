@@ -21,19 +21,19 @@ interface ImageSlotProps {
 }
 
 const positionLabels: Record<ImagePosition, string> = {
-  front: "Front View",
-  back: "Back View",
-  logo: "Logo Detail",
-  detail: "Close-up Detail",
-  random: "Additional Images"
+  front: "Vista Frontal",
+  back: "Vista Trasera",
+  logo: "Detalle del Logo",
+  detail: "Detalle de Cerca",
+  random: "Imágenes Adicionales"
 };
 
 const positionDescriptions: Record<ImagePosition, string> = {
-  front: "Main front-facing product photo",
-  back: "Rear view of the product",
-  logo: "Close-up of branding or logo",
-  detail: "Detail shot (fabric, stitching, etc.)",
-  random: "Any additional angles or details"
+  front: "Foto principal del producto de frente",
+  back: "Vista posterior del producto",
+  logo: "Acercamiento a la marca o logo",
+  detail: "Foto de detalle (tela, costura, etc.)",
+  random: "Cualquier ángulo o detalle adicional"
 };
 
 export function ImageSlot({
@@ -66,12 +66,12 @@ export function ImageSlot({
       const result = await uploadVariantImage(formData);
 
       if (!result.success) {
-        setError(result.error || "Upload failed");
+        setError(result.error || "Error al subir la imagen");
         return;
       }
 
       if(!result.data){
-        setError("Upload failed: No data returned");
+        setError("Error al subir: No se recibió respuesta");
         return;
       }
 
@@ -83,14 +83,14 @@ export function ImageSlot({
 
     } catch (err) {
       console.error("Upload error:", err);
-      setError("An unexpected error occurred during upload");
+      setError("Ocurrió un error inesperado durante la carga");
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!existingImage || !confirm("Are you sure you want to delete this image?")) {
+    if (!existingImage || !confirm("¿Está seguro de que desea eliminar esta imagen?")) {
       return;
     }
 
@@ -100,7 +100,7 @@ export function ImageSlot({
     try {
       const result = await deleteVariantImage(existingImage.id);
       if (!result.success) {
-        setError(result.error || "Delete failed");
+        setError(result.error || "Error al eliminar");
         return;
       }
 
@@ -108,7 +108,7 @@ export function ImageSlot({
 
     } catch (err) {
       console.error("Delete error:", err);
-      setError("An unexpected error occurred during deletion");
+      setError("Ocurrió un error inesperado durante la eliminación");
     } finally {
       setIsDeleting(false);
     }
@@ -159,7 +159,7 @@ export function ImageSlot({
               onClick={handleDelete}
               disabled={isDisabled}
               className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-              aria-label="Delete image"
+              aria-label="Eliminar imagen"
             >
               {isDeleting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -180,14 +180,14 @@ export function ImageSlot({
             {isUploading ? (
               <>
                 <Loader2 className="w-8 h-8 text-gray-400 animate-spin mb-2" />
-                <p className="text-sm text-gray-600">Uploading...</p>
+                <p className="text-sm text-gray-600">Subiendo...</p>
               </>
             ) : (
               <>
                 <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 font-medium">Click to upload</p>
+                <p className="text-sm text-gray-600 font-medium">Click para subir</p>
                 <p className="text-xs text-gray-500 mt-1">JPG, PNG, WEBP, AVIF</p>
-                <p className="text-xs text-gray-500">Max 5MB</p>
+                <p className="text-xs text-gray-500">Máx 5MB</p>
               </>
             )}
           </button>

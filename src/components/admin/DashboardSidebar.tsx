@@ -131,7 +131,7 @@ export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
         >
           <LogOut className={`${collapsed ? 'w-6 h-6' : 'w-5 h-5'} shrink-0`} />
           {!collapsed && (
-            <span className="font-medium">Back to Site</span>
+            <span className="font-medium">Volver al Sitio</span>
           )}
         </Link>
       </div>

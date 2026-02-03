@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, Loader2, ImageIcon, Package } from "lucide-react";
-import { ImageSlot } from "@/components/admin/products/ImageSlot";
+import { ImageSlot } from "@/components/reusable/Images/ImageSlot";
 import { PhotoGuidelines } from "@/components/admin/products/PhotoGuidelines";
 import Image from "next/image";
 import type { ImagePosition } from "@/schema/variantImageSchema";
@@ -48,7 +48,7 @@ export function ImagesPageContent() {
 
   const handleSearch = async () => {
     if (!variantId.trim()) {
-      setError("Please enter a variant ID");
+      setError("Por favor ingrese un ID de variante");
       return;
     }
 
@@ -61,7 +61,7 @@ export function ImagesPageContent() {
       const infoResult = await getVariantInfo(variantId.trim());
 
       if (!infoResult.success || !infoResult.data) {
-        setError(infoResult.error || "Variant not found");
+        setError(infoResult.error || "Variante no encontrada");
         return;
       }
 
@@ -76,7 +76,7 @@ export function ImagesPageContent() {
 
     } catch (err) {
       console.error("Search error:", err);
-      setError("An unexpected error occurred");
+      setError("Ocurrió un error inesperado");
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +112,7 @@ export function ImagesPageContent() {
       {/* Search Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Find Variant
+          Buscar Variante
         </h2>
         <div className="flex gap-3">
           <div className="flex-1">
@@ -120,7 +120,7 @@ export function ImagesPageContent() {
               type="text"
               value={variantId}
               onChange={(e) => setVariantId(e.target.value)}
-              placeholder="Enter variant UUID..."
+              placeholder="Ingrese el UUID de la variante..."
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               disabled={isLoading}
@@ -134,12 +134,12 @@ export function ImagesPageContent() {
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Searching...</span>
+                <span>Buscando...</span>
               </>
             ) : (
               <>
                 <Search className="w-5 h-5" />
-                <span>Search</span>
+                <span>Buscar</span>
               </>
             )}
           </button>
@@ -237,7 +237,7 @@ export function ImagesPageContent() {
       {variantInfo && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Additional Images
+            Imágenes Adicionales
           </h2>
 
           {/* Unique Position Slots */}
@@ -258,10 +258,10 @@ export function ImagesPageContent() {
           <div>
             <div className="mb-4 pb-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                Random / Additional Images
+                Imágenes Aleatorias / Adicionales
               </h3>
               <p className="text-sm text-gray-600">
-                Upload multiple images for any additional angles or details
+                Suba múltiples imágenes para mostrar ángulos o detalles adicionales
               </p>
             </div>
 

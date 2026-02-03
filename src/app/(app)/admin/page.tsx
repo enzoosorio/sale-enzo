@@ -52,22 +52,22 @@ export default function AdminDashboardPage() {
 
           {/* Quick Actions */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-prata font-semibold mb-4">Quick Actions</h2>
+            <h2 className="text-xl font-prata font-semibold mb-4">Acciones Rápidas</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <QuickActionButton
                 href="/admin/products/new"
-                title="Add Product"
-                description="Create a new product"
+                title="Agregar Producto"
+                description="Crear un nuevo producto"
               />
               <QuickActionButton
                 href="/admin/categories"
-                title="Manage Categories"
-                description="Organize product categories"
+                title="Gestionar Categorías"
+                description="Organizar categorías de productos"
               />
               <QuickActionButton
                 href="/admin/tags"
-                title="Manage Tags"
-                description="Create and edit tags"
+                title="Gestionar Etiquetas"
+                description="Crear y editar etiquetas"
               />
             </div>
           </div>

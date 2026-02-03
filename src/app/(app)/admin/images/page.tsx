@@ -9,10 +9,10 @@ export default function ImagesPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-prata font-bold text-gray-900 mb-2">
-            Variant Images
+            Imágenes de Variantes
           </h1>
           <p className="text-gray-600">
-            Manage additional images for product variants
+            Gestione imágenes adicionales para variantes de productos
           </p>
         </div>
 

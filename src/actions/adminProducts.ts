@@ -46,7 +46,7 @@ interface CreateProductInput {
 
     images: Array<{
       image_url: string;
-      position: number;
+      position: string | number | null; // Accept string enum, number (legacy), or null
     }>;
 
     tag_ids: string[];

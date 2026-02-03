@@ -1,5 +1,5 @@
 "use client";
-import { MainLogo } from "@/components/reusable/MainLogo";
+import { MainLogo } from "@/components/reusable/svgs/MainLogo";
 import React, { useState } from "react";
 import { MobileMenu } from "./MobileMenu";
 
