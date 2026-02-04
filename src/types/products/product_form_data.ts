@@ -25,7 +25,7 @@ export interface ProductFormData {
     }>;
 
     secondary_images: File[];
-    tag_ids: string[];
+    tags: TagInput[];
   }>;
 }
 
@@ -39,7 +39,7 @@ export interface VariantFormData {
   metadata: Record<string, any>
   items: ItemFormData[]
   secondary_images: File[]
-  tag_ids: string[]
+  tags: TagInput[]
 }
 
 export interface ItemFormData {
@@ -48,4 +48,10 @@ export interface ItemFormData {
   sku: string
   stock: string
   status: string
+}
+
+export interface TagInput {
+  name: string;
+  slug: string;
+  tagId?: string | null; // If present, tag exists; if undefined/null, tag is new
 }

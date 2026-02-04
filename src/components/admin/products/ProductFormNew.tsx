@@ -27,7 +27,7 @@ export const createNewVariant = () => ({
     status: "available"
   }],
   secondary_images: [],
-  tag_ids: []
+  tags: [] // Start with empty tags array
 });
 
 // Keep for backward compatibility but use the function instead
@@ -134,7 +134,7 @@ export function ProductForm() {
             status: item.status || undefined,
           })),
           images: variant.images || [],
-          tag_ids: variant.tag_ids.filter(Boolean),
+          tags: variant.tags || []
         }))
       };
 

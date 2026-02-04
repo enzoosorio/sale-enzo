@@ -26,7 +26,8 @@ export async function searchTags(query?: string): Promise<ActionResult<Tag[]>> {
     let queryBuilder = supabase
       .from("tags")
       .select("id, name, slug, created_at")
-      .order("name", { ascending: true });
+      .order("name", { ascending: true })
+      .limit(10);
 
     if (query && query.trim()) {
       queryBuilder = queryBuilder.ilike("name", `%${query.trim()}%`);

@@ -3,6 +3,7 @@
 import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
 import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { revalidatePath } from "next/cache";
+import { TagInput } from "@/types/products/product_form_data";
 
 /**
  * Admin server action to create a complete product with variants, items, and images.
@@ -49,7 +50,7 @@ interface CreateProductInput {
       position: string | number | null; // Accept string enum, number (legacy), or null
     }>;
 
-    tag_ids: string[];
+    tags: TagInput[];
   }>;
 }
 
@@ -178,9 +179,40 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
         }
       }
 
+      const tagsIdsToLink: string[] = [];
+
+      // Process tags based on tagId presence
+      if (variantInput.tags && variantInput.tags.length > 0) {
+        for (const tag of variantInput.tags) {
+          if (tag.tagId) {
+            // Tag already exists - use the ID directly (no DB query needed)
+            tagsIdsToLink.push(tag.tagId);
+          } else {
+            // Tag is new - create it
+            const { data: newTag, error: createTagError } = await supabaseAdmin
+              .from("tags")
+              .insert({
+                name: tag.name,
+                slug: tag.slug
+              })
+              .select()
+              .single();
+
+            if (createTagError) {
+              console.error("Error creating new tag:", createTagError);
+              continue; // Skip this tag on error
+            }
+
+            if (newTag) {
+              tagsIdsToLink.push(newTag.id);
+            }
+          }
+        }
+      }
+
       // Create variant-tag relationships
-      if (variantInput.tag_ids && variantInput.tag_ids.length > 0) {
-        const tagsToInsert = variantInput.tag_ids.map(tagId => ({
+      if (tagsIdsToLink.length > 0) {
+        const tagsToInsert = tagsIdsToLink.map(tagId => ({
           variant_id: variant.id,
           tag_id: tagId,
         }));

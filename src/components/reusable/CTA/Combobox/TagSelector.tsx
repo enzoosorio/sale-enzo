@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Plus, Search, Loader2 } from "lucide-react";
-import { searchTags, createTag, getTagsByIds } from "@/actions/tags";
+import { searchTags } from "@/actions/tags";
+import { TagInput } from "@/types/products/product_form_data";
 
 interface Tag {
   id: string;
@@ -11,8 +12,8 @@ interface Tag {
 }
 
 interface TagSelectorProps {
-  value: string[]; // Array of tag IDs
-  onChange: (tagIds: string[]) => void;
+  value: TagInput[]; // Array of TagInput objects
+  onChange: (tags: TagInput[]) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
 }
@@ -25,24 +26,16 @@ export function TagSelector({
 }: TagSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load tags when component mounts or value changes
-  useEffect(() => {
-    if (value && value.length > 0) {
-      loadSelectedTags(value);
-    } else {
-      setSelectedTags([]);
-    }
-  }, [value.join(',')]);
+  // selectedTags is now derived from value prop (TagInput[])
+  const selectedTags = value || [];
 
   // Load all tags initially
   useEffect(() => {
@@ -61,13 +54,6 @@ export function TagSelector({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const loadSelectedTags = async (tagIds: string[]) => {
-    const result = await getTagsByIds(tagIds);
-    if (result.success && result.data) {
-      setSelectedTags(result.data);
-    }
-  };
 
   const loadAllTags = async (query?: string) => {
     setIsLoading(true);
@@ -102,47 +88,57 @@ export function TagSelector({
   };
 
   const handleSelectTag = (tag: Tag) => {
-    if (selectedTags.find(t => t.id === tag.id)) {
+    if (selectedTags.find(t => t.name === tag.name)) {
       // Already selected, ignore
       return;
     }
 
-    const newSelectedTags = [...selectedTags, tag];
-    setSelectedTags(newSelectedTags);
-    onChange(newSelectedTags.map(t => t.id));
+    const newTagInput: TagInput = {
+      name: tag.name,
+      slug: tag.slug,
+      tagId: tag.id // Tag exists - store its ID
+    };
+
+    const newSelectedTags = [...selectedTags, newTagInput];
+    onChange(newSelectedTags);
     setSearchQuery("");
     setIsOpen(false);
   };
 
-  const handleRemoveTag = (tagId: string) => {
-    const newSelectedTags = selectedTags.filter(t => t.id !== tagId);
-    setSelectedTags(newSelectedTags);
-    onChange(newSelectedTags.map(t => t.id));
+  const handleRemoveTag = (tagName: string, event?: React.MouseEvent<HTMLButtonElement>) => {
+    const newSelectedTags = selectedTags.filter(t => t.name !== tagName);
+    onChange(newSelectedTags);
   };
 
-  const handleCreateTag = async () => {
+  const handleAddNewTag = () => {
     if (!searchQuery.trim()) return;
 
-    setIsCreating(true);
-    setError(null);
-
-    const result = await createTag(searchQuery.trim());
-
-    if (result.success && result.data) {
-      const newTag = result.data;
-      const newSelectedTags = [...selectedTags, newTag];
-      setSelectedTags(newSelectedTags);
-      onChange(newSelectedTags.map(t => t.id));
-      setAllTags([newTag, ...allTags]);
+    const tagName = searchQuery.trim();
+    
+    // Check if already selected
+    if (selectedTags.find(t => t.name.toLowerCase() === tagName.toLowerCase())) {
       setSearchQuery("");
       setIsOpen(false);
-    } else {
-      const errorMsg = result.error || "Error al crear etiqueta";
-      setError(errorMsg);
-      onError?.(errorMsg);
+      return;
     }
 
-    setIsCreating(false);
+    // Generate slug from name
+    const slug = tagName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-'); // Remove duplicate hyphens
+
+    const newTagInput: TagInput = {
+      name: tagName,
+      slug: slug,
+      tagId: null // Tag does not exist yet
+    };
+
+    const newSelectedTags = [...selectedTags, newTagInput];
+    onChange(newSelectedTags);
+    setSearchQuery("");
   };
 
   const handleFocus = () => {
@@ -156,11 +152,15 @@ export function TagSelector({
     (tag) => tag.name.toLowerCase() === searchQuery.toLowerCase()
   );
 
-  const showCreateOption = searchQuery.trim() && !exactMatch && !isLoading;
+  const alreadySelected = selectedTags.find(
+    (t) => t.name.toLowerCase() === searchQuery.trim().toLowerCase()
+  );
+
+  const showCreateOption = searchQuery.trim() && !exactMatch && !alreadySelected && !isLoading;
 
   // Filter out already selected tags from dropdown
   const availableTags = allTags.filter(
-    (tag) => !selectedTags.find(t => t.id === tag.id)
+    (tag) => !selectedTags.find(t => t.name === tag.name)
   );
 
   return (
@@ -168,15 +168,18 @@ export function TagSelector({
       {/* Selected Tags */}
       {selectedTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selectedTags.map((tag) => (
+          {selectedTags.map((tag, index) => (
             <div
-              key={tag.id}
+              key={`${tag.slug}-${index}`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-900 rounded-lg text-sm"
             >
               <span>{tag.name}</span>
+              {!tag.tagId && (
+                <span className="text-xs text-gray-500">(nuevo)</span>
+              )}
               <button
                 type="button"
-                onClick={() => handleRemoveTag(tag.id)}
+                onClick={() => handleRemoveTag(tag.name)}
                 disabled={disabled}
                 className="hover:text-red-600 transition-colors disabled:opacity-50"
               >
@@ -196,8 +199,18 @@ export function TagSelector({
             value={searchQuery}
             onChange={handleInputChange}
             onFocus={handleFocus}
-            placeholder="Buscar o crear etiqueta..."
-            disabled={disabled || isCreating}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (showCreateOption) {
+                  handleAddNewTag();
+                  // setIsOpen(false);
+                }
+              }
+            }}
+            placeholder="Buscar o agregar etiqueta..."
+            disabled={disabled}
             className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -243,22 +256,17 @@ export function TagSelector({
               </>
             )}
 
-            {/* Create New Option */}
-            {showCreateOption && (
+            {/* Add New Option */}
+            {showCreateOption && (  
               <button
                 type="button"
-                onClick={handleCreateTag}
-                disabled={isCreating}
-                className="w-full px-4 py-2.5 text-left border-t border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => { handleAddNewTag(); setIsOpen(false); }}
+                className="w-full px-4 py-2.5 text-left border-t border-gray-200 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  {isCreating ? (
-                    <Loader2 className="w-4 h-4 text-gray-900 animate-spin" />
-                  ) : (
-                    <Plus className="w-4 h-4 text-gray-900" />
-                  )}
+                  <Plus className="w-4 h-4 text-gray-900" />
                   <span className="text-sm text-gray-900 font-medium">
-                    Crear "{searchQuery}"
+                    Agregar "{searchQuery}"
                   </span>
                 </div>
               </button>
@@ -275,7 +283,7 @@ export function TagSelector({
       {/* Helper Text */}
       {!error && (
         <p className="text-xs text-gray-500">
-          Selecciona etiquetas existentes o crea nuevas escribiendo su nombre
+          Selecciona etiquetas existentes o agrega nuevas. Las nuevas se crearán al guardar el producto.
         </p>
       )}
     </div>
