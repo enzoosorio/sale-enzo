@@ -17,7 +17,7 @@ interface ActionResult<T = any> {
 }
 
 /**
- * Search categories by name
+ * Search root categories (parent_id IS NULL)
  * Returns last 5 created categories if no query provided
  */
 export async function searchCategories(query?: string): Promise<ActionResult<Category[]>> {
@@ -27,6 +27,7 @@ export async function searchCategories(query?: string): Promise<ActionResult<Cat
     let queryBuilder = supabase
       .from("product_categories")
       .select("id, name, slug, created_at, parent_id")
+      .is("parent_id", null) // Only root categories
       .order("created_at", { ascending: false });
 
     if (query && query.trim()) {
@@ -161,6 +162,48 @@ export async function getCategoryById(id: string): Promise<ActionResult<Category
     return {
       success: false,
       error: error.message || "Error inesperado al obtener categoría"
+    };
+  }
+}
+
+/**
+ * Search subcategories by parent category ID
+ * Returns subcategories that belong to the specified parent category
+ */
+export async function searchSubcategories(parentCategoryId: string, query?: string): Promise<ActionResult<Category[]>> {
+  try {
+    const supabase = await createClient();
+
+    let queryBuilder = supabase
+      .from("product_categories")
+      .select("id, name, slug, created_at, parent_id")
+      .eq("parent_id", parentCategoryId)
+      .order("created_at", { ascending: false });
+
+    if (query && query.trim()) {
+      queryBuilder = queryBuilder.ilike("name", `%${query.trim()}%`);
+    }
+
+    const { data, error } = await queryBuilder;
+
+    if (error) {
+      console.error("Error searching subcategories:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
+    return {
+      success: true,
+      data: data || []
+    };
+
+  } catch (error: any) {
+    console.error("Unexpected error in searchSubcategories:", error);
+    return {
+      success: false,
+      error: error.message || "Error inesperado al buscar subcategorías"
     };
   }
 }

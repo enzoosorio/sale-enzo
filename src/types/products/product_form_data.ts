@@ -1,10 +1,21 @@
+export interface CategoryInput {
+  name: string;
+  slug: string;
+  id?: string | null; // If present, category exists; if undefined/null, category is new
+}
+
+export interface SubcategoryInput {
+  name: string;
+  slug: string;
+  id?: string | null; // If present, subcategory exists; if undefined/null, subcategory is new
+}
 
 export interface ProductFormData {
   name: string;
   description: string;
   brand: string;
-  category_id: string;
-  category_name: string;
+  category: CategoryInput;
+  subcategory: SubcategoryInput;
   is_active: boolean;
 
   variants: Array<{

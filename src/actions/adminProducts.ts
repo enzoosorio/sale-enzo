@@ -3,7 +3,7 @@
 import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
 import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { revalidatePath } from "next/cache";
-import { TagInput } from "@/types/products/product_form_data";
+import { TagInput, CategoryInput, SubcategoryInput } from "@/types/products/product_form_data";
 
 /**
  * Admin server action to create a complete product with variants, items, and images.
@@ -25,7 +25,8 @@ interface CreateProductInput {
   name: string;
   description?: string;
   brand?: string;
-  category_id: string;
+  category: CategoryInput;
+  subcategory: SubcategoryInput;
   is_active: boolean;
 
   // Variants with nested items and images
@@ -73,10 +74,17 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
     }
 
     // Validate required fields
-    if (!input.name || !input.category_id) {
+    if (!input.name) {
       return {
         success: false,
-        error: "Missing required fields: name and category_id"
+        error: "Missing required field: name"
+      };
+    }
+
+    if (!input.category?.name || !input.subcategory?.name) {
+      return {
+        success: false,
+        error: "Missing required fields: category and subcategory"
       };
     }
 
@@ -87,14 +95,72 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       };
     }
 
-    // Step 1: Create the product
+    // Step 1: Resolve category
+    let categoryId: string;
+
+    if (input.category.id) {
+      // Category exists - use the ID directly
+      categoryId = input.category.id;
+    } else {
+      // Category is new - create it
+      const { data: newCategory, error: categoryError } = await supabaseAdmin
+        .from("product_categories")
+        .insert({
+          name: input.category.name,
+          slug: input.category.slug,
+          parent_id: null // Root category
+        })
+        .select()
+        .single();
+
+      if (categoryError || !newCategory) {
+        console.error("Error creating category:", categoryError);
+        return {
+          success: false,
+          error: `Failed to create category: ${categoryError?.message || "Unknown error"}`
+        };
+      }
+
+      categoryId = newCategory.id;
+    }
+
+    // Step 2: Resolve subcategory
+    let subcategoryId: string;
+
+    if (input.subcategory.id) {
+      // Subcategory exists - use the ID directly
+      subcategoryId = input.subcategory.id;
+    } else {
+      // Subcategory is new - create it with parent_id = categoryId
+      const { data: newSubcategory, error: subcategoryError } = await supabaseAdmin
+        .from("product_categories")
+        .insert({
+          name: input.subcategory.name,
+          slug: input.subcategory.slug,
+          parent_id: categoryId // Link to parent category
+        })
+        .select()
+        .single();
+
+      if (subcategoryError || !newSubcategory) {
+        console.error("Error creating subcategory:", subcategoryError);
+        return {
+          success: false,
+          error: `Failed to create subcategory: ${subcategoryError?.message || "Unknown error"}`
+        };
+      }
+
+      subcategoryId = newSubcategory.id;
+    }
+
+    // Step 3: Create the product
     const { data: product, error: productError } = await supabaseAdmin
       .from("products")
       .insert({
         name: input.name,
         description: input.description || null,
         brand: input.brand || null,
-        category_id: input.category_id,
+        subcategory_id: subcategoryId, // Always points to subcategory
         is_active: input.is_active,
       })
       .select()

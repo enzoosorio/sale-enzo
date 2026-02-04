@@ -37,8 +37,16 @@ export const initialFormData: ProductFormData = {
   name: "",
   description: "",
   brand: "",
-  category_id: "",
-  category_name: "",
+  category: {
+    name: "",
+    slug: "",
+    id: null
+  },
+  subcategory: {
+    name: "",
+    slug: "",
+    id: null
+  },
   is_active: true,
   variants: [createNewVariant()] // ✅ Use function to get new instance
 };
@@ -117,7 +125,8 @@ export function ProductForm() {
         name: formData.name,
         description: formData.description || undefined,
         brand: formData.brand || undefined,
-        category_id: formData.category_id,
+        category: formData.category,
+        subcategory: formData.subcategory,
         is_active: formData.is_active,
         variants: variantsWithImages.map(variant => ({
           size: variant.size || undefined,

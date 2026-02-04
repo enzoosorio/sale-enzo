@@ -1,5 +1,6 @@
 import { CategoryCombobox } from "@/components/reusable/CTA/Combobox/CategoryCombobox"
-import { ProductFormData } from "@/types/products/product_form_data"
+import { SubcategoryCombobox } from "@/components/reusable/CTA/Combobox/SubcategoryCombobox"
+import { ProductFormData, CategoryInput, SubcategoryInput } from "@/types/products/product_form_data"
 
 interface ProductSectionProps {
   formData: ProductFormData
@@ -10,11 +11,23 @@ interface ProductSectionProps {
 
 export const ProductSection = ({ formData, setFormData, isSubmitting, setError }: ProductSectionProps) => {
   
-  const handleCategoryChange = (categoryId: string, categoryName: string) => {
+  const handleCategoryChange = (category: CategoryInput) => {
     setFormData({ 
       ...formData, 
-      category_id: categoryId,
-      category_name: categoryName
+      category,
+      // Reset subcategory when category changes
+      subcategory: {
+        name: "",
+        slug: "",
+        id: null
+      }
+    });
+  };
+
+  const handleSubcategoryChange = (subcategory: SubcategoryInput) => {
+    setFormData({ 
+      ...formData, 
+      subcategory
     });
   };
   
@@ -70,8 +83,22 @@ export const ProductSection = ({ formData, setFormData, isSubmitting, setError }
               Categoría *
             </label>
             <CategoryCombobox
-              value={formData.category_id}
+              value={formData.category}
               onChange={handleCategoryChange}
+              onError={(error) => setError(error)}
+              disabled={isSubmitting}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Subcategoría *
+            </label>
+            <SubcategoryCombobox
+              value={formData.subcategory}
+              parentCategoryId={formData.category.id}
+              onChange={handleSubcategoryChange}
               onError={(error) => setError(error)}
               disabled={isSubmitting}
               required
