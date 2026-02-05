@@ -159,6 +159,7 @@ export const VariantsSection = ({
             </select>
           </div>
 
+            {/* we may need other component focusing just in color pipeline, maybe */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Color Principal (Hex)

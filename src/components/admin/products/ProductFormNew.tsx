@@ -27,7 +27,8 @@ export const createNewVariant = () => ({
     status: "available"
   }],
   secondary_images: [],
-  tags: [] // Start with empty tags array
+  tags: [], // Start with empty tags array
+  secondary_colors: [] // Start with empty secondary colors array
 });
 
 // Keep for backward compatibility but use the function instead

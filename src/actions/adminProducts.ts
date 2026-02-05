@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
 import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { revalidatePath } from "next/cache";
 import { TagInput, CategoryInput, SubcategoryInput } from "@/types/products/product_form_data";
+import { getOrCreateColorCluster, processSecondaryColors } from "@/utils/colors/clustering";
 
 /**
  * Admin server action to create a complete product with variants, items, and images.
@@ -52,6 +53,9 @@ interface CreateProductInput {
     }>;
 
     tags: TagInput[];
+    
+    // Optional: Secondary colors extracted from image analysis
+    secondary_colors?: string[]; // Array of HEX color strings
   }>;
 }
 
@@ -176,7 +180,31 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
 
     // Step 2: Create variants and their related data
     for (const variantInput of input.variants) {
-      // Create variant
+      // ========================================
+      // COLOR CLUSTERING PIPELINE
+      // ========================================
+      // Process main color through clustering system
+      // This MUST happen before variant creation
+      let colorClusterResult;
+      
+      try {
+        colorClusterResult = await getOrCreateColorCluster(variantInput.main_color_hex);
+        console.log(`Color clustering for variant: ${JSON.stringify({
+          hex: variantInput.main_color_hex,
+          cluster_id: colorClusterResult.color_category_id,
+          is_new: colorClusterResult.is_new_cluster
+        })}`);
+      } catch (colorError: any) {
+        console.error("Color clustering failed:", colorError);
+        // Rollback: delete the product
+        await supabaseAdmin.from("products").delete().eq("id", product.id);
+        return {
+          success: false,
+          error: `Failed to process color for variant: ${colorError.message}`
+        };
+      }
+
+      // Create variant WITH color cluster assignment
       const { data: variant, error: variantError } = await supabaseAdmin
         .from("product_variants")
         .insert({
@@ -186,6 +214,7 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
           fit: variantInput.fit || null,
           main_img_url: variantInput.main_img_url,
           main_color_hex: variantInput.main_color_hex,
+          main_color_category_id: colorClusterResult.color_category_id, // ✅ Cluster assignment
           metadata: variantInput.metadata || null,
         })
         .select()
@@ -242,6 +271,22 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
         if (imagesError) {
           console.error("Error creating images:", imagesError);
           // Continue anyway - images are not critical
+        }
+      }
+
+      // ========================================
+      // SECONDARY COLORS CLUSTERING
+      // ========================================
+      // Process secondary colors (if provided) through clustering pipeline
+      // These could come from image analysis or manual input
+      if (variantInput.secondary_colors && variantInput.secondary_colors.length > 0) {
+        try {
+          await processSecondaryColors(variant.id, variantInput.secondary_colors);
+          console.log(`Processed ${variantInput.secondary_colors.length} secondary colors for variant ${variant.id}`);
+        } catch (secondaryColorError: any) {
+          console.error("Secondary color processing failed:", secondaryColorError);
+          // Don't block product creation for secondary colors
+          // Log and continue
         }
       }
 
