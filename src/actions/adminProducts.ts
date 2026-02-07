@@ -5,6 +5,7 @@ import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { revalidatePath } from "next/cache";
 import { TagInput, CategoryInput, SubcategoryInput } from "@/types/products/product_form_data";
 import { getOrCreateColorCluster, processSecondaryColors } from "@/utils/colors/clustering";
+import { generateProductRAG, type ProductItemData } from "@/lib/rag/productRag";
 
 /**
  * Admin server action to create a complete product with variants, items, and images.
@@ -337,6 +338,145 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
           // Continue anyway - tags are not critical
         }
       }
+    }
+
+    // ========================================
+    // RAG GENERATION PIPELINE
+    // ========================================
+    // Generate semantic profiles for all product items
+    // This runs AFTER all product data is complete
+    console.log('🚀 Starting RAG generation for all product items...');
+    
+    try {
+      // Query all items with their complete related data
+      const { data: itemsWithData, error: queryError } = await supabaseAdmin
+        .from('product_items')
+        .select(`
+          id,
+          condition,
+          price,
+          stock,
+          status,
+          product_variants!inner (
+            id,
+            size,
+            gender,
+            fit,
+            main_color_hex,
+            main_color_category_id,
+            product_id,
+            products!inner (
+              id,
+              name,
+              description,
+              brand,
+              subcategory_id,
+              product_categories!inner (
+                id,
+                name,
+                slug,
+                parent_id
+              )
+            ),
+            variant_color_categories (
+              name
+            ),
+            variant_tags (
+              tags (
+                name
+              )
+            )
+          )
+        `)
+        .eq('product_variants.product_id', product.id);
+
+      if (queryError) {
+        console.error('Error querying items for RAG generation:', queryError);
+        // Don't block product creation if RAG query fails
+      } else if (itemsWithData && itemsWithData.length > 0) {
+        // Get category and subcategory info
+        const { data: categoryData } = await supabaseAdmin
+          .from('product_categories')
+          .select('id, name')
+          .eq('id', categoryId)
+          .single();
+
+        const { data: subcategoryData } = await supabaseAdmin
+          .from('product_categories')
+          .select('id, name')
+          .eq('id', subcategoryId)
+          .single();
+
+        // Generate RAG for each item
+        const ragPromises = itemsWithData.map(async (item: any) => {
+          try {
+            const variant = item.product_variants;
+            const product = variant.products;
+            
+            // Extract tags from the nested structure
+            const tags = variant.variant_tags?.map((vt: any) => vt.tags?.name).filter(Boolean) || [];
+            
+            // Get color category name
+            const colorCategoryName = variant.variant_color_categories?.name || undefined;
+            
+            // Prepare data for RAG generation
+            const ragData: ProductItemData = {
+              product_item_id: item.id,
+              
+              // Product fields
+              product_name: product.name,
+              product_description: product.description || undefined,
+              product_brand: product.brand || undefined,
+              
+              // Category fields
+              category_name: categoryData?.name || 'Unknown',
+              subcategory_name: subcategoryData?.name || 'Unknown',
+              
+              // Variant fields
+              variant_size: variant.size || undefined,
+              variant_gender: variant.gender || undefined,
+              variant_fit: variant.fit || undefined,
+              variant_main_color_hex: variant.main_color_hex,
+              
+              // Color category
+              color_category_name: colorCategoryName,
+              
+              // Item fields
+              item_condition: item.condition || undefined,
+              item_price: item.price,
+              item_stock: item.stock || 0,
+              item_status: item.status || undefined,
+              
+              // Tags
+              tags: tags
+            };
+            
+            // Generate RAG profile
+            const result = await generateProductRAG(ragData);
+            
+            if (!result.success) {
+              console.error(`Failed to generate RAG for item ${item.id}:`, result.error);
+            }
+            
+            return result;
+          } catch (itemError) {
+            console.error(`Error processing RAG for item ${item.id}:`, itemError);
+            return { success: false, error: 'Processing error' };
+          }
+        });
+
+        // Wait for all RAG generations to complete
+        const ragResults = await Promise.allSettled(ragPromises);
+        
+        const successCount = ragResults.filter(r => r.status === 'fulfilled' && r.value.success).length;
+        const failCount = ragResults.length - successCount;
+        
+        console.log(`✅ RAG generation complete: ${successCount} succeeded, ${failCount} failed`);
+      }
+    } catch (ragError) {
+      console.error('RAG generation pipeline error:', ragError);
+      // Don't block product creation if RAG fails
+      // Product is still created successfully, RAG can be regenerated later
     }
 
     // Revalidate the products page
