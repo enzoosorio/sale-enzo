@@ -52,6 +52,9 @@ export interface ProductItemData {
   
   // Tags (array of tag names)
   tags: string[];
+  
+  // Variant metadata (optional, for semantic enrichment)
+  variant_metadata?: Record<string, string>;
 }
 
 /**
@@ -116,6 +119,14 @@ export function buildDeterministicRagContent(data: ProductItemData): string {
     sections.push(data.tags.join(', '));
   }
   
+  // Variant metadata (semantic enrichment for long-tail search)
+  const metadataBlock = buildMetadataSemanticBlock(data.variant_metadata);
+  if (metadataBlock) {
+    sections.push('');
+    sections.push('Additional attributes:');
+    sections.push(metadataBlock);
+  }
+  
   // Base description (will be enhanced later)
   if (data.product_description) {
     sections.push('');
@@ -124,6 +135,84 @@ export function buildDeterministicRagContent(data: ProductItemData): string {
   }
   
   return sections.join('\n');
+}
+
+/**
+ * Transform variant metadata into semantic text for embedding enrichment
+ * 
+ * PURPOSE:
+ * - Convert structured metadata into natural language signals
+ * - Enrich semantic search with niche attributes
+ * - Enable long-tail queries (teams, sports, materials, editions, etc.)
+ * 
+ * RULES:
+ * - Skip empty values
+ * - Trim whitespace
+ * - Use readable semantic patterns
+ * - Limit output to ~500 chars max
+ * - No translation, no normalization, no schema enforcement
+ * 
+ * @param metadata - Key-value pairs from variant.metadata
+ * @returns Semantic text block or empty string if no valid metadata
+ */
+export function buildMetadataSemanticBlock(metadata?: Record<string, string>): string {
+  // Handle null, undefined, or empty object
+  if (!metadata || typeof metadata !== 'object' || Object.keys(metadata).length === 0) {
+    return '';
+  }
+
+  const semanticLines: string[] = [];
+  
+  // Known metadata keys with semantic patterns
+  const semanticPatterns: Record<string, string> = {
+    'team': 'Associated team: {value}',
+    'sport': 'Sport relevance: {value}',
+    'material': 'Material: {value}',
+    'edition': 'Edition: {value}',
+    'season': 'Season: {value}',
+    'player': 'Player: {value}',
+    'event': 'Event: {value}',
+    'collection': 'Collection: {value}',
+    'style': 'Style: {value}',
+    'feature': 'Feature: {value}',
+  };
+
+  for (const [key, value] of Object.entries(metadata)) {
+    // Skip empty values
+    const trimmedValue = value?.trim();
+    if (!trimmedValue) {
+      continue;
+    }
+
+    const trimmedKey = key?.trim().toLowerCase();
+    if (!trimmedKey) {
+      continue;
+    }
+
+    // Use semantic pattern if available, otherwise generic format
+    const pattern = semanticPatterns[trimmedKey];
+    if (pattern) {
+      semanticLines.push(pattern.replace('{value}', trimmedValue));
+    } else {
+      // Generic fallback: capitalize first letter of key
+      const capitalizedKey = trimmedKey.charAt(0).toUpperCase() + trimmedKey.slice(1);
+      semanticLines.push(`${capitalizedKey}: ${trimmedValue}`);
+    }
+  }
+
+  if (semanticLines.length === 0) {
+    return '';
+  }
+
+  // Join with periods for natural reading, limit to ~500 chars
+  let semanticBlock = semanticLines.join('. ') + '.';
+  
+  // Trim if too long (prevent embedding bloat)
+  if (semanticBlock.length > 500) {
+    semanticBlock = semanticBlock.substring(0, 497) + '...';
+  }
+
+  return semanticBlock;
 }
 
 /**
@@ -224,7 +313,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  * Upsert product RAG profile to database
  * 
  * UPSERT LOGIC:
- * - If exists: UPDATE content, embedding, version, updated_at
+ * - If exists: UPDATE content, embedding, metadata, version, updated_at
  * - If new: INSERT with version = 1
  * 
  * NOTE: embedding is passed as array (pgvector handles serialization)
@@ -232,7 +321,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 export async function upsertProductRagProfile(
   productItemId: string,
   content: string,
-  embedding: number[]
+  embedding: number[],
+  metadata?: Record<string, string>
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Validate inputs
@@ -247,13 +337,18 @@ export async function upsertProductRagProfile(
     }
 
     const now = new Date().toISOString();
-    const payload = {
+    const payload: any = {
       product_item_id: productItemId,
       content,
       embedding: embedding,
       version: 1,
       updated_at: now
     };
+
+    // Include metadata if provided (for retrieval filtering/inspection)
+    if (metadata && Object.keys(metadata).length > 0) {
+      payload.metadata = metadata;
+    }
 
     const { data, error } = await supabaseAdmin
       .from('product_rag_profiles')
@@ -330,7 +425,8 @@ export async function generateProductRAG(
     const result = await upsertProductRagProfile(
       data.product_item_id,
       finalContent,
-      embedding
+      embedding,
+      data.variant_metadata // Pass metadata for storage (enables filtering/inspection)
     );
     
     if (!result.success) {

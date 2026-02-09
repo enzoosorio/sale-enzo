@@ -375,6 +375,7 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
             fit,
             main_color_hex,
             main_color_category_id,
+            metadata,
             product_id,
             products!inner (
               id,
@@ -461,7 +462,10 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
               item_status: item.status || undefined,
               
               // Tags
-              tags: tags
+              tags: tags,
+              
+              // Variant metadata (for semantic search enrichment)
+              variant_metadata: variant.metadata || undefined
             };
             
             // Generate RAG profile
