@@ -38,7 +38,7 @@ interface CreateProductInput {
     fit?: string;
     main_img_url: string;
     main_color_hex: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, string>; // Optional metadata for semantic search enrichment
     
     items: Array<{
       condition?: string;

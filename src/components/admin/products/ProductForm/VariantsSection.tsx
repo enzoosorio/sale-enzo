@@ -1,4 +1,4 @@
-import { ProductFormData } from "@/types/products/product_form_data";
+import { ProductFormData, VariantMetadataInput } from "@/types/products/product_form_data";
 import { useEffect, useState } from "react";
 import { createNewVariant } from "../ProductFormNew";
 import { Plus, X } from "lucide-react";
@@ -6,6 +6,7 @@ import { ItemsSection } from "./ItemsSection";
 import { MainImageMiniSection } from "./MainImageMiniSection";
 import { TagSection } from "./TagSection";
 import { SecondaryImagesSection } from "./SecondaryImagesSection";
+import { MetadataSection } from "./MetadataSection";
 
 interface VariantsSectionProps {
   formData: ProductFormData;
@@ -226,6 +227,15 @@ export const VariantsSection = ({
         formData={formData}
         isSubmitting={isSubmitting}
         setFormData={setFormData}
+        />
+
+        {/* Metadata for semantic search enrichment */}
+        <MetadataSection
+          metadataInputs={currentVariant.metadataInputs}
+          onChange={(metadataInputs: VariantMetadataInput[]) => 
+            updateVariant(activeVariantIndex, "metadataInputs", metadataInputs)
+          }
+          disabled={isSubmitting}
         />
       </div>
     </section>

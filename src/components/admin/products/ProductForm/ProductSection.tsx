@@ -1,3 +1,4 @@
+import { BrandSelector } from "@/components/reusable/CTA/Combobox/BrandSelector"
 import { CategoryCombobox } from "@/components/reusable/CTA/Combobox/CategoryCombobox"
 import { SubcategoryCombobox } from "@/components/reusable/CTA/Combobox/SubcategoryCombobox"
 import { ProductFormData, CategoryInput, SubcategoryInput } from "@/types/products/product_form_data"
@@ -65,7 +66,7 @@ export const ProductSection = ({ formData, setFormData, isSubmitting, setError }
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Marca
             </label>
@@ -76,8 +77,19 @@ export const ProductSection = ({ formData, setFormData, isSubmitting, setError }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               placeholder="ej: Nike"
             />
+          </div> */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Categoría *
+            </label>
+              <BrandSelector
+              value={formData.brand}
+              onChange={(brand) => setFormData({ ...formData, brand })}
+              onError={(error) => setError(error)}
+              disabled={isSubmitting}
+              required
+            />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Categoría *

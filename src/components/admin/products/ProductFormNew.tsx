@@ -9,6 +9,48 @@ import { ProductFormData } from "@/types/products/product_form_data";
 import { ProductSection } from "./ProductForm/ProductSection";
 import { VariantsSection } from "./ProductForm/VariantsSection";
 import { ActionsSection } from "./ProductForm/ActionsSection";
+import { VariantMetadataInput } from "@/types/products/product_form_data";
+
+/**
+ * Transform metadata inputs into a validated metadata object
+ * 
+ * RULES:
+ * - Remove empty keys or values
+ * - Trim whitespace from keys
+ * - Normalize keys to lowercase
+ * - Handle duplicate keys (last value wins)
+ * - Return undefined if no valid entries
+ * 
+ * @param metadataInputs - Array of key-value pairs from form
+ * @returns Metadata object or undefined if empty
+ */
+function transformMetadataInputs(metadataInputs: VariantMetadataInput[]): Record<string, string> | undefined {
+  if (!metadataInputs || metadataInputs.length === 0) {
+    return undefined;
+  }
+
+  const metadataObject: Record<string, string> = {};
+
+  for (const entry of metadataInputs) {
+    const key = entry.key?.trim().toLowerCase();
+    const value = entry.value?.trim();
+
+    // Skip empty keys or values
+    if (!key || !value) {
+      continue;
+    }
+
+    // Add to object (duplicates: last value wins)
+    metadataObject[key] = value;
+  }
+
+  // Return undefined if no valid entries
+  if (Object.keys(metadataObject).length === 0) {
+    return undefined;
+  }
+
+  return metadataObject;
+}
 
 // ✅ Function that returns a NEW variant object with NEW arrays every time
 export const createNewVariant = () => ({
@@ -19,6 +61,7 @@ export const createNewVariant = () => ({
   main_img_file: null,
   main_color_hex: "#000000",
   metadata: {},
+  metadataInputs: [], // Initialize empty metadata inputs
   items: [{
     condition: "new",
     price: "",
@@ -118,7 +161,9 @@ export function ProductForm() {
             main_img_url: mainImageUrl,
             main_img_file: undefined,
             secondary_images: undefined,
-            images: secondaryImageUrls
+            images: secondaryImageUrls,
+            // Transform metadataInputs to metadata object
+            transformedMetadata: transformMetadataInputs(variant.metadataInputs)
           };
         })
       );
@@ -130,23 +175,31 @@ export function ProductForm() {
         category: formData.category,
         subcategory: formData.subcategory,
         is_active: formData.is_active,
-        variants: variantsWithImages.map(variant => ({
-          size: variant.size || undefined,
-          gender: variant.gender || undefined,
-          fit: variant.fit || undefined,
-          main_img_url: variant.main_img_url,
-          main_color_hex: variant.main_color_hex,
-          metadata: variant.metadata,
-          items: variant.items.map(item => ({
-            condition: item.condition || undefined,
-            price: parseFloat(item.price) || 0,
-            sku: item.sku || undefined,
-            stock: parseInt(item.stock) || 0,
-            status: item.status || undefined,
-          })),
-          images: variant.images || [],
-          tags: variant.tags || []
-        }))
+        variants: variantsWithImages.map(variant => {
+          const variantPayload: any = {
+            size: variant.size || undefined,
+            gender: variant.gender || undefined,
+            fit: variant.fit || undefined,
+            main_img_url: variant.main_img_url,
+            main_color_hex: variant.main_color_hex,
+            items: variant.items.map(item => ({
+              condition: item.condition || undefined,
+              price: parseFloat(item.price) || 0,
+              sku: item.sku || undefined,
+              stock: parseInt(item.stock) || 0,
+              status: item.status || undefined,
+            })),
+            images: variant.images || [],
+            tags: variant.tags || []
+          };
+
+          // Only include metadata if it has valid entries
+          if (variant.transformedMetadata) {
+            variantPayload.metadata = variant.transformedMetadata;
+          }
+
+          return variantPayload;
+        })
       };
 
       const result = await createProduct(transformedData);

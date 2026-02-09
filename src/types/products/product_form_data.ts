@@ -1,3 +1,7 @@
+export interface BrandInput {
+  name: string;
+}
+
 export interface CategoryInput {
   name: string;
   slug: string;
@@ -8,6 +12,11 @@ export interface SubcategoryInput {
   name: string;
   slug: string;
   id?: string | null; // If present, subcategory exists; if undefined/null, subcategory is new
+}
+
+export interface VariantMetadataInput {
+  key: string;
+  value: string;
 }
 
 export interface ProductFormData {
@@ -25,7 +34,8 @@ export interface ProductFormData {
     main_img_url: string;
     main_img_file: File | null;
     main_color_hex: string;
-    metadata: Record<string, any>;
+    metadata: Record<string, string>; // Will be populated from metadataInputs on submit
+    metadataInputs: VariantMetadataInput[]; // Client-side form state for metadata
     
     items: Array<{
       condition: string;
@@ -47,7 +57,8 @@ export interface VariantFormData {
   main_img_url: string
   main_img_file: File | null
   main_color_hex: string
-  metadata: Record<string, any>
+  metadataInputs: VariantMetadataInput[] // Client-side form state for metadata
+  metadata: Record<string, string> // Will be populated from metadataInputs on submit
   items: ItemFormData[]
   secondary_images: File[]
   tags: TagInput[]
