@@ -23,13 +23,28 @@ export const SecondaryImagesSection = ({
     const newVariants = [...formData.variants];
     const filesArray = Array.from(files);
     
-    // Limit to 10 secondary images per variant
-    const limitedFiles = filesArray.slice(0, 10);
+    // Calculate remaining slots (max 10 total)
+    const currentCount = newVariants[index].secondary_images.length;
+    const remainingSlots = 10 - currentCount;
+    
+    // Check if limit already reached
+    if (remainingSlots <= 0) {
+      alert('Ya has alcanzado el límite de 10 imágenes para esta variante');
+      return;
+    }
+    
+    // Only add files up to the remaining limit
+    const filesToAdd = filesArray.slice(0, remainingSlots);
     
     newVariants[index] = {
       ...newVariants[index],
-      secondary_images: [...newVariants[index].secondary_images, ...limitedFiles]
+      secondary_images: [...newVariants[index].secondary_images, ...filesToAdd]
     };
+    
+    // Notify user if some files were skipped due to limit
+    if (filesArray.length > remainingSlots) {
+      alert(`Solo se agregaron ${filesToAdd.length} de ${filesArray.length} imágenes para no exceder el límite de 10`);
+    }
     
     setFormData({ ...formData, variants: newVariants });
   };

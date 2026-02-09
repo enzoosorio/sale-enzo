@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { createProduct } from "@/actions/adminProducts";
 import { uploadMainVariantImage } from "@/utils/supabase/uploadMainImage";
-// import { uploadSecondaryVariantImage } from "@/utils/supabase/uploadSecondaryImage";
+import { uploadSecondaryVariantImage } from "@/utils/supabase/uploadSecondaryImage";
+import { assignVariantImages } from "@/actions/images/assignVariantImages";
 import { useRouter } from "next/navigation";
 import { ProductFormData } from "@/types/products/product_form_data";
 import { ProductSection } from "./ProductForm/ProductSection";
@@ -108,66 +109,17 @@ export function ProductForm() {
     setError(null);
     console.log("Submitting form with data:");
     console.log({formData});
+    
     try {
-      // Upload all main images and secondary images first
-      const variantsWithImages = await Promise.all(
-        formData.variants.map(async (variant, index) => {
-          // Upload main image
-          let mainImageUrl = variant.main_img_url;
-          
-          if (variant.main_img_file) {
-            setUploadingImages(prev => ({ ...prev, [index]: true }));
-            const tempId = `temp-${Date.now()}-${index}`;
-            const { url, error: uploadError } = await uploadMainVariantImage(
-              variant.main_img_file,
-              tempId
-            );
-            setUploadingImages(prev => ({ ...prev, [index]: false }));
+      // ========================================
+      // MODEL A: VARIANT-FIRST ARCHITECTURE
+      // ========================================
+      // Step 1: Create product structure WITHOUT uploading images
+      // Step 2: Server creates variants and returns IDs (Loop 1)
+      // Step 3: Upload images using variant IDs (Loop 2 client-side)
+      // ========================================
 
-            if (uploadError || !url) {
-              throw new Error(`Error subiendo imagen para variante ${index + 1}: ${uploadError}`);
-            }
-
-            mainImageUrl = url;
-          }
-
-          if (!mainImageUrl) {
-            throw new Error(`La variante ${index + 1} requiere una imagen principal`);
-          }
-
-          // Upload secondary images if any
-          const secondaryImageUrls: Array<{ image_url: string; position: string | null }> = [];
-          
-          if (variant.secondary_images && variant.secondary_images.length > 0) {
-            const tempId = `temp-${Date.now()}-${index}`;
-            
-            const uploadResults = await Promise.all(
-              variant.secondary_images.map(async (file, fileIndex) => {
-                const { url, error } = await uploadMainVariantImage(file, tempId);
-                if (error || !url) {
-                  console.warn(`Warning: Failed to upload secondary image ${fileIndex + 1} for variant ${index + 1}:`, error);
-                  return null;
-                }
-                return { image_url: url, position: null }; // NULL for random/additional images
-              })
-            );
-
-            // Filter out failed uploads
-            secondaryImageUrls.push(...uploadResults.filter((result): result is { image_url: string; position: null } => result !== null));
-          }
-
-          return {
-            ...variant,
-            main_img_url: mainImageUrl,
-            main_img_file: undefined,
-            secondary_images: undefined,
-            images: secondaryImageUrls,
-            // Transform metadataInputs to metadata object
-            transformedMetadata: transformMetadataInputs(variant.metadataInputs)
-          };
-        })
-      );
-
+      // Prepare form data for product creation (without image URLs)
       const transformedData = {
         name: formData.name,
         description: formData.description || undefined,
@@ -175,12 +127,11 @@ export function ProductForm() {
         category: formData.category,
         subcategory: formData.subcategory,
         is_active: formData.is_active,
-        variants: variantsWithImages.map(variant => {
+        variants: formData.variants.map(variant => {
           const variantPayload: any = {
             size: variant.size || undefined,
             gender: variant.gender || undefined,
             fit: variant.fit || undefined,
-            main_img_url: variant.main_img_url,
             main_color_hex: variant.main_color_hex,
             items: variant.items.map(item => ({
               condition: item.condition || undefined,
@@ -189,27 +140,121 @@ export function ProductForm() {
               stock: parseInt(item.stock) || 0,
               status: item.status || undefined,
             })),
-            images: variant.images || [],
+            images: [], // Will be populated after upload
             tags: variant.tags || []
           };
 
-          // Only include metadata if it has valid entries
-          if (variant.transformedMetadata) {
-            variantPayload.metadata = variant.transformedMetadata;
+          // Include metadata if present
+          const transformedMetadata = transformMetadataInputs(variant.metadataInputs);
+          if (transformedMetadata) {
+            variantPayload.metadata = transformedMetadata;
           }
 
           return variantPayload;
         })
       };
 
+      // LOOP 1 (Server): Create product and variants without images
+      console.log('📦 Creating product structure...');
       const result = await createProduct(transformedData);
       
-      if (!result.success) {
+      if (!result.success || !result.variantIds) {
         setError(result.error || "Error al crear el producto");
         return;
       }
 
-      alert("¡Producto creado exitosamente!");
+      console.log(`✅ Product created with ${result.variantIds.length} variants`);
+
+      // LOOP 2 (Client): Upload images using the variant IDs
+      console.log('🖼️  Uploading images with variant IDs...');
+      const uploadErrors: string[] = [];
+
+      for (let index = 0; index < formData.variants.length; index++) {
+        const variant = formData.variants[index];
+        const variantId = result.variantIds[index];
+
+        if (!variantId) {
+          console.error(`No variant ID for index ${index}`);
+          continue;
+        }
+
+        setUploadingImages(prev => ({ ...prev, [index]: true }));
+
+        try {
+          let mainImageUrl: string | undefined;
+          const secondaryImageUrls: Array<{ image_url: string; position: string | null }> = [];
+
+          // Upload main image if present
+          if (variant.main_img_file) {
+            console.log(`Uploading main image for variant ${index + 1}/${formData.variants.length}`);
+            const { url, error: uploadError } = await uploadMainVariantImage(
+              variant.main_img_file,
+              variantId // Use actual variant ID
+            );
+
+            if (uploadError || !url) {
+              uploadErrors.push(`Variant ${index + 1} main image: ${uploadError}`);
+              console.error(`Failed to upload main image for variant ${index}:`, uploadError);
+            } else {
+              mainImageUrl = url;
+              console.log(`✓ Main image uploaded for variant ${index + 1}`);
+            }
+          }
+
+          // Upload secondary images if present
+          if (variant.secondary_images && variant.secondary_images.length > 0) {
+            console.log(`Uploading ${variant.secondary_images.length} secondary images for variant ${index + 1}`);
+            
+            for (let imgIndex = 0; imgIndex < variant.secondary_images.length; imgIndex++) {
+              const file = variant.secondary_images[imgIndex];
+              const { url, error: uploadError } = await uploadSecondaryVariantImage(
+                file,
+                variantId,
+                imgIndex // Sequential index for deterministic naming
+              );
+
+              if (uploadError || !url) {
+                uploadErrors.push(`Variant ${index + 1} secondary image ${imgIndex + 1}: ${uploadError}`);
+                console.error(`Failed to upload secondary image ${imgIndex} for variant ${index}:`, uploadError);
+              } else {
+                secondaryImageUrls.push({ image_url: url, position: null });
+                console.log(`✓ Secondary image ${imgIndex + 1}/${variant.secondary_images.length} uploaded`);
+              }
+            }
+          }
+
+          // Assign uploaded images to the variant in the database
+          if (mainImageUrl || secondaryImageUrls.length > 0) {
+            const assignResult = await assignVariantImages(
+              variantId,
+              mainImageUrl,
+              secondaryImageUrls.length > 0 ? secondaryImageUrls : undefined
+            );
+
+            if (!assignResult.success) {
+              uploadErrors.push(`Variant ${index + 1} image assignment: ${assignResult.error}`);
+              console.error(`Failed to assign images for variant ${index}:`, assignResult.error);
+            } else {
+              console.log(`✓ Images assigned to variant ${index + 1}`);
+            }
+          }
+        } catch (uploadError: any) {
+          uploadErrors.push(`Variant ${index + 1}: ${uploadError.message}`);
+          console.error(`Error uploading images for variant ${index}:`, uploadError);
+        } finally {
+          setUploadingImages(prev => ({ ...prev, [index]: false }));
+        }
+      }
+
+      // Report results
+      if (uploadErrors.length > 0) {
+        console.warn('Some images failed to upload:', uploadErrors);
+        alert(`Producto creado exitosamente, pero algunas imágenes fallaron:\n${uploadErrors.join('\n')}`);
+      } else {
+        console.log('✅ All images uploaded successfully');
+        alert("¡Producto creado exitosamente con todas las imágenes!");
+      }
+
       router.push("/admin/products");
       
     } catch (error: any) {

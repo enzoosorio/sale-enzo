@@ -5,16 +5,24 @@ import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
 const BUCKET_NAME = "variant-images";
 
 /**
- * Upload main variant image to Supabase Storage
- * Path: /main/{variant_temp_id}/{timestamp}.{ext}
+ * Upload main variant image to deterministic storage path
+ * 
+ * Architecture: Model A - Variant-first storage
+ * Path: /variants/{variantId}/main/main-image-1.{ext}
+ * 
+ * Rules:
+ * - Variant MUST exist before calling this function
+ * - Only ONE main image per variant
+ * - Uses upsert to allow replacement
+ * - No temporary folders
  * 
  * @param file - The File object to upload
- * @param tempId - Temporary ID for organizing (before variant is created)
+ * @param variantId - The variant UUID (must exist in database)
  * @returns The public URL or error
  */
 export async function uploadMainVariantImage(
   file: File,
-  tempId: string
+  variantId: string
 ): Promise<{ url: string | null; error: string | null }> {
   try {
     // Validate file type
@@ -38,16 +46,15 @@ export async function uploadMainVariantImage(
     // Get file extension
     const extension = file.name.split('.').pop()?.toLowerCase() || 'webp';
     
-    // Build file path
-    const timestamp = Date.now();
-    const filePath = `main/${tempId}/${timestamp}.${extension}`;
+    // Deterministic path: /variants/{variantId}/main/main-image-1.{ext}
+    const filePath = `variants/${variantId}/main/main-image-1.${extension}`;
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabaseAdmin.storage
+    // Upload to Supabase Storage (upsert allows replacing main image)
+    const { error } = await supabaseAdmin.storage
       .from(BUCKET_NAME)
       .upload(filePath, file, {
         cacheControl: "3600",
-        upsert: false,
+        upsert: true,
       });
 
     if (error) {

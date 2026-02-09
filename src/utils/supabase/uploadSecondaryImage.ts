@@ -1,4 +1,8 @@
-import { uploadVariantImage } from "./storage";
+"use server";
+
+import { supabaseAdmin } from "./supabase-admin";
+
+const BUCKET_NAME = "variant-images";
 
 interface UploadResult {
   url: string | null;
@@ -6,16 +10,26 @@ interface UploadResult {
 }
 
 /**
- * Upload a secondary variant image to Supabase Storage
- * Used for additional images during product creation
+ * Upload a secondary variant image to deterministic storage path
+ * 
+ * Architecture: Model A - Variant-first storage
+ * Path: /variants/{variantId}/secondary/secondary-{index}.{ext}
+ * 
+ * Rules:
+ * - Variant MUST exist before calling this function
+ * - Multiple secondary images allowed per variant
+ * - Sequential indexing (0, 1, 2, ...)
+ * - No temporary folders
  * 
  * @param file - The image file to upload
- * @param variantTempId - Temporary ID for the variant (format: temp-{timestamp}-{index})
+ * @param variantId - The variant UUID (must exist in database)
+ * @param index - Sequential index for this image (0, 1, 2, ...)
  * @returns Object with url and error
  */
 export async function uploadSecondaryVariantImage(
   file: File,
-  variantTempId: string
+  variantId: string,
+  index: number
 ): Promise<UploadResult> {
   try {
     // Validate file
@@ -36,27 +50,34 @@ export async function uploadSecondaryVariantImage(
     }
 
     // Get file extension
-    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'webp';
 
-    // Create unique filename
-    const timestamp = Date.now();
-    const filename = `${timestamp}.${extension}`;
+    // Deterministic path: /variants/{variantId}/secondary/secondary-{index}.{ext}
+    const filePath = `variants/${variantId}/secondary/secondary-${index}.${extension}`;
 
-    // Upload path: secondary/{tempVariantId}/{filename}
-    const path = `secondary/${variantTempId}/${filename}`;
+    // Upload to Supabase Storage
+    const { error } = await supabaseAdmin.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
 
-    // Upload to storage
-    const result = await uploadVariantImage(file, path, 'variant-images');
-
-    if (result.error) {
+    if (error) {
+      console.error("Secondary image upload error:", error);
       return {
         url: null,
-        error: result.error
+        error: error.message
       };
     }
 
+    // Get public URL
+    const { data: urlData } = supabaseAdmin.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filePath);
+
     return {
-      url: result.url,
+      url: urlData.publicUrl,
       error: null
     };
 

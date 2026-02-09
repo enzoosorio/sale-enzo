@@ -80,7 +80,7 @@ export const ProductSection = ({ formData, setFormData, isSubmitting, setError }
           </div> */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Categoría *
+              Marca *
             </label>
               <BrandSelector
               value={formData.brand}

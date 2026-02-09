@@ -36,7 +36,8 @@ interface CreateProductInput {
     size?: string;
     gender?: string;
     fit?: string;
-    main_img_url: string;
+    // NOTE: main_img_url is NOT included in input
+    // Images are uploaded CLIENT-SIDE after variants are created
     main_color_hex: string;
     metadata?: Record<string, string>; // Optional metadata for semantic search enrichment
     
@@ -48,9 +49,11 @@ interface CreateProductInput {
       status?: string;
     }>;
 
-    images: Array<{
+    // NOTE: images array is NOT used anymore
+    // Secondary images are uploaded CLIENT-SIDE after variant creation
+    images?: Array<{
       image_url: string;
-      position: string | number | null; // Accept string enum, number (legacy), or null
+      position: string | number | null;
     }>;
 
     tags: TagInput[];
@@ -64,6 +67,7 @@ interface ActionResult {
   success: boolean;
   error?: string;
   productId?: string;
+ variantIds?: string[]; // Array of created variant IDs for image uploads
 }
 
 export async function createProduct(input: CreateProductInput): Promise<ActionResult> {
@@ -179,8 +183,19 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       };
     }
 
-    // Step 2: Create variants and their related data
-    for (const variantInput of input.variants) {
+    // Map to store variant IDs for Loop 2
+    const variantIdMap: Map<number, string> = new Map();
+
+    // ========================================
+    // LOOP 1: VARIANT CREATION PHASE
+    // ========================================
+    // Purpose: Establish structural layer - create all variants WITHOUT images
+    // Images are NOT uploaded here - variant IDs must exist first
+    // ========================================
+    console.log('📦 Loop 1: Creating variant structure...');
+    
+    for (let variantIndex = 0; variantIndex < input.variants.length; variantIndex++) {
+      const variantInput = input.variants[variantIndex];
       // ========================================
       // COLOR CLUSTERING PIPELINE
       // ========================================
@@ -212,6 +227,8 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       }
 
       // Create variant WITH color cluster assignment
+      // NOTE: main_img_url is set to empty string initially
+      // Images will be uploaded and assigned in Loop 2
       const { data: variant, error: variantError } = await supabaseAdmin
         .from("product_variants")
         .insert({
@@ -219,7 +236,7 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
           size: variantInput.size || null,
           gender: variantInput.gender || null,
           fit: variantInput.fit || null,
-          main_img_url: variantInput.main_img_url,
+          main_img_url: "", // Empty initially - Loop 2 will populate this
           main_color_hex: variantInput.main_color_hex,
           main_color_category_id: colorClusterResult.color_category_id, // ✅ Cluster assignment
           metadata: variantInput.metadata || null,
@@ -236,6 +253,10 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
           error: `Failed to create variant: ${variantError?.message || "Unknown error"}`
         };
       }
+
+      // Store variant ID for Loop 2 (image assignment phase)
+      variantIdMap.set(variantIndex, variant.id);
+      console.log(`✓ Created variant ${variantIndex + 1}: ${variant.id}`);
 
       // Create product items for this variant
       if (variantInput.items && variantInput.items.length > 0) {
@@ -263,23 +284,8 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
         }
       }
 
-      // Create additional images for this variant
-      if (variantInput.images && variantInput.images.length > 0) {
-        const imagesToInsert = variantInput.images.map(img => ({
-          variant_id: variant.id,
-          image_url: img.image_url,
-          position: img.position,
-        }));
-
-        const { error: imagesError } = await supabaseAdmin
-          .from("variant_images")
-          .insert(imagesToInsert);
-
-        if (imagesError) {
-          console.error("Error creating images:", imagesError);
-          // Continue anyway - images are not critical
-        }
-      }
+      // NOTE: Image creation moved to Loop 2
+      // Images are uploaded and assigned AFTER all variants exist
 
       // ========================================
       // SECONDARY COLORS CLUSTERING
@@ -350,6 +356,23 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
         }
       }
     }
+
+    console.log(`✅ Loop 1 complete: Created ${variantIdMap.size} variants`);
+    console.log(`📤 Returning variant IDs to client for image upload...`);
+
+    // ========================================
+    // NOTE: Image upload happens CLIENT-SIDE
+    // ========================================
+    // The client will:
+    // 1. Receive variantIds[] from this response
+    // 2. Upload images to /variants/{variantId}/main/ and /secondary/
+    // 3. Call assignVariantImages() to update the database
+    //
+    // This ensures:
+    // - Deterministic storage paths using real variant IDs
+    // - No temporary folders
+    // - Clean separation of concerns
+    // ========================================
 
     // ========================================
     // RAG GENERATION PIPELINE
@@ -499,9 +522,11 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
     // Revalidate the products page
     revalidatePath("/admin/products");
 
+    // Return product ID and variant IDs for client-side image uploads
     return {
       success: true,
       productId: product.id,
+      variantIds: Array.from(variantIdMap.values()), // Return ordered array of variant IDs
     };
 
   } catch (error) {
