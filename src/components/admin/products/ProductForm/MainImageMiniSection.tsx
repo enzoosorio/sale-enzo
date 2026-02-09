@@ -41,20 +41,21 @@ export const MainImageMiniSection = ({ currentVariant, formData, setFormData, ac
 
     return (
     <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block  text-sm font-medium text-gray-700 mb-2">
                 Imagen Principal * 
                 <span className="text-xs font-normal text-gray-500 ml-2">(Imágenes adicionales se gestionan después de crear el producto)</span>
               </label>
               
               {currentVariant.main_img_url ? (
-                <div className="relative">
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-300">
+                <div className="relative min-h-(--placeholder-image-height)">
+                  <div className="relative w-full min-h-(--placeholder-image-height) rounded-lg overflow-hidden border-2 border-gray-300">
                     <Image
                       src={currentVariant.main_img_url}
                       alt="Vista previa"
+                      className="object-cover min-h-(--placeholder-image-height)"
                       fill
-                      className="object-cover"
                       sizes="(max-width: 768px) 100vw, 50vw"
+                      // height={700}
                     />
                   </div>
                   <button
@@ -66,17 +67,17 @@ export const MainImageMiniSection = ({ currentVariant, formData, setFormData, ac
                   </button>
                 </div>
               ) : (
-                <div className="relative">
+                <div className="relative min-h-(--placeholder-image-height) rounded-lg">
                   <input
                     type="file"
                     id={`main-image-${activeVariantIndex}`}
                     accept="image/*"
                     onChange={(e) => handleMainImageChange(activeVariantIndex, e.target.files?.[0] || null)}
-                    className="hidden"
+                    className="hidden h-full"
                   />
                   <label
                     htmlFor={`main-image-${activeVariantIndex}`}
-                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="flex flex-col items-center justify-center w-full min-h-(--placeholder-image-height) border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                   >
                     {uploadingImages[activeVariantIndex] ? (
                       <>

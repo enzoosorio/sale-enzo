@@ -192,11 +192,31 @@ async function assignToExistingCluster(
  * 
  * Initial centroid = the color itself
  * Initial count = 1
+ * 
+ * CRITICAL: Explicitly generates UUID to avoid database null constraint violations
  */
 async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResult> {
+  // Validate LAB values before insert
+  if (lab.l < 0 || lab.l > 100) {
+    throw new Error(`Invalid L value: ${lab.l}. Must be between 0-100`);
+  }
+  if (lab.a < -128 || lab.a > 127) {
+    throw new Error(`Invalid a value: ${lab.a}. Must be between -128 and 127`);
+  }
+  if (lab.b < -128 || lab.b > 127) {
+    throw new Error(`Invalid b value: ${lab.b}. Must be between -128 and 127`);
+  }
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+    throw new Error(`Invalid representative_hex: ${hex}`);
+  }
+
+  // Generate UUID explicitly (Supabase may not have gen_random_uuid() default set)
+  const clusterId = crypto.randomUUID();
+
   const { data: newCluster, error: createError } = await supabaseAdmin
     .from("variant_color_categories")
     .insert({
+      id: clusterId, // ✅ Explicit UUID generation
       centroid_l: lab.l,
       centroid_a: lab.a,
       centroid_b: lab.b,
@@ -209,9 +229,14 @@ async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResu
     .select()
     .single();
 
-  if (createError || !newCluster) {
+  if (createError) {
     console.error("Error creating new cluster:", createError);
-    throw new Error(`Failed to create cluster: ${createError?.message || "Unknown error"}`);
+    throw new Error(`Failed to create cluster: ${createError.message}`);
+  }
+
+  // Guard: Verify cluster was created with valid ID
+  if (!newCluster || !newCluster.id) {
+    throw new Error("Cluster creation failed: missing id in response");
   }
 
   console.log(`✓ Created new cluster ${newCluster.id} for color ${hex}`);
@@ -232,9 +257,12 @@ async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResu
  * This function handles multiple colors extracted from a variant image.
  * Each color goes through the same clustering pipeline.
  * 
+ * CRITICAL: This function now FAILS LOUDLY on clustering errors.
+ * Secondary color failure BLOCKS variant creation to ensure data integrity.
+ * 
  * @param variantId - UUID of the variant
  * @param colorHexArray - Array of HEX color strings
- * @returns Array of created variant_colors records
+ * @throws Error if clustering fails for any color
  */
 export async function processSecondaryColors(
   variantId: string,
@@ -242,6 +270,11 @@ export async function processSecondaryColors(
 ): Promise<void> {
   if (!colorHexArray || colorHexArray.length === 0) {
     return;
+  }
+
+  // Validate input
+  if (!variantId || typeof variantId !== 'string') {
+    throw new Error('Invalid variantId provided to processSecondaryColors');
   }
 
   const colorsToInsert: Array<{
@@ -254,22 +287,23 @@ export async function processSecondaryColors(
   }> = [];
 
   // Process each color through clustering pipeline
+  // ⚠️ NO TRY-CATCH: Let errors propagate to block variant creation
   for (const hex of colorHexArray) {
-    try {
-      const clusterResult = await getOrCreateColorCluster(hex);
+    const clusterResult = await getOrCreateColorCluster(hex);
 
-      colorsToInsert.push({
-        variant_id: variantId,
-        color_category_id: clusterResult.color_category_id,
-        original_hex: hex,
-        l: clusterResult.l,
-        a: clusterResult.a,
-        b: clusterResult.b,
-      });
-    } catch (error) {
-      console.error(`Failed to process secondary color ${hex}:`, error);
-      // Continue processing other colors even if one fails
+    // Guard: Ensure cluster result is valid
+    if (!clusterResult.color_category_id) {
+      throw new Error(`Clustering returned invalid result for color ${hex}: missing color_category_id`);
     }
+
+    colorsToInsert.push({
+      variant_id: variantId,
+      color_category_id: clusterResult.color_category_id,
+      original_hex: hex,
+      l: clusterResult.l,
+      a: clusterResult.a,
+      b: clusterResult.b,
+    });
   }
 
   // Bulk insert all secondary colors

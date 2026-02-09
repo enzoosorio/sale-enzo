@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Check, ChevronDown, Loader2 } from "lucide-react";
 import { searchSubcategories } from "@/actions/categories";
-import { SubcategoryInput } from "@/types/products/product_form_data";
+import { CategoryInput, SubcategoryInput } from "@/types/products/product_form_data";
 
 interface Subcategory {
   id: string;
@@ -13,7 +13,7 @@ interface Subcategory {
 
 interface SubcategoryComboboxProps {
   value: SubcategoryInput;
-  parentCategoryId: string | null | undefined;
+  parentCategory?: CategoryInput
   onChange: (subcategory: SubcategoryInput) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
@@ -22,7 +22,7 @@ interface SubcategoryComboboxProps {
 
 export function SubcategoryCombobox({
   value,
-  parentCategoryId,
+  parentCategory,
   onChange,
   onError,
   disabled = false,
@@ -49,13 +49,13 @@ export function SubcategoryCombobox({
 
   // Load subcategories when parent category changes
   useEffect(() => {
-    if (parentCategoryId) {
+    if (parentCategory?.id) {
       loadSubcategories();
     } else {
       setSubcategories([]);
       setSearchQuery("");
     }
-  }, [parentCategoryId]);
+  }, [parentCategory?.id]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -70,12 +70,12 @@ export function SubcategoryCombobox({
   }, []);
 
   const loadSubcategories = async (query?: string) => {
-    if (!parentCategoryId) return;
+    if (!parentCategory?.id) return;
 
     setIsLoading(true);
     setError(null);
 
-    const result = await searchSubcategories(parentCategoryId, query);
+    const result = await searchSubcategories(parentCategory.id, query);
 
     if (result.success && result.data) {
       setSubcategories(result.data);
@@ -134,13 +134,13 @@ export function SubcategoryCombobox({
       slug: slug,
       id: null // New subcategory
     };
-
+    console.log({subcategoryInput})
     onChange(subcategoryInput);
     setIsOpen(false);
   };
 
   const handleFocus = () => {
-    if (!parentCategoryId) {
+    if (!parentCategory?.id && !parentCategory?.name) {
       setError("Primero selecciona una categoría");
       return;
     }
@@ -154,9 +154,9 @@ export function SubcategoryCombobox({
     (sub) => sub.name.toLowerCase() === searchQuery.toLowerCase()
   );
 
-  const showCreateOption = searchQuery.trim() && !exactMatch && !isLoading && parentCategoryId;
+  const showCreateOption = searchQuery.trim() && !exactMatch && !isLoading && parentCategory?.id;
 
-  const isDisabled = disabled || !parentCategoryId;
+  const isDisabled = disabled || (!parentCategory?.id && !parentCategory?.name);
 
   return (
     <div ref={containerRef} className="relative">
@@ -168,7 +168,14 @@ export function SubcategoryCombobox({
           value={searchQuery}
           onChange={handleInputChange}
           onFocus={handleFocus}
-          placeholder={parentCategoryId ? "Buscar o agregar subcategoría..." : "Primero selecciona una categoría"}
+          onKeyDown={(e) => {
+            if(e.key === 'Enter'){
+              e.preventDefault();
+              e.stopPropagation();
+              handleAddNewSubcategory();
+            }
+          }}
+          placeholder={parentCategory?.id ? "Buscar o agregar subcategoría..." : "Primero selecciona una categoría"}
           disabled={isDisabled}
           required={required}
           className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
@@ -241,7 +248,7 @@ export function SubcategoryCombobox({
       {/* Helper Text */}
       {!error && (
         <p className="mt-1.5 text-xs text-gray-500">
-          {parentCategoryId 
+          {parentCategory?.id 
             ? "Escribe para buscar o agregar una subcategoría nueva" 
             : "Selecciona una categoría primero"}
         </p>

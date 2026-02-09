@@ -56,6 +56,7 @@ export interface ProductItemData {
 
 /**
  * Build deterministic RAG content from structured fields
+ * - No LLM, no creativity, just organized data
  * This is the semantic profile foundation - no LLM, pure data
  */
 export function buildDeterministicRagContent(data: ProductItemData): string {
@@ -144,22 +145,22 @@ export async function enhanceDescriptionWithLLM(
   try {
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
-      temperature: 0.2, // Low temperature for consistency
+      temperature: 0.3, 
       max_tokens: 300,
       messages: [
         {
           role: 'system',
           content: `You rewrite product descriptions for semantic search retrieval.
-
 CRITICAL RULES:
 - Do NOT invent facts or attributes
 - Do NOT change size, color, price, condition, or any specific details
-- Keep the exact same meaning
-- Add alternative phrasing useful for search queries
+- Most important: Keep the exact same meaning
 - Expand semantic richness without hallucination
+- You can rephrase, add synonyms, and include related terms, but do NOT add new information
+- You may use common search terms and phrases customers would use to find this product
 - Use natural language that customers would search for
-
-Your goal is to make the description MORE searchable, not more creative.`
+- The generated content will be in SPANISH, so include Spanish synonyms and related terms where appropriate
+Your goal is to make the description MORE searchable for RAG architecture implementation, not more creative for other purposes.`
         },
         {
           role: 'user',
@@ -225,6 +226,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  * UPSERT LOGIC:
  * - If exists: UPDATE content, embedding, version, updated_at
  * - If new: INSERT with version = 1
+ * 
+ * NOTE: embedding is passed as array (pgvector handles serialization)
  */
 export async function upsertProductRagProfile(
   productItemId: string,
@@ -232,55 +235,38 @@ export async function upsertProductRagProfile(
   embedding: number[]
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Check if profile exists
-    const { data: existing, error: checkError } = await supabaseAdmin
+    // Validate inputs
+    if (!productItemId) {
+      throw new Error('productItemId is required');
+    }
+    if (!content || content.trim() === '') {
+      throw new Error('content cannot be empty');
+    }
+    if (!embedding || embedding.length === 0) {
+      throw new Error('embedding cannot be empty');
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      product_item_id: productItemId,
+      content,
+      embedding: embedding,
+      version: 1,
+      updated_at: now
+    };
+
+    const { data, error } = await supabaseAdmin
       .from('product_rag_profiles')
-      .select('product_item_id, version')
-      .eq('product_item_id', productItemId)
+      .upsert(payload, { onConflict: 'product_item_id' })
+      .select()
       .single();
     
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = not found (OK)
-      console.error('Error checking existing RAG profile:', checkError);
-      return { success: false, error: checkError.message };
+    if (error) {
+      console.error('Supabase upsert error:', error);
+      return { success: false, error: error.message };
     }
     
-    if (existing) {
-      // UPDATE existing profile
-      const { error: updateError } = await supabaseAdmin
-        .from('product_rag_profiles')
-        .update({
-          content,
-          embedding: `[${embedding.join(',')}]`, // PostgreSQL vector format
-          version: existing.version + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('product_item_id', productItemId);
-      
-      if (updateError) {
-        console.error('Error updating RAG profile:', updateError);
-        return { success: false, error: updateError.message };
-      }
-      
-      console.log(`✅ Updated RAG profile for product_item ${productItemId} (version ${existing.version + 1})`);
-      
-    } else {
-      // INSERT new profile
-      const { error: insertError } = await supabaseAdmin
-        .from('product_rag_profiles')
-        .insert({
-          product_item_id: productItemId,
-          content,
-          embedding: `[${embedding.join(',')}]`, // PostgreSQL vector format
-          version: 1
-        });
-      
-      if (insertError) {
-        console.error('Error inserting RAG profile:', insertError);
-        return { success: false, error: insertError.message };
-      }
-      
-      console.log(`✅ Created RAG profile for product_item ${productItemId} (version 1)`);
-    }
+    console.log(`✓ Upserted RAG profile for item ${productItemId}`);
     
     return { success: true };
     

@@ -63,7 +63,8 @@ export function ProductForm() {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-
+    console.log("Submitting form with data:");
+    console.log({formData});
     try {
       // Upload all main images and secondary images first
       const variantsWithImages = await Promise.all(

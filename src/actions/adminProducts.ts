@@ -190,13 +190,19 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       
       try {
         colorClusterResult = await getOrCreateColorCluster(variantInput.main_color_hex);
-        console.log(`Color clustering for variant: ${JSON.stringify({
+        
+        // Guard: Validate cluster result has required fields
+        if (!colorClusterResult.color_category_id) {
+          throw new Error(`Clustering returned invalid result: missing color_category_id`);
+        }
+        
+        console.log(`✓ Color clustering for variant: ${JSON.stringify({
           hex: variantInput.main_color_hex,
           cluster_id: colorClusterResult.color_category_id,
           is_new: colorClusterResult.is_new_cluster
         })}`);
       } catch (colorError: any) {
-        console.error("Color clustering failed:", colorError);
+        console.error("❌ Color clustering failed:", colorError);
         // Rollback: delete the product
         await supabaseAdmin.from("products").delete().eq("id", product.id);
         return {
@@ -280,14 +286,19 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       // ========================================
       // Process secondary colors (if provided) through clustering pipeline
       // These could come from image analysis or manual input
+      // ⚠️ BLOCKS variant creation on failure for data integrity
       if (variantInput.secondary_colors && variantInput.secondary_colors.length > 0) {
         try {
           await processSecondaryColors(variant.id, variantInput.secondary_colors);
-          console.log(`Processed ${variantInput.secondary_colors.length} secondary colors for variant ${variant.id}`);
+          console.log(`✓ Processed ${variantInput.secondary_colors.length} secondary colors for variant ${variant.id}`);
         } catch (secondaryColorError: any) {
-          console.error("Secondary color processing failed:", secondaryColorError);
-          // Don't block product creation for secondary colors
-          // Log and continue
+          console.error("❌ Secondary color processing failed:", secondaryColorError);
+          // Rollback: delete the product (cascade will handle variants)
+          await supabaseAdmin.from("products").delete().eq("id", product.id);
+          return {
+            success: false,
+            error: `Failed to process secondary colors: ${secondaryColorError.message}`
+          };
         }
       }
 
@@ -379,7 +390,8 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
               )
             ),
             variant_color_categories (
-              name
+              label,
+              representative_hex
             ),
             variant_tags (
               tags (
@@ -416,8 +428,9 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
             // Extract tags from the nested structure
             const tags = variant.variant_tags?.map((vt: any) => vt.tags?.name).filter(Boolean) || [];
             
-            // Get color category name
-            const colorCategoryName = variant.variant_color_categories?.name || undefined;
+            // Extract color category info (if available)
+            const colorCategoryLabel = variant.variant_color_categories?.label || undefined;
+            const colorCategoryHex = variant.variant_color_categories?.representative_hex || variant.main_color_hex;
             
             // Prepare data for RAG generation
             const ragData: ProductItemData = {
@@ -438,8 +451,8 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
               variant_fit: variant.fit || undefined,
               variant_main_color_hex: variant.main_color_hex,
               
-              // Color category
-              color_category_name: colorCategoryName,
+              // Color category (use label if available, otherwise use hex as fallback)
+              color_category_name: colorCategoryLabel || colorCategoryHex,
               
               // Item fields
               item_condition: item.condition || undefined,

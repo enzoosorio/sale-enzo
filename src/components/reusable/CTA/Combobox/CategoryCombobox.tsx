@@ -153,6 +153,16 @@ export function CategoryCombobox({
           value={searchQuery}
           onChange={handleInputChange}
           onFocus={handleFocus}
+          onKeyDown={(e) => {
+            if(e.key === 'Enter'){
+              e.preventDefault();
+              e.stopPropagation();
+              
+              if(showCreateOption) {
+                handleAddNewCategory();
+              }
+            }
+          }}
           placeholder="Buscar o agregar categoría..."
           disabled={disabled}
           required={required}

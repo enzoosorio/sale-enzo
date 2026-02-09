@@ -97,7 +97,7 @@ export const ProductSection = ({ formData, setFormData, isSubmitting, setError }
             </label>
             <SubcategoryCombobox
               value={formData.subcategory}
-              parentCategoryId={formData.category.id}
+              parentCategory={formData.category}
               onChange={handleSubcategoryChange}
               onError={(error) => setError(error)}
               disabled={isSubmitting}
