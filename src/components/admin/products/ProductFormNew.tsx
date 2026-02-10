@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createProduct } from "@/actions/adminProducts";
+import { createProduct } from "@/actions/admin/product";
 import { uploadMainVariantImage } from "@/utils/supabase/uploadMainImage";
 import { uploadSecondaryVariantImage } from "@/utils/supabase/uploadSecondaryImage";
 import { assignVariantImages } from "@/actions/images/assignVariantImages";
