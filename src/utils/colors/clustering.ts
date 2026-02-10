@@ -21,7 +21,29 @@ import { hexToLab, LAB, isValidHex } from "./labConversion";
 import { deltaE2000 } from "./deltaE";
 
 /**
- * Perceptual distance threshold for cluster assignment
+ * Weighted Clustering Configuration
+ * 
+ * Main colors are strong signals (product's dominant color)
+ * Secondary colors are weak signals (accents, details, borders)
+ * 
+ * Weights affect:
+ * - Centroid evolution (weighted moving average)
+ * - Cluster assignment threshold (secondary colors more tolerant)
+ */
+
+/**
+ * Main color weight: Strong signal, high impact on centroid
+ */
+const MAIN_COLOR_WEIGHT = 1.0;
+
+/**
+ * Secondary color weight: Weak signal, low impact on centroid
+ * Lower values (0.2-0.4) prevent noise from distorting clusters
+ */
+const SECONDARY_COLOR_WEIGHT = 0.3;
+
+/**
+ * Perceptual distance threshold for MAIN color assignment
  * 
  * Based on CIEDE2000 scale:
  * - 0-1: Just Noticeable Difference (JND)
@@ -29,16 +51,16 @@ import { deltaE2000 } from "./deltaE";
  * - 5-15: Moderate difference
  * - 15-30: Large difference
  * - 30+: Very different colors
- * 
- * A threshold of 15 means:
- * "If the color is within moderate perceptual distance, assign to existing cluster.
- *  Otherwise, create a new cluster."
- * 
- * Tuning guidance:
- * - Lower (5-10): More clusters, finer distinctions
- * - Higher (20-30): Fewer clusters, broader grouping
  */
-const CLUSTER_THRESHOLD = 15;
+const MAIN_COLOR_THRESHOLD = 15;
+
+/**
+ * Perceptual distance threshold for SECONDARY color assignment
+ * 
+ * Higher than main threshold to prevent creating too many clusters
+ * from visual noise (accents, borders, reflections, etc.)
+ */
+const SECONDARY_COLOR_THRESHOLD = 25;
 
 /**
  * Result of color clustering operation
@@ -50,6 +72,7 @@ export interface ColorClusterResult {
   b: number;
   representative_hex: string;
   is_new_cluster: boolean;
+  weight: number; // Weight used for this color (1.0 for main, 0.3 for secondary)
 }
 
 /**
@@ -62,22 +85,27 @@ interface ColorCluster {
   centroid_b: number;
   representative_hex: string;
   color_count: number;
+  weighted_count: number; // Sum of weights for weighted moving average
   is_locked: boolean;
   is_hidden: boolean;
   label: string | null;
 }
 
 /**
- * Main clustering function
+ * Main clustering function with WEIGHTED support
  * 
  * Determines whether to assign a color to an existing cluster or create a new one.
- * Updates centroids using online learning (moving average).
+ * Updates centroids using weighted moving average.
  * 
  * @param hex - HEX color string (e.g., "#FF5733")
+ * @param weight - Weight of this color (1.0 for main, 0.3 for secondary). Default: 1.0
  * @returns ColorClusterResult with cluster assignment
  * @throws Error if color processing fails
  */
-export async function getOrCreateColorCluster(hex: string): Promise<ColorClusterResult> {
+export async function getOrCreateColorCluster(
+  hex: string,
+  weight: number = MAIN_COLOR_WEIGHT
+): Promise<ColorClusterResult> {
   // Step 1: Validate input
   if (!isValidHex(hex)) {
     throw new Error(`Invalid HEX color: ${hex}`);
@@ -100,7 +128,13 @@ export async function getOrCreateColorCluster(hex: string): Promise<ColorCluster
     throw new Error(`Failed to fetch color clusters: ${fetchError.message}`);
   }
 
-  // Step 4: Find nearest cluster
+  // Step 4: Determine threshold based on weight
+  // Secondary colors (weight < 1.0) use higher threshold to avoid over-clustering
+  const threshold = weight >= MAIN_COLOR_WEIGHT 
+    ? MAIN_COLOR_THRESHOLD 
+    : SECONDARY_COLOR_THRESHOLD;
+
+  // Step 5: Find nearest cluster
   let nearestCluster: ColorCluster | null = null;
   let minDistance = Infinity;
 
@@ -121,37 +155,41 @@ export async function getOrCreateColorCluster(hex: string): Promise<ColorCluster
     }
   }
 
-  // Step 5: Decision logic
-  if (nearestCluster && minDistance <= CLUSTER_THRESHOLD) {
+  // Step 6: Decision logic using dynamic threshold
+  if (nearestCluster && minDistance <= threshold) {
     // CASE A: Assign to existing cluster
-    return await assignToExistingCluster(nearestCluster, lab, hex);
+    return await assignToExistingCluster(nearestCluster, lab, hex, weight);
   } else {
     // CASE B: Create new cluster
-    return await createNewCluster(lab, hex);
+    return await createNewCluster(lab, hex, weight);
   }
 }
 
 /**
  * Assign color to existing cluster and update centroid
  * 
- * Uses moving average formula:
- * new_centroid = (old_centroid * count + new_color) / (count + 1)
+ * Uses WEIGHTED moving average formula:
+ * new_centroid = (old_centroid * old_weight_sum + new_color * weight) / (old_weight_sum + weight)
  * 
  * This allows centroids to evolve gradually without sudden drift.
+ * Main colors (weight=1.0) have stronger influence than secondary colors (weight=0.3).
  */
 async function assignToExistingCluster(
   cluster: ColorCluster,
   lab: LAB,
-  hex: string
+  hex: string,
+  weight: number
 ): Promise<ColorClusterResult> {
+  const oldWeightSum = cluster.weighted_count;
+  const newWeightSum = oldWeightSum + weight;
   const oldCount = cluster.color_count;
   const newCount = oldCount + 1;
 
-  // Calculate new centroid using moving average
+  // Calculate new centroid using WEIGHTED moving average
   const newCentroid: LAB = {
-    l: (cluster.centroid_l * oldCount + lab.l) / newCount,
-    a: (cluster.centroid_a * oldCount + lab.a) / newCount,
-    b: (cluster.centroid_b * oldCount + lab.b) / newCount,
+    l: (cluster.centroid_l * oldWeightSum + lab.l * weight) / newWeightSum,
+    a: (cluster.centroid_a * oldWeightSum + lab.a * weight) / newWeightSum,
+    b: (cluster.centroid_b * oldWeightSum + lab.b * weight) / newWeightSum,
   };
 
   // Update cluster in database
@@ -162,6 +200,7 @@ async function assignToExistingCluster(
       centroid_a: newCentroid.a,
       centroid_b: newCentroid.b,
       color_count: newCount,
+      weighted_count: newWeightSum,
       updated_at: new Date().toISOString(),
     })
     .eq("id", cluster.id);
@@ -171,7 +210,7 @@ async function assignToExistingCluster(
     throw new Error(`Failed to update cluster: ${updateError.message}`);
   }
 
-  console.log(`✓ Assigned color ${hex} to existing cluster ${cluster.id} (deltaE: ${deltaE2000(lab, {
+  console.log(`✓ Assigned color ${hex} to cluster ${cluster.id} (weight: ${weight}, deltaE: ${deltaE2000(lab, {
     l: cluster.centroid_l,
     a: cluster.centroid_a,
     b: cluster.centroid_b
@@ -184,6 +223,7 @@ async function assignToExistingCluster(
     b: lab.b,
     representative_hex: hex,
     is_new_cluster: false,
+    weight,
   };
 }
 
@@ -192,10 +232,11 @@ async function assignToExistingCluster(
  * 
  * Initial centroid = the color itself
  * Initial count = 1
+ * Initial weighted_count = weight of the first color
  * 
  * CRITICAL: Explicitly generates UUID to avoid database null constraint violations
  */
-async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResult> {
+async function createNewCluster(lab: LAB, hex: string, weight: number): Promise<ColorClusterResult> {
   // Validate LAB values before insert
   if (lab.l < 0 || lab.l > 100) {
     throw new Error(`Invalid L value: ${lab.l}. Must be between 0-100`);
@@ -222,6 +263,7 @@ async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResu
       centroid_b: lab.b,
       representative_hex: hex,
       color_count: 1,
+      weighted_count: weight, // Initial weighted count = weight of first color
       is_locked: false,
       is_hidden: false,
       label: null, // Can be set manually later by admin
@@ -239,7 +281,7 @@ async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResu
     throw new Error("Cluster creation failed: missing id in response");
   }
 
-  console.log(`✓ Created new cluster ${newCluster.id} for color ${hex}`);
+  console.log(`✓ Created new cluster ${newCluster.id} for color ${hex} (weight: ${weight})`);
 
   return {
     color_category_id: newCluster.id,
@@ -248,6 +290,7 @@ async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResu
     b: lab.b,
     representative_hex: hex,
     is_new_cluster: true,
+    weight,
   };
 }
 
@@ -255,9 +298,15 @@ async function createNewCluster(lab: LAB, hex: string): Promise<ColorClusterResu
  * Process secondary colors for a variant
  * 
  * This function handles multiple colors extracted from a variant image.
- * Each color goes through the same clustering pipeline.
+ * Each color goes through the clustering pipeline with REDUCED WEIGHT.
  * 
- * CRITICAL: This function now FAILS LOUDLY on clustering errors.
+ * Secondary colors use:
+ * - Weight: 0.3 (vs 1.0 for main colors)
+ * - Threshold: 25 (vs 15 for main colors)
+ * 
+ * This prevents visual noise from creating excessive clusters.
+ * 
+ * CRITICAL: This function FAILS LOUDLY on clustering errors.
  * Secondary color failure BLOCKS variant creation to ensure data integrity.
  * 
  * @param variantId - UUID of the variant
@@ -278,31 +327,38 @@ export async function processSecondaryColors(
   }
 
   const colorsToInsert: Array<{
+    id: string;
     variant_id: string;
     color_category_id: string;
     original_hex: string;
     l: number;
     a: number;
     b: number;
+    weight: number;
   }> = [];
 
-  // Process each color through clustering pipeline
+  // Process each color through clustering pipeline with SECONDARY WEIGHT
   // ⚠️ NO TRY-CATCH: Let errors propagate to block variant creation
   for (const hex of colorHexArray) {
-    const clusterResult = await getOrCreateColorCluster(hex);
+    const clusterResult = await getOrCreateColorCluster(hex, SECONDARY_COLOR_WEIGHT);
 
     // Guard: Ensure cluster result is valid
     if (!clusterResult.color_category_id) {
       throw new Error(`Clustering returned invalid result for color ${hex}: missing color_category_id`);
     }
 
+    // Generate UUID explicitly (same as variant_color_categories)
+    const colorId = crypto.randomUUID();
+
     colorsToInsert.push({
+      id: colorId, // ✅ Explicit UUID generation
       variant_id: variantId,
       color_category_id: clusterResult.color_category_id,
       original_hex: hex,
       l: clusterResult.l,
       a: clusterResult.a,
       b: clusterResult.b,
+      weight: clusterResult.weight, // Persist weight (0.3 for secondary colors)
     });
   }
 

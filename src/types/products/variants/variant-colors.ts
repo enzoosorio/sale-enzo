@@ -9,6 +9,7 @@ export interface VariantColorRow {
   l: number
   a: number
   b: number
+  weight: number // Peso del color (1.0 para main, 0.3 para secondary)
   created_at: Timestamp
 }
 
