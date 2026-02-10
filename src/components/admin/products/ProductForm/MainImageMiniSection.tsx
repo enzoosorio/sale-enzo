@@ -40,7 +40,7 @@ export const MainImageMiniSection = ({ currentVariant, formData, setFormData, ac
   
 
     return (
-    <div className="md:col-span-2">
+    <div className="md:col-span-2 md:row-span-11">
               <label className="block  text-sm font-medium text-gray-700 mb-2">
                 Imagen Principal * 
                 <span className="text-xs font-normal text-gray-500 ml-2">(Imágenes adicionales se gestionan después de crear el producto)</span>

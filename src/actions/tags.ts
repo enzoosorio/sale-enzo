@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
 
 interface Tag {
   id: string;
@@ -21,9 +21,8 @@ interface ActionResult<T = any> {
  */
 export async function searchTags(query?: string): Promise<ActionResult<Tag[]>> {
   try {
-    const supabase = await createClient();
-
-    let queryBuilder = supabase
+    console.log("Searching tags...");
+    let queryBuilder = supabaseAdmin
       .from("tags")
       .select("id, name, slug, created_at")
       .order("name", { ascending: true })
@@ -34,7 +33,7 @@ export async function searchTags(query?: string): Promise<ActionResult<Tag[]>> {
     }
 
     const { data, error } = await queryBuilder;
-
+    console.log({data})
     if (error) {
       console.error("Error searching tags:", error);
       return {
@@ -70,8 +69,6 @@ export async function createTag(name: string): Promise<ActionResult<Tag>> {
       };
     }
 
-    const supabase = await createClient();
-
     // Generate slug from name
     const slug = name
       .toLowerCase()
@@ -81,7 +78,7 @@ export async function createTag(name: string): Promise<ActionResult<Tag>> {
       .replace(/-+/g, '-'); // Remove duplicate hyphens
 
     // Check if slug already exists
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from("tags")
       .select("id")
       .eq("slug", slug)
@@ -95,7 +92,7 @@ export async function createTag(name: string): Promise<ActionResult<Tag>> {
     }
 
     // Create tag
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("tags")
       .insert({
         name: name.trim(),
@@ -131,9 +128,7 @@ export async function createTag(name: string): Promise<ActionResult<Tag>> {
  */
 export async function getTagById(id: string): Promise<ActionResult<Tag>> {
   try {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("tags")
       .select("id, name, slug, created_at")
       .eq("id", id)
@@ -173,9 +168,7 @@ export async function getTagsByIds(ids: string[]): Promise<ActionResult<Tag[]>> 
       };
     }
 
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("tags")
       .select("id, name, slug, created_at")
       .in("id", ids);

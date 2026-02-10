@@ -1,10 +1,11 @@
 import { ProductFormData, VariantMetadataInput } from "@/types/products/product_form_data";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createNewVariant } from "../ProductFormNew";
 import { Plus, X } from "lucide-react";
 import { ItemsSection } from "./ItemsSection";
 import { MainImageMiniSection } from "./MainImageMiniSection";
 import { TagSection } from "./TagSection";
+import { SecondaryColorsSection } from "./SecondaryColorsSection";
 import { SecondaryImagesSection } from "./SecondaryImagesSection";
 import { MetadataSection } from "./MetadataSection";
 
@@ -80,11 +81,10 @@ export const VariantsSection = ({
               onClick={() => setActiveVariantIndex(index)}
               className={`
                   px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap
-                  ${
-                    activeVariantIndex === index
-                      ? "bg-gray-900 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }
+                  ${activeVariantIndex === index
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }
                 `}
             >
               Variante {index + 1}
@@ -107,8 +107,8 @@ export const VariantsSection = ({
       <div className="space-y-6 border-t border-gray-200 pt-6">
         <h3 className="font-medium text-gray-900">Detalles de la Variante</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-8 gap-4">
+          <div className="md:col-span-1 md:row-span-1" >
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Talla
             </label>
@@ -123,7 +123,7 @@ export const VariantsSection = ({
             />
           </div>
 
-          <div>
+          <div className="md:col-span-1 md:row-span-1" >
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Género
             </label>
@@ -141,7 +141,7 @@ export const VariantsSection = ({
             </select>
           </div>
 
-          <div>
+          <div className="md:col-span-1 bg md:row-span-1"   >
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ajuste
             </label>
@@ -160,38 +160,47 @@ export const VariantsSection = ({
             </select>
           </div>
 
-            {/* we may need other component focusing just in color pipeline, maybe */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Color Principal (Hex)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={currentVariant.main_color_hex}
-                onChange={(e) =>
-                  updateVariant(
-                    activeVariantIndex,
-                    "main_color_hex",
-                    e.target.value,
-                  )
-                }
-                className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
-              />
-              <input
-                type="text"
-                value={currentVariant.main_color_hex}
-                onChange={(e) =>
-                  updateVariant(
-                    activeVariantIndex,
-                    "main_color_hex",
-                    e.target.value,
-                  )
-                }
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                placeholder="#000000"
-              />
+          {/* we may need other component focusing just in color pipeline, maybe */}
+          <div className="md:col-span-1 md:row-span-11 h-full flex flex-col gap-10" >
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Color Principal (Hex)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={currentVariant.main_color_hex}
+                  onChange={(e) =>
+                    updateVariant(
+                      activeVariantIndex,
+                      "main_color_hex",
+                      e.target.value,
+                    )
+                  }
+                  className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={currentVariant.main_color_hex}
+                  onChange={(e) =>
+                    updateVariant(
+                      activeVariantIndex,
+                      "main_color_hex",
+                      e.target.value,
+                    )
+                  }
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  placeholder="#000000"
+                />
+              </div>
             </div>
+            {/* Secondary Colors */}
+            <SecondaryColorsSection
+              activeVariantIndex={activeVariantIndex}
+              currentVariant={currentVariant}
+              isSubmitting={isSubmitting}
+              updateVariant={updateVariant}
+            />
           </div>
           <MainImageMiniSection
             activeVariantIndex={activeVariantIndex}
@@ -220,19 +229,21 @@ export const VariantsSection = ({
           setError={setError}
         />
 
+
+
         {/* Secondary Images */}
         <SecondaryImagesSection
-        activeVariantIndex={activeVariantIndex}
-        currentVariant={currentVariant}
-        formData={formData}
-        isSubmitting={isSubmitting}
-        setFormData={setFormData}
+          activeVariantIndex={activeVariantIndex}
+          currentVariant={currentVariant}
+          formData={formData}
+          isSubmitting={isSubmitting}
+          setFormData={setFormData}
         />
 
         {/* Metadata for semantic search enrichment */}
         <MetadataSection
           metadataInputs={currentVariant.metadataInputs}
-          onChange={(metadataInputs: VariantMetadataInput[]) => 
+          onChange={(metadataInputs: VariantMetadataInput[]) =>
             updateVariant(activeVariantIndex, "metadataInputs", metadataInputs)
           }
           disabled={isSubmitting}

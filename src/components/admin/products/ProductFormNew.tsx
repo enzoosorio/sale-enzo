@@ -141,7 +141,8 @@ export function ProductForm() {
               status: item.status || undefined,
             })),
             images: [], // Will be populated after upload
-            tags: variant.tags || []
+            tags: variant.tags || [],
+            secondary_colors: variant.secondary_colors || [] // Array of HEX color strings
           };
 
           // Include metadata if present

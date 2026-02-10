@@ -47,6 +47,7 @@ export interface ProductFormData {
 
     secondary_images: File[];
     tags: TagInput[];
+    secondary_colors: string[]; // Array of HEX color strings
   }>;
 }
 
@@ -62,6 +63,7 @@ export interface VariantFormData {
   items: ItemFormData[]
   secondary_images: File[]
   tags: TagInput[]
+  secondary_colors: string[] // Array of HEX color strings
 }
 
 export interface ItemFormData {
