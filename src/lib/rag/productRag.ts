@@ -3,11 +3,12 @@
  * 
  * Generates semantic profiles for product items using:
  * 1. Deterministic content from structured fields
- * 2. LLM-enhanced description (ONLY)
+ * 2. User-approved enhanced description (when available)
  * 3. OpenAI embeddings (text-embedding-3-small)
  * 4. Upsert with versioning
  * 
  * This runs AFTER product creation is complete.
+ * Description enhancement is USER-TRIGGERED in the UI, not automatic.
  * No LangChain, no agents, no over-abstraction.
  */
 
@@ -29,6 +30,8 @@ export interface ProductItemData {
   // Product fields
   product_name: string;
   product_description?: string;
+  enhanced_description?: string; // User-approved enhanced description (takes priority)
+  enhanced_description_en?: string; // Short English semantic version
   product_brand?: string;
   
   // Category fields
@@ -127,8 +130,20 @@ export function buildDeterministicRagContent(data: ProductItemData): string {
     sections.push(metadataBlock);
   }
   
-  // Base description (will be enhanced later)
-  if (data.product_description) {
+  // Description: Use enhanced if available, otherwise fallback to original
+  // Priority: enhanced_description > product_description
+  if (data.enhanced_description) {
+    sections.push('');
+    sections.push('Enhanced description:');
+    sections.push(data.enhanced_description);
+    
+    // Include English semantic version for multilingual retrieval
+    if (data.enhanced_description_en) {
+      sections.push('');
+      sections.push('English semantic version:');
+      sections.push(data.enhanced_description_en);
+    }
+  } else if (data.product_description) {
     sections.push('');
     sections.push('Base description:');
     sections.push(data.product_description);
@@ -216,6 +231,9 @@ export function buildMetadataSemanticBlock(metadata?: Record<string, string>): s
 }
 
 /**
+ * @deprecated This function is no longer used in the RAG pipeline.
+ * Description enhancement is now user-triggered via /actions/ai/enhance-description.ts
+ * 
  * Enhance ONLY the product description using LLM
  * 
  * CRITICAL RULES:
@@ -382,10 +400,11 @@ export async function upsertProductRagProfile(
  * 
  * Flow:
  * 1. Build deterministic content from structured fields
- * 2. Enhance ONLY the description with LLM
- * 3. Merge enhanced description back into content
- * 4. Generate embedding
- * 5. Upsert to database
+ * 2. Use enhanced_description if available (user-approved), otherwise product_description
+ * 3. Generate embedding from final content
+ * 4. Upsert to database
+ * 
+ * NOTE: Description enhancement is now USER-TRIGGERED in the UI, not automatic.
  */
 export async function generateProductRAG(
   data: ProductItemData
@@ -393,34 +412,28 @@ export async function generateProductRAG(
   try {
     console.log(`🚀 Starting RAG generation for product_item ${data.product_item_id}...`);
     
-    // Step 1: Build deterministic content
-    const baseContent = buildDeterministicRagContent(data);
+    // Step 1: Build complete RAG content (includes enhanced description if available)
+    const finalContent = buildDeterministicRagContent(data);
     console.log('✓ Built deterministic content');
     
-    // Step 2: Enhance description with LLM (if exists)
-    let finalContent = baseContent;
-    
-    if (data.product_description) {
-      console.log('⚡ Enhancing description with LLM...');
-      const enhancedDescription = await enhanceDescriptionWithLLM(
-        data.product_description
-      );
-      
-      // Replace the "Base description:" section with "Enhanced description:"
-      finalContent = baseContent.replace(
-        `Base description:\n${data.product_description}`,
-        `Enhanced description:\n${enhancedDescription}`
-      );
-      
-      console.log('✓ Description enhanced');
+    // Log which description is being used
+    if (data.enhanced_description) {
+      console.log('✓ Using user-approved enhanced description');
+      if (data.enhanced_description_en) {
+        console.log('✓ Including English semantic version for multilingual retrieval');
+      }
+    } else if (data.product_description) {
+      console.log('ℹ Using original product description');
+    } else {
+      console.log('⚠ No description available');
     }
     
-    // Step 3: Generate embedding
+    // Step 2: Generate embedding
     console.log('🔮 Generating OpenAI embedding...');
     const embedding = await generateEmbedding(finalContent);
     console.log(`✓ Generated embedding (${embedding.length} dimensions)`);
     
-    // Step 4: Upsert to database
+    // Step 3: Upsert to database
     console.log('💾 Upserting to product_rag_profiles...');
     const result = await upsertProductRagProfile(
       data.product_item_id,

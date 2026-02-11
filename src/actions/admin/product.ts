@@ -26,6 +26,8 @@ interface CreateProductInput {
   // Product data
   name: string;
   description?: string;
+  enhanced_description?: string; // User-triggered enhanced description (for RAG only, not persisted in DB)
+  enhanced_description_en?: string; // Short English semantic version (for RAG only)
   brand?: string;
   category: CategoryInput;
   subcategory: SubcategoryInput;
@@ -463,6 +465,8 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
               // Product fields
               product_name: product.name,
               product_description: product.description || undefined,
+              enhanced_description: input.enhanced_description, // User-approved enhanced description
+              enhanced_description_en: input.enhanced_description_en, // Short English version
               product_brand: product.brand || undefined,
               
               // Category fields

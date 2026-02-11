@@ -71,6 +71,7 @@ export const createNewVariant = () => ({
     status: "available"
   }],
   secondary_images: [],
+  secondary_image_positions: [], // Initialize empty positions array
   tags: [], // Start with empty tags array
   secondary_colors: [] // Start with empty secondary colors array
 });
@@ -81,6 +82,8 @@ export const initialVariant = createNewVariant();
 export const initialFormData: ProductFormData = {
   name: "",
   description: "",
+  enhanced_description: undefined,
+  enhanced_description_en: undefined,
   brand: "",
   category: {
     name: "",
@@ -123,6 +126,8 @@ export function ProductForm() {
       const transformedData = {
         name: formData.name,
         description: formData.description || undefined,
+        enhanced_description: formData.enhanced_description, // Pass enhanced description for RAG
+        enhanced_description_en: formData.enhanced_description_en, // Pass English version for RAG
         brand: formData.brand || undefined,
         category: formData.category,
         subcategory: formData.subcategory,
@@ -208,18 +213,20 @@ export function ProductForm() {
             
             for (let imgIndex = 0; imgIndex < variant.secondary_images.length; imgIndex++) {
               const file = variant.secondary_images[imgIndex];
+              const position = variant.secondary_image_positions?.[imgIndex] || 'random';
+              
               const { url, error: uploadError } = await uploadSecondaryVariantImage(
                 file,
                 variantId,
-                imgIndex // Sequential index for deterministic naming
+                imgIndex, // Sequential index for deterministic naming
               );
 
               if (uploadError || !url) {
                 uploadErrors.push(`Variant ${index + 1} secondary image ${imgIndex + 1}: ${uploadError}`);
                 console.error(`Failed to upload secondary image ${imgIndex} for variant ${index}:`, uploadError);
               } else {
-                secondaryImageUrls.push({ image_url: url, position: null });
-                console.log(`✓ Secondary image ${imgIndex + 1}/${variant.secondary_images.length} uploaded`);
+                secondaryImageUrls.push({ image_url: url, position: position });
+                console.log(`✓ Secondary image ${imgIndex + 1}/${variant.secondary_images.length} uploaded (${position})`);
               }
             }
           }

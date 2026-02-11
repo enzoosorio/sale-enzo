@@ -19,9 +19,13 @@ export interface VariantMetadataInput {
   value: string;
 }
 
+export type ImagePosition = "random" | "front" | "back" | "logo_detail" | "close_detail";
+
 export interface ProductFormData {
   name: string;
   description: string;
+  enhanced_description?: string; // User-triggered enhanced description
+  enhanced_description_en?: string; // Short English semantic version for multilingual retrieval
   brand: string;
   category: CategoryInput;
   subcategory: SubcategoryInput;
@@ -46,6 +50,7 @@ export interface ProductFormData {
     }>;
 
     secondary_images: File[];
+    secondary_image_positions: ImagePosition[]; // Parallel array to secondary_images
     tags: TagInput[];
     secondary_colors: string[]; // Array of HEX color strings
   }>;
@@ -62,6 +67,7 @@ export interface VariantFormData {
   metadata: Record<string, string> // Will be populated from metadataInputs on submit
   items: ItemFormData[]
   secondary_images: File[]
+  secondary_image_positions: ImagePosition[] // Parallel array to secondary_images
   tags: TagInput[]
   secondary_colors: string[] // Array of HEX color strings
 }
