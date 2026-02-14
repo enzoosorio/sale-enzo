@@ -4,7 +4,7 @@ import { products } from "@/lib/products";
 
 export default function Home() {
   return (
-    <main className="relative mt-16">
+    <main className="relative mt-16 -z-20">
       <SuperBarraBusqueda />
       {/* ayuda para el espaciado respecto al SuperBarraBusqueda que ahora es absoluto. */}
       <div className="h-10 "/>

@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { CloseButtonSVG } from "@/components/reusable/svgs/CloseButtonSVG";
 import { InfiniteScrollCategories } from "./InfiniteScrollCategories";
 import { SplitText } from "gsap/all";
 import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
+import { ProductCategory } from "@/schema";
+import { getParentCategories } from "@/utils/filters";
 
 interface CategoriesProps {
   showCategories?: boolean;
@@ -30,6 +32,7 @@ export const Categories = ({
 }: CategoriesProps) => {
   const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [categories, setCategories] = useState<ProductCategory[]>()
 
   useGSAP(() => {
     let tl = gsap.timeline();
@@ -69,6 +72,19 @@ export const Categories = ({
     }
   }, [showCategories]);
 
+  useEffect(() => {
+    // initial fetch of categories to show in the section
+    const fetchCategories = async () => {
+      try {
+        const categories = await getParentCategories();
+        setCategories(categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    
+    fetchCategories();  
+  }, [])
 
   const positions = ["20", "15", "10", "10", "15", "0"];
 
@@ -132,7 +148,7 @@ export const Categories = ({
       </button>
 
       {/* div para mostrar las imagenes pertenecientes al actual individual category que se encuentra en hover. */}
-      <div className="images-wrapper fixed inset-0 z-10 select-none pointer-events-none bg-amber-0 w-full h-full">
+      <div className="images-wrapper fixed inset-0 z-10 select-none pointer-events-none bg-amber-0 w-full h-screen">
         {imagesByCategory.map((image, index) => (
           <div
             className="image-container h-max w-max overflow-hidden bg-amber-400"
