@@ -1,4 +1,4 @@
-import { Images } from '@/types/categories';
+import { Images } from "@/types/products/old_category/categories";
 import {create} from 'zustand'
 
 interface ImagesCategoriesState {

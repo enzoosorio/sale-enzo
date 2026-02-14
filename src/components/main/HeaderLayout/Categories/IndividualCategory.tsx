@@ -1,5 +1,5 @@
 "use client";
-import { Categories } from "@/types/categories";
+import { Categories } from "@/types/products/old_category/categories";
 import { SplitText } from "gsap/all";
 import React, { useEffect, useState } from "react";
 import gsap from "gsap";

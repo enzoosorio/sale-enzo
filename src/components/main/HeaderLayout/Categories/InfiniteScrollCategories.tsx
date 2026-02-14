@@ -1,7 +1,7 @@
 import gsap from "gsap";
 import React, { useEffect, useRef, useState } from "react";
 import { categories } from "@/lib/categories";
-import { Categories } from "@/types/categories";
+import { Categories } from "@/types/products/old_category/categories";
 import { IndividualCategory } from "./IndividualCategory";
 import { BackButton } from "@/components/reusable/svgs/BackButton";
 import { AsideCategoriesFilter } from "./AsideCategories/Filters/AsideProduct&Filters";

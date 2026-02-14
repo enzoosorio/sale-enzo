@@ -10,6 +10,11 @@ export const variantColorCategorySchema = z.strictObject({
   centroid_a: z.number().min(-128).max(127), // a: green to red
   centroid_b: z.number().min(-128).max(127), // b: blue to yellow
   representative_hex: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  label: z.string().nullable(),
+  color_count: z.number().int().nullable(),
+  is_locked: z.boolean().nullable(),
+  is_hidden: z.boolean().nullable(),
+  weighted_count: z.number().nullable(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
 });
@@ -30,6 +35,11 @@ export const variantColorCategoryInsertSchema = z.strictObject({
     .max(127),
   representative_hex: z.string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color format"),
+  label: z.string().optional(),
+  color_count: z.number().int().optional(),
+  is_locked: z.boolean().optional(),
+  is_hidden: z.boolean().optional(),
+  weighted_count: z.number().optional(),
 });
 
 /**
@@ -43,6 +53,11 @@ export const variantColorCategoryUpdateSchema = z.strictObject({
   representative_hex: z.string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
+  label: z.string().optional(),
+  color_count: z.number().int().optional(),
+  is_locked: z.boolean().optional(),
+  is_hidden: z.boolean().optional(),
+  weighted_count: z.number().optional(),
 });
 
 // Type exports
