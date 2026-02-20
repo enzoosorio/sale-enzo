@@ -11,7 +11,8 @@ import {
   Image,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Blend,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -51,6 +52,11 @@ const navigationItems = [
     href: "/admin/images", 
     icon: Image 
   },
+  { 
+    name: "Cluster Colores", 
+    href: "/admin/clustering", 
+    icon: Blend 
+  }
 ];
 
 export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {

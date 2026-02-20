@@ -697,7 +697,7 @@ export const MusicPlayer = () => {
         ref={audioBoxRef}
         className={`music-player-container w-96 cursor-grab overflow-hidden 
           fixed gradial-radient 
-          shadow-2xl select-none touch-none transition-all`}
+          shadow-2xl select-none touch-none z-0 transition-all`}
         style={{ borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}
       >
         {/* primer container con clippy-path mostrando solo main cancion (primera carga) */}

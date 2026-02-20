@@ -22,7 +22,7 @@ export default async function AppLayout({
     <main className="relative ">
         <HeaderBar userId={userSub} />
         {children}  
-        <MusicPlayer/>
+        {/* <MusicPlayer/> */}
     </main>
   );
 }

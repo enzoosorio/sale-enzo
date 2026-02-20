@@ -216,6 +216,14 @@ async function assignToExistingCluster(
     b: cluster.centroid_b
   }).toFixed(2)})`);
 
+  // Reassign perceptual color name after centroid update
+  try {
+    await assignClusterLabel(cluster.id);
+  } catch (labelError) {
+    console.error(`Warning: Failed to assign label to cluster ${cluster.id}:`, labelError);
+    // Don't fail the entire operation if labeling fails
+  }
+
   return {
     color_category_id: cluster.id,
     l: lab.l,
@@ -282,6 +290,14 @@ async function createNewCluster(lab: LAB, hex: string, weight: number): Promise<
   }
 
   console.log(`✓ Created new cluster ${newCluster.id} for color ${hex} (weight: ${weight})`);
+
+  // Assign perceptual color name to new cluster
+  try {
+    await assignClusterLabel(newCluster.id);
+  } catch (labelError) {
+    console.error(`Warning: Failed to assign label to new cluster ${newCluster.id}:`, labelError);
+    // Don't fail the entire operation if labeling fails
+  }
 
   return {
     color_category_id: newCluster.id,
@@ -436,4 +452,105 @@ export async function getClusterStats(clusterId: string) {
     secondary_color_usage: secondaryColorCount || 0,
     total_usage: (mainColorCount || 0) + (secondaryColorCount || 0),
   };
+}
+
+// ============================================================================
+// Perceptual Color Naming
+// ============================================================================
+
+/**
+ * Interface for color dictionary entries
+ */
+interface ColorBaseName {
+  id: string;
+  name: string;
+  hex: string;
+  lab_l: number;
+  lab_a: number;
+  lab_b: number;
+}
+
+/**
+ * Assigns the nearest perceptual color name to a cluster
+ * 
+ * This function:
+ * 1. Fetches the cluster's centroid LAB values
+ * 2. Fetches all colors from the color_base_names dictionary
+ * 3. Computes deltaE2000 distance to each dictionary color
+ * 4. Finds the minimum distance
+ * 5. Updates the cluster with suggested_label and label
+ * 
+ * This is DETERMINISTIC: same centroid always gets same label
+ * 
+ * @param clusterId - UUID of the cluster to label
+ * @throws Error if cluster not found or database operation fails
+ */
+export async function assignClusterLabel(clusterId: string): Promise<void> {
+  // Step 1: Fetch cluster centroid
+  const { data: cluster, error: clusterError } = await supabaseAdmin
+    .from("variant_color_categories")
+    .select("id, centroid_l, centroid_a, centroid_b, representative_hex")
+    .eq("id", clusterId)
+    .single();
+
+  if (clusterError || !cluster) {
+    throw new Error(`Failed to fetch cluster ${clusterId}: ${clusterError?.message || 'Not found'}`);
+  }
+
+  const clusterLab: LAB = {
+    l: cluster.centroid_l,
+    a: cluster.centroid_a,
+    b: cluster.centroid_b,
+  };
+
+  // Step 2: Fetch all dictionary colors
+  const { data: dictionaryColors, error: dictionaryError } = await supabaseAdmin
+    .from("color_base_names")
+    .select("*");
+
+  if (dictionaryError || !dictionaryColors || dictionaryColors.length === 0) {
+    throw new Error(`Failed to fetch color dictionary: ${dictionaryError?.message || 'Empty dictionary'}`);
+  }
+
+  // Step 3: Find nearest color using deltaE2000
+  let nearestColor: ColorBaseName | null = null;
+  let minDistance = Infinity;
+
+  for (const dictColor of dictionaryColors) {
+    const dictLab: LAB = {
+      l: dictColor.lab_l,
+      a: dictColor.lab_a,
+      b: dictColor.lab_b,
+    };
+
+    const distance = deltaE2000(clusterLab, dictLab);
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestColor = dictColor;
+    }
+  }
+
+  if (!nearestColor) {
+    throw new Error(`No nearest color found for cluster ${clusterId}`);
+  }
+
+  // Step 4: Update cluster with the nearest color name
+  const { error: updateError } = await supabaseAdmin
+    .from("variant_color_categories")
+    .update({
+      suggested_label: nearestColor.name,
+      label: nearestColor.name, // Also set label for initial assignment
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", clusterId);
+
+  if (updateError) {
+    throw new Error(`Failed to update cluster ${clusterId}: ${updateError.message}`);
+  }
+
+  console.log(
+    `✓ Assigned label "${nearestColor.name}" to cluster ${clusterId} ` +
+    `(HEX: ${cluster.representative_hex}, deltaE: ${minDistance.toFixed(2)})`
+  );
 }
