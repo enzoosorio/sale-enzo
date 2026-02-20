@@ -12,14 +12,17 @@ export default function Home() {
   return (
     <>
     <ReactLenis root />
-    <main className={`main-home relative pt-20 z-0 `}
+    <main className={`main-home relative z-0 `}
     // style={{
     //   pointerEvents: showCategories ? 'none' : 'auto'
     // }}
     >
+      <div className="h-20 "/>
+      <div className="relative mini-navbar-container pt-16 bg-amber-300">
       <SuperBarraBusqueda />
+      </div>
       {/* ayuda para el espaciado respecto al SuperBarraBusqueda que ahora es absoluto. */}
-      <div className="h-10 "/>
+      <div className="h-5 "/>
       <OverviewProductsHero products={products} />
     </main>
     </>
