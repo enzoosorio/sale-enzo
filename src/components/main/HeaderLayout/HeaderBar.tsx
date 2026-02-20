@@ -20,7 +20,7 @@ export const HeaderBar = async ({ userId }: HeaderBarProps) => {
   return (
     <>
     {/* todo: mejorar la apariencia del radial gradient */}
-    <header className="w-full sticky gradial-radient backdrop-blur-md min-h-(--navbar-height) flex items-center justify-center ">
+    <header className="w-full sticky gradial-radient min-h-(--navbar-height) z-10 flex items-center justify-center ">
         <nav className="relative p-2 bg-transparent px-4 md:px-16 xl:px-20 w-full h-full flex items-center justify-between">
             {/* Desktop Navigation - Hidden on mobile */}
             <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata">

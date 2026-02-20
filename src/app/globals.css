@@ -22,7 +22,7 @@
 }
 
 .overlay-element {
-  backdrop-filter: blur(1.8px);
+  /* backdrop-filter: blur(1.8px); */
   will-change: backdrop-filter;
   transition: all 0.4s;
   transition-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);

@@ -11,10 +11,12 @@ export const SuperBarraBusqueda = () => {
     if (overlayElement) {
         if (action === 'show') {   
             overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-            overlayElement.style.zIndex = '10';
+            overlayElement.style.backdropFilter = 'blur(1.8px)';
+            overlayElement.style.zIndex = '0';
         } else if (action === 'hide') {
             overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0)';
             overlayElement.style.zIndex = '-10';
+            overlayElement.style.backdropFilter = 'blur(0px)';
         }
     }
   }
@@ -24,7 +26,8 @@ export const SuperBarraBusqueda = () => {
     <>
     <form
       ref={barraBusquedaRef}
-      className="absolute top-0 left-1/2 -translate-x-1/2 bg-white z-10 w-1/2 mx-auto focus:shadow-2xl focus-within:shadow-xl transition-shadow h-10 shadow-lg flex items-center justify-between"
+      className="absolute top-20 left-1/2 -translate-x-1/2 bg-white w-1/2 mx-auto focus:shadow-2xl focus-within:shadow-xl transition-shadow h-10 shadow-lg flex items-center justify-between"
+      style={{ zIndex: 10 }}
     >
       <input 
       onFocus={() => {

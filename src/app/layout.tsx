@@ -38,7 +38,7 @@ export default async function RootLayout(props: {
         className={`${prata.className} ${nanum.className} ${inria_serif.className} antialiased`}
         
       >
-        <Toaster
+        {/* <Toaster
       position="bottom-right"
       
       toastOptions={{
@@ -50,7 +50,7 @@ export default async function RootLayout(props: {
       border: '0.5px solid rgba(255, 255, 255, 0.2)',
     },
   }}
-      />
+      /> */}
         <GoogleOneTap />
         {children}   
       </body>

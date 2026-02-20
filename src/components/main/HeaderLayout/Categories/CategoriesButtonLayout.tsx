@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Categories } from "./Categories";
+import { useCategoriesStore } from "@/store/categorySection";
 export const CategoriesButton = () => {
 
-    const [showCategories, setShowCategories] = useState(false);
+    const { showCategories, setShowCategories } = useCategoriesStore();
   
     return (
    <>

@@ -12,7 +12,7 @@ import { getParentCategories } from "@/utils/filters";
 
 interface CategoriesProps {
   showCategories?: boolean;
-  setShowCategories?: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowCategories?: ( showCategories: boolean ) => void;
 }
 
 gsap.registerPlugin(useGSAP, SplitText);
@@ -128,8 +128,12 @@ export const Categories = ({
 
   return (
     <section
-      className="categories-section cursor-auto fixed inset-0 w-full bg-off-white z-20 flex flex-col items-center justify-center overflow-hidden"
-      style={{ height: "0vh" }}
+      className="categories-section cursor-auto fixed inset-0 z-20 w-full bg-off-white flex flex-col items-center justify-center overflow-hidden"
+      style={{ 
+        height: "0vh",
+        zIndex: 9999,
+        isolation: 'isolate'
+      }}
     >
       <InfiniteScrollCategories
         isAnimating={isAnimating}
@@ -140,6 +144,7 @@ export const Categories = ({
         className=" absolute top-[10%] right-[10%] z-50 cursor-pointer "
         onClick={() => {
           setShowCategories && setShowCategories(false);
+          setExitImagesByCategory(true);
           document.body.style.overflow = "auto";
           setIsAnimating(false);
         }}
