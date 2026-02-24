@@ -26,7 +26,7 @@ export const SuperBarraBusqueda = () => {
     <>
     <form
       ref={barraBusquedaRef}
-      className="absolute top-0 left-1/2 -translate-x-1/2 bg-white w-1/2 mx-auto focus:shadow-2xl focus-within:shadow-xl transition-shadow h-10 shadow-lg flex items-center justify-between"
+      className="bg-white w-[600px] mx-auto focus:shadow-2xl focus-within:shadow-xl transition-shadow h-10 shadow-lg flex items-center justify-between"
       style={{ zIndex: 10 }}
     >
       <input 

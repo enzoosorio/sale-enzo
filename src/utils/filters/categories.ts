@@ -121,6 +121,7 @@ export async function getAllSubcategories(): Promise<ProductCategory[]> {
   return data || [];
 }
 
+
 /**
  * TODO: DATOS MOCK TEMPORALES - ELIMINAR CUANDO SE AGREGUEN A LA BASE DE DATOS
  * 

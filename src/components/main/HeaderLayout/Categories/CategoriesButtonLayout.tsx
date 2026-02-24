@@ -14,7 +14,12 @@ export const CategoriesButton = () => {
     onClick={() => {
         setShowCategories(!showCategories);
         document.body.style.overflow = !showCategories ? 'hidden' : 'auto';
-    }}>
+    }}
+    onMouseEnter={() => {
+        // pre loader de las categorias padre. Si el usuario ya hizo hover, no hace nada, si no, carga las categorias padre para que al hacer click se muestren instantaneamente.
+        
+    }}
+    >
         Categorías
     </button>
     <Categories showCategories={showCategories} setShowCategories={setShowCategories} />

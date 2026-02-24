@@ -135,6 +135,23 @@
     0 6px 16px rgba(0,0,0,0.08);
 }
 
+
+.search-bar {
+  background:
+    linear-gradient(0.025deg, rgba(214, 217, 223, 70%) 0%, rgba(179, 180, 184, 70%) 100%),
+    radial-gradient(
+      300px 120px at 2% 20%,
+      rgba(0, 0, 0, 0.2) 0%,
+      rgba(0, 0, 0, 0) 70%
+    ),
+    radial-gradient(
+      300px 120px at 98% 20%,
+      rgba(0, 0, 0, 0.2) 0%,
+      rgba(0, 0, 0, 0) 70%
+    );
+}
+
+
 .gradial-radient-hover{
   background: radial-gradient(
     ellipse at 50% 120%,  

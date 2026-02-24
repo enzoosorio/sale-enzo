@@ -1,6 +1,6 @@
 // import { Categories } from "@/types/categories";
 
-interface Categories {
+interface CategoriesFrontend {
     id: number;
     name: string;
     referenceImages: {
@@ -9,7 +9,7 @@ interface Categories {
     }[];
 }
 
-export const categories : Categories[] = [
+export const categories : CategoriesFrontend[] = [
     {
         id: 1,
         name: 'POLOS',

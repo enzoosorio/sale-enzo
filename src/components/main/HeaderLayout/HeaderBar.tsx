@@ -69,7 +69,7 @@ export const HeaderBar = async ({ userId }: HeaderBarProps) => {
                 {userId && (
                     <div className=" h-8 flex items-center justify-center">
                 <Image
-                    src="/images/sillye-head.png"
+                    src="/images/syllie/sillye-head-idle.png"
                     alt="Bot Icon"
                     width={72}
                     height={48}
