@@ -39,191 +39,203 @@ export const IndividualCategory = ({
       pointerEvents: "none",
     });
 
-    if (categorySelected && categorySelected.name === category.name) {
-      if (isAnimating) {
-        // Revertir SplitText anterior si existe
-        if (splitInstance) {
-          splitInstance.revert();
-        }
+    // if (categorySelected && categorySelected.name === category.name) {
+    //   if (isAnimating) {
+    //     // Revertir SplitText anterior si existe
+    //     if (splitInstance) {
+    //       splitInstance.revert();
+    //     }
 
-        // Crear nuevo SplitText para animación de salida
-        const splittedText = SplitText.create(".no-animate", {
-          type: "lines",
-        });
-        setSplitInstance(splittedText);
+    //     // Crear nuevo SplitText para animación de salida
+    //     const splittedText = SplitText.create(".no-animate", {
+    //       type: "lines",
+    //     });
+    //     setSplitInstance(splittedText);
 
-        let tl = gsap.timeline();
+    //     let tl = gsap.timeline();
 
-        tl.to(
-          splittedText.lines,
-          {
-            y: -100,
-            opacity: 0,
-            stagger: 0.05,
-            duration: 0.2,
-            ease: "power2.in",
-          },
-          0
-        );
-        tl.to(
-          ".individual-category",
-          {
-            zIndex: -1,
-            userSelect: "none",
-            cursor: "default",
-            pointerEvents: "none",
-            duration: 0.2,
-            ease: "power2.in",
-          },
-          0.2
-        );
-        tl.to(
-          ".p-tag",
-          {
-            cursor: "default",
-            duration: 0.1,
-          },
-          0.2
-        );
-        tl.to(
-          ".flechitas-container",
-          {
-            zIndex: -1,
-            opacity: 0,
-            userSelect: "none",
-            cursor: "default",
-            pointerEvents: "none",
-            duration: 0.2,
-            ease: "power2.in",
-          },
-          0.3
-        );
-        tl.to(
-          ".infinite-menu-items",
-          {
-            x: "-100%",
-            width: "390px",
-            duration: 0.3,
-            ease: "power2.in",
-          },
-          0.5
-        );
-        tl.to(
-          ".aside-filters",
-          {
-            zIndex: 10,
-            opacity: 1,
-            ease: "power2.out",
-          },
-          0.6
-        );
-        tl.to(
-          ".back-button",
-          {
-            zIndex: 10,
-            userSelect: "auto",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            opacity: 1,
-            ease: "power2.out",
-          },
-          0.6
-        );
-      } else {
-        // Revertir SplitText anterior (esto restaura el DOM original)
-        let tl = gsap.timeline();
-        if (splitInstance) {
-          tl.to(
-            splitInstance.lines,
-            {
-              y: 0,
-              opacity: 1,
-              stagger: 0.05,
-              duration: 0.2,
-              ease: "power2.in",
-              reversed: true,
-            },
-            0
-          );
-          setSplitInstance(null);
-        }
+    //     tl.to(
+    //       splittedText.lines,
+    //       {
+    //         y: -100,
+    //         opacity: 0,
+    //         stagger: 0.05,
+    //         duration: 0.2,
+    //         ease: "power2.in",
+    //       },
+    //       0
+    //     );
+    //     tl.to(
+    //       ".individual-category",
+    //       {
+    //         zIndex: -1,
+    //         userSelect: "none",
+    //         cursor: "default",
+    //         pointerEvents: "none",
+    //         duration: 0.2,
+    //         ease: "power2.in",
+    //       },
+    //       0.2
+    //     );
+    //     tl.to(
+    //       ".p-tag",
+    //       {
+    //         cursor: "default",
+    //         duration: 0.1,
+    //       },
+    //       0.2
+    //     );
+    //     tl.to(
+    //       ".flechitas-container",
+    //       {
+    //         zIndex: -1,
+    //         opacity: 0,
+    //         userSelect: "none",
+    //         cursor: "default",
+    //         pointerEvents: "none",
+    //         duration: 0.2,
+    //         ease: "power2.in",
+    //       },
+    //       0.3
+    //     );
+    //     tl.to(
+    //       ".infinite-menu-items",
+    //       {
+    //         x: "-100%",
+    //         width: "390px",
+    //         duration: 0.3,
+    //         ease: "power2.in",
+    //       },
+    //       0.5
+    //     );
+    //     tl.to(
+    //       ".aside-filters",
+    //       {
+    //         zIndex: 10,
+    //         opacity: 1,
+    //         ease: "power2.out",
+    //       },
+    //       0.6
+    //     );
+    //     tl.to(
+    //       ".back-button",
+    //       {
+    //         zIndex: 10,
+    //         userSelect: "auto",
+    //         cursor: "pointer",
+    //         pointerEvents: "auto",
+    //         opacity: 1,
+    //         ease: "power2.out",
+    //       },
+    //       0.6
+    //     );
+    //   } else {
+    //     // Revertir SplitText anterior (esto restaura el DOM original)
+    //     let tl = gsap.timeline();
+    //     if (splitInstance) {
+    //       tl.to(
+    //         splitInstance.lines,
+    //         {
+    //           y: 0,
+    //           opacity: 1,
+    //           stagger: 0.05,
+    //           duration: 0.2,
+    //           ease: "power2.in",
+    //           reversed: true,
+    //         },
+    //         0
+    //       );
+    //       setSplitInstance(null);
+    //     }
 
-        // Primero animar los containers
-        tl.to(
-          ".individual-category",
-          {
-            zIndex: 10,
-            userSelect: "auto",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            duration: 0.2,
-            ease: "power2.out",
-          },
-          0
-        );
-        tl.to(
-          ".p-tag",
-          {
-            cursor: "pointer",
-            duration: 0.1,
-          },
-          0.2
-        );
-        tl.to(
-          ".flechitas-container",
-          {
-            zIndex: 10,
-            opacity: 1,
-            userSelect: "auto",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            duration: 0.2,
-            ease: "power2.out",
-          },
-          0.6
-        );
-        tl.to(
-          ".infinite-menu-items",
-          {
-            x: "0%",
-            width: "100%",
-            duration: 0.3,
-            ease: "power2.out",
-          },
-          0.5
-        );
-        tl.to(
-          ".back-button",
-          {
-            zIndex: -1,
-            userSelect: "none",
-            cursor: "default",
-            pointerEvents: "none",
-            opacity: 0,
-          },
-          0.2
-        );
-        tl.to(
-          ".aside-filters",
-          {
-            zIndex: -1,
-            opacity: 0,
-          },
-          0.2
-        );
+    //     // Primero animar los containers
+    //     tl.to(
+    //       ".individual-category",
+    //       {
+    //         zIndex: 10,
+    //         userSelect: "auto",
+    //         cursor: "pointer",
+    //         pointerEvents: "auto",
+    //         duration: 0.2,
+    //         ease: "power2.out",
+    //       },
+    //       0
+    //     );
+    //     tl.to(
+    //       ".p-tag",
+    //       {
+    //         cursor: "pointer",
+    //         duration: 0.1,
+    //       },
+    //       0.2
+    //     );
+    //     tl.to(
+    //       ".flechitas-container",
+    //       {
+    //         zIndex: 10,
+    //         opacity: 1,
+    //         userSelect: "auto",
+    //         cursor: "pointer",
+    //         pointerEvents: "auto",
+    //         duration: 0.2,
+    //         ease: "power2.out",
+    //       },
+    //       0.6
+    //     );
+    //     tl.to(
+    //       ".infinite-menu-items",
+    //       {
+    //         x: "0%",
+    //         width: "100%",
+    //         duration: 0.3,
+    //         ease: "power2.out",
+    //       },
+    //       0.5
+    //     );
+    //     tl.to(
+    //       ".back-button",
+    //       {
+    //         zIndex: -1,
+    //         userSelect: "none",
+    //         cursor: "default",
+    //         pointerEvents: "none",
+    //         opacity: 0,
+    //       },
+    //       0.2
+    //     );
+    //     tl.to(
+    //       ".aside-filters",
+    //       {
+    //         zIndex: -1,
+    //         opacity: 0,
+    //       },
+    //       0.2
+    //     );
 
-        selectedWord?.classList.add("no-animate");
-        selectedWord?.classList.add("individual-category");
-        setSelectedWord(null);
-        setTimeout(() => {
-          setCategorySelected(null);
-        }, 300);
+    //     selectedWord?.classList.add("no-animate");
+    //     selectedWord?.classList.add("individual-category");
+    //     setSelectedWord(null);
+    //     setTimeout(() => {
+    //       setCategorySelected(null);
+    //     }, 300);
+    //   }
+    // }
+  }, [categorySelected, isAnimating]);
+
+  useEffect(() => {
+
+      if (categorySelected && categorySelected.name === category.name) {
+        //fetch de subcategorias e imágenes de subcategorias
+        document.body.style.overflow = 'hidden'; // Evitar scroll durante animación
+        
+
+
       }
-    }
+
   }, [categorySelected, isAnimating]);
 
   return (
-      <p
+     <p
         onMouseEnter={() => {
           if(categorySelected) return;
 
@@ -232,11 +244,17 @@ export const IndividualCategory = ({
               setExitImagesByCategory(false);
             }
 
-            setImagesByCategory(category.referenceImages);
+            // Only set images if referenceImages exist
+            if (category.referenceImages && category.referenceImages.length > 0) {
+              setImagesByCategory(category.referenceImages);
+            }
           }, 100);
         }}
         onMouseLeave={() => {
-          setExitImagesByCategory(true);
+          // Only trigger exit animation if there are images to exit
+          if (category.referenceImages && category.referenceImages.length > 0) {
+            setExitImagesByCategory(true);
+          }
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -260,9 +278,9 @@ export const IndividualCategory = ({
           categorySelected?.name !== category.name
             ? " no-animate individual-category "
             : ""
-        } font-nanum font-light text-5xl cursor-pointer text-center px-4 py-1 transition-all touch-manipulation`}
+        } font-nanum font-light text-5xl cursor-pointer text-left px-4 py-1 transition-all touch-manipulation`}
       >
         {category.name}
-      </p>
+      </p> 
   );
 };

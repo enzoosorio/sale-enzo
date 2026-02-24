@@ -4,10 +4,10 @@ export interface Images{
 }
 
 export interface Categories{
-    id: number;
+    id: string; // UUID from database
     name: string;
-    referenceImages: Images[];
-    filters?: Filters;
+    slug?: string; // Add slug from database
+    referenceImages?: Images[]; // Make optional
 }
 
 export interface Filter{

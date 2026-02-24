@@ -7,6 +7,7 @@ import { CloseButtonSVG } from "@/components/reusable/svgs/CloseButtonSVG";
 import { InfiniteScrollCategories } from "./InfiniteScrollCategories";
 import { SplitText } from "gsap/all";
 import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
+import { useCategoriesStore } from "@/store/categorySection";
 import { ProductCategory } from "@/schema";
 import { getParentCategories } from "@/utils/filters";
 
@@ -31,8 +32,8 @@ export const Categories = ({
   showCategories,
 }: CategoriesProps) => {
   const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
+  const { parentCategories, setParentCategories, setIsLoadingCategories } = useCategoriesStore();
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
-  const [categories, setCategories] = useState<ProductCategory[]>()
 
   useGSAP(() => {
     let tl = gsap.timeline();
@@ -75,16 +76,43 @@ export const Categories = ({
   useEffect(() => {
     // initial fetch of categories to show in the section
     const fetchCategories = async () => {
+      // Solo cargar si no hay categorías ya cargadas
+      if (parentCategories.length > 0) return;
+      
       try {
+        setIsLoadingCategories(true);
         const categories = await getParentCategories();
-        setCategories(categories);
+        setParentCategories(categories);
       } catch (error) {
         console.error("Error fetching categories:", error);
+      } finally {
+        setIsLoadingCategories(false);
       }
     };
     
     fetchCategories();  
   }, [])
+
+  // Bloquear scroll del body cuando las categorías están abiertas
+  useEffect(() => {
+    if (showCategories) {
+      // Guardar posición actual del scroll
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      // Restaurar posición del scroll
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+  }, [showCategories])
 
   const positions = ["20", "15", "10", "10", "15", "0"];
 
@@ -128,11 +156,11 @@ export const Categories = ({
 
   return (
     <section
-      className="categories-section cursor-auto fixed inset-0 z-20 w-full bg-off-white flex flex-col items-center justify-center overflow-hidden"
+      className="categories-section cursor-auto fixed inset-0 z-50 w-full bg-off-white flex flex-col items-center justify-center overflow-hidden"
       style={{ 
         height: "0vh",
         zIndex: 9999,
-        isolation: 'isolate'
+        isolation: 'isolate',
       }}
     >
       <InfiniteScrollCategories
@@ -145,7 +173,6 @@ export const Categories = ({
         onClick={() => {
           setShowCategories && setShowCategories(false);
           setExitImagesByCategory(true);
-          document.body.style.overflow = "auto";
           setIsAnimating(false);
         }}
       >

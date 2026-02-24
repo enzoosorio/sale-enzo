@@ -1,10 +1,11 @@
 import gsap from "gsap";
-import React, { useEffect, useRef, useState } from "react";
-import { categories } from "@/lib/categories";
+import React, { useEffect, useMemo, useRef, useState} from "react";
 import { Categories } from "@/types/products/old_category/categories";
 import { IndividualCategory } from "./IndividualCategory";
 import { BackButton } from "@/components/reusable/svgs/BackButton";
 import { AsideCategoriesFilter } from "./AsideCategories/Filters/AsideProduct&Filters";
+import { useCategoriesStore } from "@/store/categorySection";
+import { ProductCategory } from "@/schema/categorySchema";
 
 interface InfiniteScrollCategoriesProps {
   isAnimating: boolean;
@@ -17,13 +18,30 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating }: Infini
   const [isMobile, setIsMobile] = useState(false);
   const [speedDrag, setSpeedDrag] = useState(1.2);
   const [categorySelected, setCategorySelected] = useState<Categories | null>(null);
+  const [subcategories, setSubcategories] = useState<Categories[] | null>([]);
+  const [subcategorySelected, setSubcategorySelected] = useState<string | null>(null);
+  const { parentCategories } = useCategoriesStore();
+
+  // Adapt ProductCategory[] from DB to Categories[] format expected by UI
+  const categories: Categories[] = useMemo(() => {
+    if (parentCategories.length === 0) {
+      return [];
+    }
+    return parentCategories.map((cat: ProductCategory) => ({
+      id: cat.id,
+      name: cat.name.toUpperCase(),
+      slug: cat.slug,
+      // referenceImages is optional, so we don't include it if not available
+    }));
+  }, [parentCategories]);
+
 
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
     window.addEventListener("resize", checkIsMobile);
-    checkIsMobile(); // Check on mount
+    checkIsMobile(); 
 
     return () => {
       window.removeEventListener("resize", checkIsMobile);
@@ -33,9 +51,9 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating }: Infini
   // Adjust speedDrag based on device type
   useEffect(() => {
     if (isMobile) {
-      setSpeedDrag(1.5); // Increase drag sensitivity for mobile
+      setSpeedDrag(1.5);
     } else {
-      setSpeedDrag(1.2); // Default drag sensitivity for desktop
+      setSpeedDrag(1.2);
     }
   }, [isMobile]);
 
@@ -127,7 +145,6 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating }: Infini
       hasMoved = false;
       if (e instanceof TouchEvent) {
         startY = -e.touches[0].clientY;
-        // Don't prevent default on touchstart to allow clicks
       } else {
         e.preventDefault(); // Prevent text selection and default behavior for mouse
         startY = -e.clientY;
@@ -206,7 +223,6 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating }: Infini
       "touchmove",
       (e: TouchEvent) => {
         if (isDragging) {
-          e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
           onDragMove(e);
@@ -282,7 +298,7 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating }: Infini
                 }
               }}
               key={index}
-              className="absolute overflow-hidden w-full flex items-center justify-center"
+              className="eabsolute overflow-hidden w-full flex items-cnter justify-center"
             >
               <IndividualCategory
                 category={category}
@@ -294,6 +310,26 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating }: Infini
               />
             </li>
           ))}
+         {/* {subcategories.map((category, index) => (
+           <li
+             ref={(el) => {
+               if (el) {
+                 itemsRef.current[index] = el;
+               }
+             }}
+             key={index}
+             className="eabsolute overflow-hidden w-full flex items-cnter justify-center"
+           >
+             <IndividualCategory
+               category={category}
+               menuRef={menuRef}
+               isAnimating={isAnimating}
+               setIsAnimating={setIsAnimating}
+               categorySelected={categorySelected}
+               setCategorySelected={setCategorySelected}
+             />
+           </li>
+         ))} */}
         </ul>
         <AsideCategoriesFilter categorySelected={categorySelected?.name || null} />
       </div>

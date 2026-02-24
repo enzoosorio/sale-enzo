@@ -5,14 +5,27 @@ import { products } from "@/lib/products";
 import { useCategoriesStore } from "@/store/categorySection";
 import { ReactLenis, useLenis } from "lenis/react";
 import Image from "next/image";
+import { useEffect } from "react";
 
 export default function Home() {
   const { showCategories } = useCategoriesStore();
+  const lenis = useLenis();
+
+  // Pausar/reanudar Lenis cuando se abre/cierra el menú de categorías
+  useEffect(() => {
+    if (lenis) {
+      if (showCategories) {
+        lenis.stop();
+      } else {
+        lenis.start();
+      }
+    }
+  }, [showCategories, lenis]);
 
   return (
     <>
       <ReactLenis root />
-      <main className={`main-home relative z-0 `}>
+      <main className="main-home relative z-0">
         {/* filters & Sillye for overscrolling */}
         <div className="addons-wrapper absolute -top-12 right-32 z-30  flex items-center justify-center gap-12">
           {/* filters svg */}
