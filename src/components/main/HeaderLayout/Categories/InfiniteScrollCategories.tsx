@@ -143,7 +143,7 @@ useEffect(() => {
 //   (phase === "TO_SUB" || phase === "SUBCATEGORIES")
 // ) {
 
-      if (categorySelected && phase === "TO_SUB") {
+      if (categorySelected && (phase !== 'PARENTS' && phase !== 'TO_PARENTS')) {
         try {
           const fetchedSubcategories = await getSubcategoriesByParentId(categorySelected.id);
           const formattedSubcategories: Categories[] = fetchedSubcategories.map((sub: ProductCategory) => ({
@@ -231,6 +231,20 @@ useEffect(() => {
       // Force layout calculation
       subMenuRef.current.getBoundingClientRect();
       subItemsRef.current.forEach(item => item?.getBoundingClientRect());
+
+      //forcing parents to be hidden because if we receive searchParams directly in the URL, we skip the parent exit animation, so we need to make sure they are hidden before animating the subcategories in.
+      gsap.set(parentsMenuRef.current, {
+        opacity: 0,
+        pointerEvents: "none",
+        zIndex: 0,
+      })
+
+      //forcing back button to be visible in case we come directly with URL params to the subcategories phase, so we skip the parent exit animation where the back button appears.
+      gsap.set(".back-button", {
+        opacity: 1,
+        zIndex: 10,
+        pointerEvents: "auto",
+      });
 
       // Set container visible
       gsap.set(subMenuRef.current, {
@@ -335,15 +349,38 @@ useEffect(() => {
         pointerEvents: "none",
         duration: 0.1,
       }, 0.4);
+    }else if(phase !== "ALL_FILTERS" && subMenuRef.current) {
+      //Ensure categories are hidden when not in transition to filters
+      gsap.set(parentsMenuRef.current, {
+        opacity: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+      })
+
+      // Ensure subcategories are hidden when not in transition to filters
+      gsap.set(subMenuRef.current, {
+        opacity: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+      });
+      
     }
   }, [phase, setPhase]);
 
   // Aside filters entry animation (ALL_FILTERS phase)
   useEffect(() => {
     const asideElement = document.querySelector(".aside-filters");
-    if (!asideElement) return;
+    if (!asideElement) return; 
 
     if (phase === "ALL_FILTERS") {
+
+      //forcing parents elements to be hidden in case we come directly with URL params to the ALL_FILTERS phase, so we skip the parent and subcategory exit animations, which are the ones that hide the parents and subcategories containers.
+      gsap.set(parentsMenuRef.current, {
+      opacity: 0,
+      zIndex: 0,
+      pointerEvents: "none",
+    });
+
       gsap.timeline()
         .to(asideElement, {
           opacity: 1,
@@ -472,19 +509,21 @@ useEffect(() => {
       }, 0.2);
 
       // Show parents container
-      if (parentsMenuRef.current) {
+      // if (parentsMenuRef.current) {
         tl.set(parentsMenuRef.current, {
           zIndex: 10,
           // opacity: 1,
           pointerEvents: "auto",
         }, 0.5);
-      }
+      // }
     }
     //changing parents opacity because we are hiding it
     if (phase === "PARENTS") {
       if (parentsMenuRef.current) {
         gsap.set(parentsMenuRef.current, {
           opacity: 1,
+          pointerEvents: "auto",
+          zIndex: 10,
         });
       }
     }
@@ -709,7 +748,7 @@ useEffect(() => {
           ref={subMenuRef}
           className="subcategories-menu cursor-grab absolute top-0 left-0  w-full h-full select-none"
           style={{
-            zIndex: 20,
+            zIndex: 0,
             pointerEvents: "none",
           }}
         >
