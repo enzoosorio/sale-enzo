@@ -18,8 +18,9 @@ export {
   getSubcategoriesByParentId,
   getCategoriesWithSubcategories,
   getAllSubcategories,
-  MOCK_SUBCATEGORIES,
-  type CategoryWithSubcategories,
+  findParentCategoryBySubcategorySlug,
+  validateCategoryHierarchy,
+  validateCategoryHierarchyServer,
 } from './categories';
 
 // Exportar funciones de tamaños

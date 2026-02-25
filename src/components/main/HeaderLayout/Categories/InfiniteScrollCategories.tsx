@@ -9,7 +9,9 @@ import { useCategoriesStore } from "@/store/categorySection";
 import { ProductCategory } from "@/schema/categorySchema";
 import { getSubcategoriesByParentId } from "@/utils/filters";
 import { useInfiniteVerticalScroll } from "@/hooks/useInfiniteVerticalScroll";
-import { CategoryPhase } from "./Categories";
+import { CategoryPhase } from "./CategoriesPanel";
+import { useFiltersStore } from "@/store/filtersStore";
+import { useRouter, useSearchParams } from "next/navigation";
 
 
 interface InfiniteScrollCategoriesProps {
@@ -30,13 +32,18 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating, showCate
   // SplitText refs for proper cleanup
   const parentsSplitRef = useRef<SplitText | null>(null);
   const subSplitRef = useRef<SplitText | null>(null);
-  
   const [isMobile, setIsMobile] = useState(false);
   const [speedDrag, setSpeedDrag] = useState(1.2);
   const [categorySelected, setCategorySelected] = useState<Categories | null>(null);
   const [subcategories, setSubcategories] = useState<Categories[]>([]);
-  const [subcategorySelected, setSubcategorySelected] = useState<Categories | null>(null);
   const { parentCategories } = useCategoriesStore();
+  
+  // URL navigation
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Global filter state (category, subcategory are no longer used for writes - URL is source of truth)
+  const { category, subcategory } = useFiltersStore();
 
   // Adapt ProductCategory[] from DB to Categories[] format expected by UI
   const categories: Categories[] = useMemo(() => {
@@ -78,6 +85,7 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating, showCate
   isActive: isSubScrollReady,
 });
 
+// Reset subcategory refs when subcategories change to avoid stale refs
 useEffect(() => {
   subItemsRef.current = [];
 }, [subcategories]);
@@ -86,14 +94,55 @@ useEffect(() => {
   // Handle parent category click
   const handleParentClick = useCallback((category: Categories) => {
     if (phase !== "PARENTS") return;
+    
+    // Ensure slug exists before proceeding
+    if (!category.slug) {
+      console.error("Category missing slug:", category);
+      return;
+    }
+    
     setPhase("TO_SUB");
     setIsAnimating(true);
     setCategorySelected(category);
-  }, [phase, setIsAnimating]);
+    
+    // Write to URL instead of Zustand
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("category", category.slug);
+    params.delete("subcategory"); // Remove subcategory when selecting new category
+    
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [phase, setIsAnimating, setPhase, router, searchParams]);
+
+  // Handle subcategory click - triggers transition to ALL_FILTERS
+  const handleSubcategoryClick = useCallback((subcat: Categories) => {
+    if (phase !== "SUBCATEGORIES") return;
+    
+    // Ensure slug exists before proceeding
+    if (!subcat.slug) {
+      console.error("Subcategory missing slug:", subcat);
+      return;
+    }
+    
+    // Write to URL instead of Zustand
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("subcategory", subcat.slug);
+    
+    router.replace(`?${params.toString()}`, { scroll: false });
+    
+    // Trigger transition to filters
+    setPhase("TO_ALL_FILTERS");
+    setIsAnimating(true);
+  }, [phase, setPhase, setIsAnimating, router, searchParams]);
 
   // Fetch subcategories when transitioning to subcategories
   useEffect(() => {
     const fetchSubcategories = async () => {
+
+// if (
+//   categorySelected &&
+//   (phase === "TO_SUB" || phase === "SUBCATEGORIES")
+// ) {
+
       if (categorySelected && phase === "TO_SUB") {
         try {
           const fetchedSubcategories = await getSubcategoriesByParentId(categorySelected.id);
@@ -116,6 +165,15 @@ useEffect(() => {
     
     fetchSubcategories();
   }, [categorySelected, phase]);
+
+
+  useEffect(() => {
+  if (phase === "SUBCATEGORIES") {
+    setTimeout(() => {
+      console.log('[INIT] Subcategories layout complete');
+    }, 500); // Wait for animations
+  }
+}, [phase]);
 
   // Parent exit animation (TO_SUB phase)
   useEffect(() => {
@@ -151,6 +209,7 @@ useEffect(() => {
       // Hide parents container after text animates out
       tl.to(parentsMenuRef.current, {
         zIndex: 0,
+        opacity: 0,
         pointerEvents: "none",
         duration: 0.1,
       }, 0.4);
@@ -219,13 +278,150 @@ useEffect(() => {
     }
   }, [phase, subcategories]);
 
-  // Handle back button click
+  // Handle back button click - URL-driven navigation with transition animations
   const handleBackClick = useCallback(() => {
-    if (phase !== "SUBCATEGORIES") return;
-    setPhase("TO_PARENTS");
-  }, [phase]);
+    const params = new URLSearchParams(searchParams.toString());
+    const hasSubcategory = params.has("subcategory");
+    const hasCategory = params.has("category");
 
-  // Subcategory exit animation (TO_PARENTS phase)
+    if (hasSubcategory) {
+      // Back from ALL_FILTERS to SUBCATEGORIES
+      setPhase("TO_SUBCATEGORIES");
+      setIsAnimating(true);
+      params.delete("subcategory");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    } else if (hasCategory) {
+      // Back from SUBCATEGORIES to PARENTS
+      setPhase("TO_PARENTS");
+      params.delete("category");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+  }, [router, searchParams, setPhase, setIsAnimating]);
+
+  // Subcategory exit animation to ALL_FILTERS (TO_ALL_FILTERS phase)
+  useEffect(() => {
+    if (phase === "TO_ALL_FILTERS" && subMenuRef.current) {
+      // Revert previous SplitText if exists
+      if (subSplitRef.current) {
+        subSplitRef.current.revert();
+        subSplitRef.current = null;
+      }
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setPhase("ALL_FILTERS");
+        },
+      });
+
+      // SplitText exit animation for subcategories
+      const subItems = subMenuRef.current.querySelectorAll(".individual-category");
+      if (subItems.length > 0) {
+        subSplitRef.current = SplitText.create(subItems, {
+          type: "lines",
+        });
+
+        tl.to(subSplitRef.current.lines, {
+          y: -80,
+          opacity: 0,
+          stagger: 0.04,
+          duration: 0.5,
+          ease: "power2.in",
+        }, 0);
+      }
+
+      // Hide subcategories container
+      tl.to(subMenuRef.current, {
+        zIndex: 0,
+        pointerEvents: "none",
+        duration: 0.1,
+      }, 0.4);
+    }
+  }, [phase, setPhase]);
+
+  // Aside filters entry animation (ALL_FILTERS phase)
+  useEffect(() => {
+    const asideElement = document.querySelector(".aside-filters");
+    if (!asideElement) return;
+
+    if (phase === "ALL_FILTERS") {
+      gsap.timeline()
+        .to(asideElement, {
+          opacity: 1,
+          x: 0,
+          zIndex: 10,
+          pointerEvents: "auto",
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => {
+            setIsAnimating(false);
+          },
+        });
+
+      // Keep back button visible for returning to subcategories
+      gsap.to(".back-button", {
+        opacity: 1,
+        zIndex: 10,
+        pointerEvents: "auto",
+        duration: 0.3,
+        ease: "power2.out",
+      });
+    }
+  }, [phase, setIsAnimating]);
+
+  // Aside exit + subcategories re-entry (TO_SUBCATEGORIES phase)
+  useEffect(() => {
+    const asideElement = document.querySelector(".aside-filters");
+    if (phase === "TO_SUBCATEGORIES" && asideElement && subMenuRef.current) {
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setPhase("SUBCATEGORIES");
+          setIsAnimating(false);
+        },
+      });
+
+      // Animate aside out
+      tl.to(asideElement, {
+        opacity: 0,
+        x: 50,
+        zIndex: -10,
+        pointerEvents: "none",
+        duration: 0.4,
+        ease: "power2.in",
+      }, 0);
+
+      // Show subcategories container
+      tl.set(subMenuRef.current, {
+        zIndex: 10,
+        pointerEvents: "auto",
+      }, 0.5);
+
+      // Re-animate subcategories in
+      const subcatItems = subMenuRef.current.querySelectorAll(".individual-category");
+      if (subcatItems && subcatItems.length > 0) {
+        if (subSplitRef.current) {
+          subSplitRef.current.revert();
+          subSplitRef.current = null;
+        }
+
+        gsap.set(subcatItems, { y: 0, opacity: 1 });
+
+        subSplitRef.current = SplitText.create(subcatItems, {
+          type: "lines",
+        });
+
+        tl.from(subSplitRef.current.lines, {
+          opacity: 0,
+          y: 100,
+          stagger: 0.05,
+          duration: 0.6,
+          ease: "power2.out",
+        }, 0.5);
+      }
+    }
+  }, [phase, setIsAnimating, setPhase]);
+
+
+  // Subcategory exit animation to PARENTS (TO_PARENTS phase)
   useEffect(() => {
     if (phase === "TO_PARENTS" && subMenuRef.current) {
       // Revert previous SplitText if exists
@@ -238,7 +434,6 @@ useEffect(() => {
         onComplete: () => {
           setSubcategories([]);
           setCategorySelected(null);
-          setSubcategorySelected(null);
           setPhase("PARENTS");
           setIsAnimating(false);
         },
@@ -280,15 +475,28 @@ useEffect(() => {
       if (parentsMenuRef.current) {
         tl.set(parentsMenuRef.current, {
           zIndex: 10,
+          // opacity: 1,
           pointerEvents: "auto",
         }, 0.5);
       }
     }
-  }, [phase, setIsAnimating]);
+    //changing parents opacity because we are hiding it
+    if (phase === "PARENTS") {
+      if (parentsMenuRef.current) {
+        gsap.set(parentsMenuRef.current, {
+          opacity: 1,
+        });
+      }
+    }
+  }, [phase, setIsAnimating, setPhase]);
 
   // Parent entry animation after back (PARENTS phase after TO_PARENTS)
   useEffect(() => {
-    if (phase === "PARENTS" && parentsMenuRef.current && !categorySelected) {
+   if (
+    phase === "PARENTS" &&
+    parentsMenuRef.current &&
+    showCategories
+  ) {
       // Revert previous SplitText if exists
       if (parentsSplitRef.current) {
         parentsSplitRef.current.revert();
@@ -318,81 +526,103 @@ useEffect(() => {
     }
   }, [phase, categorySelected]);
 
-  // Reset state when panel closes
+
+
+  // Setting up the current filters in the aside based on the selected category and subcategory. This effect runs whenever the selected category changes, ensuring that the filters are always in sync with the user's selection.
+//   useEffect(() => {
+//     console.log('prueba con searchparams cambiando')
+//   if (!showCategories) return; // 🔥 CRÍTICO
+//     console.log('estamos dentro')
+//   const category = searchParams.get("category");
+//   const subcategory = searchParams.get("subcategory");
+
+//   let targetPhase: CategoryPhase;
+
+//   if (!category) {
+//     targetPhase = "PARENTS";
+//   } else if (category && !subcategory) {
+//     targetPhase = "SUBCATEGORIES";
+//   } else {
+//     targetPhase = "ALL_FILTERS";
+//   }
+
+//   // No interrumpir transiciones
+//   if (phase.startsWith("TO_")) return;
+
+//   if (phase !== targetPhase) {
+//     setPhase(targetPhase);
+//   }
+// }, [searchParams, showCategories]);
+
   useEffect(() => {
-    if (showCategories === false && (phase !== "PARENTS" || categorySelected)) {
-      // Revert all SplitText instances first
-      if (parentsSplitRef.current) {
-        parentsSplitRef.current.revert();
-        parentsSplitRef.current = null;
-      }
-      if (subSplitRef.current) {
-        subSplitRef.current.revert();
-        subSplitRef.current = null;
-      }
-      
-      // Kill all ongoing animations specifically on subcategories
-      if (subMenuRef.current) {
-        gsap.killTweensOf(subMenuRef.current);
-        const subChildren = subMenuRef.current.querySelectorAll("li, .individual-category, p");
-        gsap.killTweensOf(subChildren);
-      }
-      
-      // Reset state
-      setPhase("PARENTS");
-      setCategorySelected(null);
-      setSubcategories([]);
-      setSubcategorySelected(null);
-      setIsAnimating(false);
-      
-      // Clear all transforms after state reset
-      requestAnimationFrame(() => {
-        if (parentsMenuRef.current) {
-          gsap.set(parentsMenuRef.current, {
-            clearProps: "all",
-            zIndex: 10,
-            pointerEvents: "auto",
-          });
-        }
-        
-        if (subMenuRef.current) {
-          // First clear ALL transforms from container
-          gsap.set(subMenuRef.current, {
-            clearProps: "all",
-          });
-          
-          // Clear transforms from all li elements
-          const subLiElements = subMenuRef.current.querySelectorAll("li");
-          if (subLiElements.length > 0) {
-            gsap.set(subLiElements, {
-              clearProps: "all",
-            });
-          }
-          
-          // Clear transforms from all .individual-category and nested p elements
-          const subTextElements = subMenuRef.current.querySelectorAll(".individual-category, .individual-category p, .individual-category div");
-          if (subTextElements.length > 0) {
-            gsap.set(subTextElements, {
-              clearProps: "all",
-            });
-          }
-          
-          // Now set the required display properties
-          gsap.set(subMenuRef.current, {
-            zIndex: 0,
-            pointerEvents: "none",
-          });
-        }
-        
-        gsap.set(".back-button", {
-          clearProps: "all",
-          opacity: 0,
-          zIndex: -10,
-          pointerEvents: "none",
-        });
-      });
+  const category = searchParams.get("category");
+  const subcategory = searchParams.get("subcategory");
+
+  let targetPhase: CategoryPhase;
+
+  if (!category) {
+    targetPhase = "PARENTS";
+  } else if (category && !subcategory) {
+    targetPhase = "SUBCATEGORIES";
+  } else {
+    targetPhase = "ALL_FILTERS";
+  }
+
+  // No interferir con transiciones activas
+  if (phase.startsWith("TO_")) return;
+
+  if (phase !== targetPhase) {
+    setPhase(targetPhase);
+  }
+
+}, [searchParams]);
+
+useEffect(() => {
+  const categorySlug = searchParams.get("category");
+
+  if (!categorySlug || categories.length === 0) return;
+
+  const matchedCategory = categories.find(
+    (cat) => cat.slug === categorySlug
+  );
+
+  if (!matchedCategory) return;
+
+  // Si ya está seleccionado, no hacer nada
+  if (categorySelected?.slug === matchedCategory.slug) return;
+
+  setCategorySelected(matchedCategory);
+
+}, [searchParams, categories]);
+
+  // Cleanup animations when panel closes
+  useEffect(() => {
+  if (!showCategories) {
+    // 🔥 SOLO matar animaciones
+    if (parentsSplitRef.current) {
+      parentsSplitRef.current.revert();
+      parentsSplitRef.current = null;
     }
-  }, [showCategories, phase, categorySelected, setIsAnimating]);
+
+    if (subSplitRef.current) {
+      subSplitRef.current.revert();
+      subSplitRef.current = null;
+    }
+
+    if (parentsMenuRef.current) {
+      gsap.killTweensOf(parentsMenuRef.current);
+    }
+
+    if (subMenuRef.current) {
+      gsap.killTweensOf(subMenuRef.current);
+    }
+
+    const aside = document.querySelector(".aside-filters");
+    if (aside) {
+      gsap.killTweensOf(aside);
+    }
+  }
+}, [showCategories]);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -463,7 +693,7 @@ useEffect(() => {
                 }
               }}
               key={category.id}
-              className="absolute overflow-hidden h-36  w-full flex items-center justify-center"
+              className="absolute overflow-hidden h-36 w-full flex items-center justify-center"
             >
               <IndividualCategory
                 category={category}
@@ -477,9 +707,9 @@ useEffect(() => {
         {/* Subcategories List - Always Mounted */}
         <ul
           ref={subMenuRef}
-          className="subcategories-menu cursor-grab absolute top-0 left-0 overflow-hidden w-full h-full select-none"
+          className="subcategories-menu cursor-grab absolute top-0 left-0  w-full h-full select-none"
           style={{
-            zIndex: 0,
+            zIndex: 20,
             pointerEvents: "none",
           }}
         >
@@ -491,22 +721,18 @@ useEffect(() => {
                 }
               }}
               key={category.id}
-              className="absolute overflow-hidden h-36  w-full flex items-center justify-center"
+              className="absolute overflow-hidden h-36 w-full flex items-center justify-center"
             >
               <IndividualCategory
                 category={category}
-                onCategoryClick={(cat) => {
-                  if (!isAnimating) {
-                    setSubcategorySelected(cat);
-                  }
-                }}
-                isDisabled={isAnimating}
+                onCategoryClick={handleSubcategoryClick}
+                isDisabled={phase !== "SUBCATEGORIES"}
               />
             </li>
           ))}
         </ul>
-
-        <AsideCategoriesFilter categorySelected={categorySelected?.name || null} />
+        {/* Pass category from global filter store */}
+        <AsideCategoriesFilter categorySelected={category} />
       </div>
     </div>
    </>

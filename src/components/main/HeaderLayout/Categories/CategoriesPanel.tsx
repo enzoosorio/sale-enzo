@@ -9,13 +9,8 @@ import { SplitText } from "gsap/all";
 import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
 import { useCategoriesStore } from "@/store/categorySection";
 import { getParentCategories } from "@/utils/filters";
+import { Breadcrumbs } from "./Breadcrumbs/Breadcrumbs";
 
-interface CategoriesProps {
-  showCategories?: boolean;
-  setShowCategories?: ( showCategories: boolean ) => void;
-  isAnimating: boolean;
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
-}
 
 gsap.registerPlugin(useGSAP, SplitText);
 
@@ -29,17 +24,20 @@ const initImagesPositions = [
 ];
 
 // Strict state machine for animation flow
-export type CategoryPhase = "PARENTS" | "TO_SUB" | "SUBCATEGORIES" | "TO_PARENTS";
+export type CategoryPhase = 
+"PARENTS" |
+"TO_SUB" | 
+"SUBCATEGORIES" | 
+"TO_ALL_FILTERS"|
+"ALL_FILTERS" |
+"TO_SUBCATEGORIES" |
+"TO_PARENTS";
 
-export const Categories = ({
-  setShowCategories,
-  showCategories,
-  isAnimating,
-  setIsAnimating
-}: CategoriesProps) => {
+export const CategoriesPanel = () => {
   const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
   const [phase, setPhase] = useState<CategoryPhase>("PARENTS");
-  const { parentCategories, setParentCategories, setIsLoadingCategories } = useCategoriesStore();
+  const { parentCategories, setParentCategories, setIsLoadingCategories, showCategories, setShowCategories } = useCategoriesStore();
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
   useGSAP(() => {
     const section = document.querySelector(".categories-section");
@@ -172,6 +170,26 @@ export const Categories = ({
     }
   }, [imagesByCategory, exitImagesByCategory]);
 
+
+  // NOW we are going to listen the escape key to close the categories section, this is a common UX pattern that users expect, and it will enhance the user experience by allowing them to quickly exit the categories view without having to click the close button. We will add an event listener for the 'keydown' event and check if the pressed key is 'Escape'. If it is, we will trigger the same function that is called when the close button is clicked.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if(!showCategories) return;
+      if (e.key === "Escape") {
+        console.log('escape')
+        setShowCategories && setShowCategories(false);
+        setExitImagesByCategory(true);
+        setIsAnimating(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showCategories, setShowCategories, setExitImagesByCategory, setIsAnimating]);
+
   return (
     <section
       className="categories-section cursor-auto fixed inset-0 z-50 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
@@ -194,7 +212,6 @@ export const Categories = ({
         className="close-categories-button absolute top-[10%] right-[10%] z-50 cursor-pointer "
         onClick={() => {
           // setting showCategories to false is handled in the parent component (HeaderLayout) through the setShowCategories prop, so we just need to call it here.
-          setPhase("PARENTS");
           setShowCategories && setShowCategories(false);
           setExitImagesByCategory(true);
           setIsAnimating(false);
@@ -220,6 +237,9 @@ export const Categories = ({
           </div>
         ))}
       </div>
+      {/* Breadcrumbs */}
+        <Breadcrumbs/>
+
     </section>
   );
 };

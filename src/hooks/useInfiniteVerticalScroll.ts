@@ -138,15 +138,17 @@
       let currentY = 0;
       let isDragging = false;
       let hasMoved = false;
-      const dragThreshold = 5;
+      // Drag threshold in pixels to prevent accidental drags from minor movements
+      const dragThreshold = 50;
 
       const onDragStart = (e: MouseEvent | TouchEvent) => {
+         console.log('[DRAG] mousedown fired', { menuId: menu.id });
         isDragging = true;
         hasMoved = false;
         if (e instanceof TouchEvent) {
           startY = -e.touches[0].clientY;
         } else {
-          e.preventDefault();
+          
           startY = -e.clientY;
           menu.classList.add("is-dragging");
           document.body.style.userSelect = "none";
@@ -156,7 +158,8 @@
 
       const onDragMove = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
-        console.log('wheelin')
+        console.log('[DRAG] mousemove fired', { isDragging, hasMoved });
+        console.log('dragging');
         if (e instanceof TouchEvent) {
           currentY = -e.touches[0].clientY;
         } else {

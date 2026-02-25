@@ -1,9 +1,10 @@
 import { Filters } from "./Filters";
 import { MostRelatedProduct } from "../MostRelatedProduct";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { SizeFilter } from "./Size/SizeFilter";
 import { products } from "@/lib/products";
 import { getAvailableSizesByCategory as getAvailableSizes } from "@/utils/filters/getAvailableSizes";
+import gsap from "gsap";
 
 interface AsideCategoriesFilterProps {
   categorySelected: string | null;
@@ -16,6 +17,19 @@ export const AsideCategoriesFilter = ({
   const [currentFilters, setCurrentFilters] = useState<React.ReactElement[]>(
     []
   );
+  const asideRef = useRef<HTMLElement>(null);
+
+  // Initialize aside state on mount
+  useEffect(() => {
+    if (asideRef.current) {
+      gsap.set(asideRef.current, {
+        opacity: 0,
+        x: 50,
+        zIndex: -10,
+        pointerEvents: "none",
+      });
+    }
+  }, []);
 
   useEffect(() => {
   
@@ -73,14 +87,12 @@ export const AsideCategoriesFilter = ({
 
   return (
     <aside
-      className={`aside-filters fixed -z-10 opacity-0 w-[70%] select-none  inset-y-0 h-screen right-0 left-auto flex items-center justify-center 
-        ${
-        // categorySelected
-        //   ? "z-10 pointer-events-auto"
-        //   : "z-0 pointer-events-none"
-        "-z-10 pointer-events-none"}
-      `}
+      ref={asideRef}
+      className="aside-filters fixed w-[70%] select-none inset-y-0 h-screen right-0 left-auto flex items-center justify-center"
     >
+      <div className="bg-amber-200 text-4xl">
+        holaaaaa
+      </div>
       {/* parte donde se muestren los filtrados y el most-related product. */}
       {categorySelected && (
         <div className="flex items-start h-max justify-start w-full max-w-4xl p-8 pointer-events-auto gap-8">
