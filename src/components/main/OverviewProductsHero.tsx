@@ -16,10 +16,7 @@ interface OverviewProductsHeroProps {
 
 export const OverviewProductsHero = ({
   products,
-}: OverviewProductsHeroProps) => {
-  const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
-  const mainElementRef = useRef<HTMLElement | null>(null);
-  const { showCategories } = useCategoriesStore();
+}: OverviewProductsHeroProps) => {  
 
   useEffect(() => {
     const fetchUserMetadata = async () => {

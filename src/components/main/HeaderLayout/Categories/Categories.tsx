@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { CloseButtonSVG } from "@/components/reusable/svgs/CloseButtonSVG";
@@ -8,12 +8,13 @@ import { InfiniteScrollCategories } from "./InfiniteScrollCategories";
 import { SplitText } from "gsap/all";
 import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
 import { useCategoriesStore } from "@/store/categorySection";
-import { ProductCategory } from "@/schema";
 import { getParentCategories } from "@/utils/filters";
 
 interface CategoriesProps {
   showCategories?: boolean;
   setShowCategories?: ( showCategories: boolean ) => void;
+  isAnimating: boolean;
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 gsap.registerPlugin(useGSAP, SplitText);
@@ -27,49 +28,66 @@ const initImagesPositions = [
   { id: "image6", top: "55%", left: "74%" },
 ];
 
+// Strict state machine for animation flow
+export type CategoryPhase = "PARENTS" | "TO_SUB" | "SUBCATEGORIES" | "TO_PARENTS";
+
 export const Categories = ({
   setShowCategories,
   showCategories,
+  isAnimating,
+  setIsAnimating
 }: CategoriesProps) => {
   const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
+  const [phase, setPhase] = useState<CategoryPhase>("PARENTS");
   const { parentCategories, setParentCategories, setIsLoadingCategories } = useCategoriesStore();
-  const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
   useGSAP(() => {
-    let tl = gsap.timeline();
+    const section = document.querySelector(".categories-section");
+    if (!section) return;
 
     const splittedText = SplitText.create(".individual-category", {
       type: "lines",
     });
 
     if (showCategories) {
-      tl.to(
-        ".categories-section",
-        { height: "100vh", duration: 0.5, ease: "power2.out" },
-        0
-      );
-
-      tl.from(
-        splittedText.lines,
-        {
-          opacity: 1,
-          y: 100,
-          stagger: 0.05,
-          duration: 0.5,
-          ease: "power2.out",
-        },
-        0.3
-      );
+      gsap.timeline()
+        .set(section, {
+          display: "flex",
+        })
+        .to(
+          section,
+          {
+            clipPath: "inset(0% 0% 0% 0%)",
+            duration: 0.5,
+            ease: "power2.out",
+          },
+          0
+        )
+        .from(
+          splittedText.lines,
+          {
+            opacity: 1,
+            y: 100,
+            stagger: 0.05,
+            duration: 0.5,
+            ease: "power2.out",
+          },
+          0.3
+        );
     } else {
-      tl.to(
-        ".categories-section",
-        {
-          height: "0vh",
-          duration: 0.5,
-          ease: "power2.in",
-        },
-        0
-      );
+      gsap.timeline()
+        .to(
+          section,
+          {
+            clipPath: "inset(100% 0% 0% 0%)",
+            duration: 0.5,
+            ease: "power2.in",
+          },
+          0
+        )
+        .set(section, {
+          display: "none",
+        });
     }
   }, [showCategories]);
 
@@ -156,21 +174,27 @@ export const Categories = ({
 
   return (
     <section
-      className="categories-section cursor-auto fixed inset-0 z-50 w-full bg-off-white flex flex-col items-center justify-center overflow-hidden"
+      className="categories-section cursor-auto fixed inset-0 z-50 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
       style={{ 
-        height: "0vh",
-        zIndex: 9999,
+        display: "none",
+        clipPath: "inset(100% 0% 0% 0%)",
+        // zIndex: 10,
         isolation: 'isolate',
       }}
     >
       <InfiniteScrollCategories
         isAnimating={isAnimating}
         setIsAnimating={setIsAnimating}
+        showCategories={showCategories}
+        phase={phase}
+        setPhase={setPhase}
       />
       {/* boton de cerrar el section */}
       <button
-        className=" absolute top-[10%] right-[10%] z-50 cursor-pointer "
+        className="close-categories-button absolute top-[10%] right-[10%] z-50 cursor-pointer "
         onClick={() => {
+          // setting showCategories to false is handled in the parent component (HeaderLayout) through the setShowCategories prop, so we just need to call it here.
+          setPhase("PARENTS");
           setShowCategories && setShowCategories(false);
           setExitImagesByCategory(true);
           setIsAnimating(false);

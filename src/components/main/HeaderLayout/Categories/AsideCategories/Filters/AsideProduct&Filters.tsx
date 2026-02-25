@@ -73,11 +73,13 @@ export const AsideCategoriesFilter = ({
 
   return (
     <aside
-      className={`aside-filters fixed -z-10 opacity-0 w-[70%] select-none  inset-y-0 h-screen right-0 left-auto flex items-center justify-center ${
-        categorySelected
-          ? "z-10 pointer-events-auto"
-          : "z-0 pointer-events-none"
-      }`}
+      className={`aside-filters fixed -z-10 opacity-0 w-[70%] select-none  inset-y-0 h-screen right-0 left-auto flex items-center justify-center 
+        ${
+        // categorySelected
+        //   ? "z-10 pointer-events-auto"
+        //   : "z-0 pointer-events-none"
+        "-z-10 pointer-events-none"}
+      `}
     >
       {/* parte donde se muestren los filtrados y el most-related product. */}
       {categorySelected && (
