@@ -37,7 +37,8 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating, showCate
   const [categorySelected, setCategorySelected] = useState<Categories | null>(null);
   const [subcategories, setSubcategories] = useState<Categories[]>([]);
   const { parentCategories } = useCategoriesStore();
-  
+  const activeTimelineRef = useRef<gsap.core.Timeline | null>(null);
+
   // URL navigation
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -137,12 +138,6 @@ useEffect(() => {
   // Fetch subcategories when transitioning to subcategories
   useEffect(() => {
     const fetchSubcategories = async () => {
-
-// if (
-//   categorySelected &&
-//   (phase === "TO_SUB" || phase === "SUBCATEGORIES")
-// ) {
-
       if (categorySelected && (phase !== 'PARENTS' && phase !== 'TO_PARENTS')) {
         try {
           const fetchedSubcategories = await getSubcategoriesByParentId(categorySelected.id);
@@ -168,6 +163,7 @@ useEffect(() => {
 
 
   useEffect(() => {
+    console.log({phase})
   if (phase === "SUBCATEGORIES") {
     setTimeout(() => {
       console.log('[INIT] Subcategories layout complete');
@@ -177,17 +173,56 @@ useEffect(() => {
 
   // Parent exit animation (TO_SUB phase)
   useEffect(() => {
-    if (phase === "TO_SUB" && subcategories.length > 0 && parentsMenuRef.current) {
+    // if (phase === "TO_SUB" && subcategories.length > 0 && parentsMenuRef.current) {
+    if (phase === "TO_SUB" && parentsMenuRef.current) {
       // Revert previous SplitText if exists
       if (parentsSplitRef.current) {
         parentsSplitRef.current.revert();
         parentsSplitRef.current = null;
       }
 
+      gsap.to(".back-button", {
+        pointerEvents: "none",
+      });
+
       const tl = gsap.timeline({
         onComplete: () => {
           setPhase("SUBCATEGORIES");
+          gsap.to(".back-button", {
+        pointerEvents: "auto",
+      });
         },
+        onUpdate: () => {
+          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
+          const progress = tl.progress();
+          if(progress > 0.01 && progress < 0.7) {
+            gsap.to(".blurred", {
+              x: () => 400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+          }else if(progress > 0.7) {
+             gsap.to(".blurred", {
+              x: () => -2 * progress,
+              filter: () => `blur(${120 - progress * 10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -40 * progress,
+              filter: () => `blur(${120 - progress * -10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+          }
+      }
       });
 
       // SplitText exit animation for parents
@@ -223,7 +258,8 @@ useEffect(() => {
         ease: "power2.out",
       }, 0.4);
     }
-  }, [phase, subcategories]);
+  // }, [phase, subcategories]);
+  }, [phase, setPhase]);
 
   // Subcategory entry animation (SUBCATEGORIES phase)
   useEffect(() => {
@@ -321,10 +357,50 @@ useEffect(() => {
         subSplitRef.current = null;
       }
 
+      gsap.to(".back-button", {
+        pointerEvents: "none",
+        opacity: 0.3,
+      });
+
       const tl = gsap.timeline({
         onComplete: () => {
           setPhase("ALL_FILTERS");
+          gsap.to(".back-button", {
+          pointerEvents: "auto",
+          opacity: 1,
+        });
         },
+        onUpdate: () => {
+          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
+          const progress = tl.progress();
+          if(progress > 0.1 && progress < 0.7) {
+            gsap.to(".blurred", {
+              x: () => 400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+          }else if(progress > 0.7) {
+             gsap.to(".blurred", {
+              x: () => -2 * progress,
+              filter: () => `blur(${120 - progress * 10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -40 * progress,
+              filter: () => `blur(${120 - progress * -10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+          }
+      }
       });
 
       // SplitText exit animation for subcategories
@@ -349,6 +425,7 @@ useEffect(() => {
         pointerEvents: "none",
         duration: 0.1,
       }, 0.4);
+
     }else if(phase !== "ALL_FILTERS" && subMenuRef.current) {
       //Ensure categories are hidden when not in transition to filters
       gsap.set(parentsMenuRef.current, {
@@ -381,7 +458,7 @@ useEffect(() => {
       pointerEvents: "none",
     });
 
-      gsap.timeline()
+      const tl = gsap.timeline()
         .to(asideElement, {
           opacity: 1,
           x: 0,
@@ -409,11 +486,52 @@ useEffect(() => {
   useEffect(() => {
     const asideElement = document.querySelector(".aside-filters");
     if (phase === "TO_SUBCATEGORIES" && asideElement && subMenuRef.current) {
+
+      gsap.to(".back-button", {
+        pointerEvents: "none",
+        opacity: 0.3,
+      });
+
       const tl = gsap.timeline({
         onComplete: () => {
           setPhase("SUBCATEGORIES");
           setIsAnimating(false);
+          gsap.to(".back-button", {
+          pointerEvents: "auto",
+          opacity: 1,
+        });
         },
+        onUpdate: () => {
+          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
+          const progress = tl.progress();
+          if(progress > 0.1 && progress < 0.7) {
+            gsap.to(".blurred", {
+              x: () => 400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+          }else if(progress > 0.7) {
+             gsap.to(".blurred", {
+              x: () => -2 * progress,
+              filter: () => `blur(${120 - progress * 10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -40 * progress,
+              filter: () => `blur(${120 - progress * -10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+          }
+      }
       });
 
       // Animate aside out
@@ -467,13 +585,53 @@ useEffect(() => {
         subSplitRef.current = null;
       }
 
+      gsap.to(".back-button", {
+        pointerEvents: "none",
+        opacity: 0.3,
+      });
+
       const tl = gsap.timeline({
         onComplete: () => {
           setSubcategories([]);
           setCategorySelected(null);
           setPhase("PARENTS");
           setIsAnimating(false);
+          gsap.to(".back-button", {
+          pointerEvents: "none",
+          opacity: 0,
+        });
         },
+        onUpdate: () => {
+          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
+          const progress = tl.progress();
+          if(progress > 0.1 && progress < 0.7) {
+            gsap.to(".blurred", {
+              x: () => 400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -400 * progress,
+              filter: () => `blur(${120 - progress * 100}px)`,
+              // duration: 1.5,
+              ease: "power3.out",
+            });
+          }else if(progress > 0.7) {
+             gsap.to(".blurred", {
+              x: () => -2 * progress,
+              filter: () => `blur(${120 - progress * 10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+            gsap.to(".blurred-2", {
+              x: () => -40 * progress,
+              filter: () => `blur(${120 - progress * -10}px)`,
+              // duration: 1.5,
+              ease: "power3.in",
+            });
+          }
+      }
       });
 
       // SplitText exit animation for subcategories
@@ -565,33 +723,6 @@ useEffect(() => {
     }
   }, [phase, categorySelected]);
 
-
-
-  // Setting up the current filters in the aside based on the selected category and subcategory. This effect runs whenever the selected category changes, ensuring that the filters are always in sync with the user's selection.
-//   useEffect(() => {
-//     console.log('prueba con searchparams cambiando')
-//   if (!showCategories) return; // 🔥 CRÍTICO
-//     console.log('estamos dentro')
-//   const category = searchParams.get("category");
-//   const subcategory = searchParams.get("subcategory");
-
-//   let targetPhase: CategoryPhase;
-
-//   if (!category) {
-//     targetPhase = "PARENTS";
-//   } else if (category && !subcategory) {
-//     targetPhase = "SUBCATEGORIES";
-//   } else {
-//     targetPhase = "ALL_FILTERS";
-//   }
-
-//   // No interrumpir transiciones
-//   if (phase.startsWith("TO_")) return;
-
-//   if (phase !== targetPhase) {
-//     setPhase(targetPhase);
-//   }
-// }, [searchParams, showCategories]);
 
   useEffect(() => {
   const category = searchParams.get("category");

@@ -81,7 +81,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <Breadcrumb className="absolute bottom-12 left-12">
+    <Breadcrumb className="absolute bottom-12 left-12 z-30">
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={item.href}>

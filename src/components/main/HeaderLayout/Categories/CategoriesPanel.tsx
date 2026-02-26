@@ -10,6 +10,8 @@ import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
 import { useCategoriesStore } from "@/store/categorySection";
 import { getParentCategories } from "@/utils/filters";
 import { Breadcrumbs } from "./Breadcrumbs/Breadcrumbs";
+import { BlurEffect } from "@/components/reusable/svgs/BlurEffect";
+import { BlurEffect2 } from "@/components/reusable/svgs/BlurEffect2";
 
 
 gsap.registerPlugin(useGSAP, SplitText);
@@ -190,6 +192,25 @@ export const CategoriesPanel = () => {
     };
   }, [showCategories, setShowCategories, setExitImagesByCategory, setIsAnimating]);
 
+  // useEffect(() => {
+  //   // we are going to add animation to the UI, to be more consistent when the user clicks on an individual item.
+  //   if (isAnimating) {
+  //     gsap.to(".blurred", {
+  //       x: 100,
+  //       filter: "blur(50px)",
+  //       duration: 1.5,
+  //       ease: "power3.out",
+  //     });
+  //   } else {
+  //     gsap.to(".blurred", {
+  //       x: -100,
+  //       filter: "blur(100px)",
+  //       duration: 1.5,
+  //       ease: "power3.in",
+  //     });
+  //   }
+  // }, [isAnimating])
+
   return (
     <section
       className="categories-section cursor-auto fixed inset-0 z-50 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
@@ -239,7 +260,9 @@ export const CategoriesPanel = () => {
       </div>
       {/* Breadcrumbs */}
         <Breadcrumbs/>
-
+      {/* blur effect when loading */}
+      <BlurEffect/> 
+      <BlurEffect2/> 
     </section>
   );
 };
