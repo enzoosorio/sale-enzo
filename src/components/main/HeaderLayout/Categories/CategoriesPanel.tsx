@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { CloseButtonSVG } from "@/components/reusable/svgs/CloseButtonSVG";
+import { CloseButtonSVG, CloseButtonSVGAux, CloseButtonSVGOpen } from "@/components/reusable/svgs/CloseOpenSVG";
 import { InfiniteScrollCategories } from "./InfiniteScrollCategories";
 import { SplitText } from "gsap/all";
 import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
@@ -192,25 +192,6 @@ export const CategoriesPanel = () => {
     };
   }, [showCategories, setShowCategories, setExitImagesByCategory, setIsAnimating]);
 
-  // useEffect(() => {
-  //   // we are going to add animation to the UI, to be more consistent when the user clicks on an individual item.
-  //   if (isAnimating) {
-  //     gsap.to(".blurred", {
-  //       x: 100,
-  //       filter: "blur(50px)",
-  //       duration: 1.5,
-  //       ease: "power3.out",
-  //     });
-  //   } else {
-  //     gsap.to(".blurred", {
-  //       x: -100,
-  //       filter: "blur(100px)",
-  //       duration: 1.5,
-  //       ease: "power3.in",
-  //     });
-  //   }
-  // }, [isAnimating])
-
   return (
     <section
       className="categories-section cursor-auto fixed inset-0 z-50 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
@@ -230,15 +211,29 @@ export const CategoriesPanel = () => {
       />
       {/* boton de cerrar el section */}
       <button
-        className="close-categories-button absolute top-[10%] right-[10%] z-50 cursor-pointer "
+        className={`w-12 h-12 close-categories-button border-[0.5px] p-3.5 border-black flex items-center justify-center rounded-full 
+          absolute 
+          top-12 right-[10%] 
+          z-50 cursor-pointer `}
         onClick={() => {
           // setting showCategories to false is handled in the parent component (HeaderLayout) through the setShowCategories prop, so we just need to call it here.
+          
           setShowCategories && setShowCategories(false);
           setExitImagesByCategory(true);
           setIsAnimating(false);
+
+          if(phase === "SUBCATEGORIES" || phase === "ALL_FILTERS") {
+            // we must also navigate to /products with all the search params included.
+            const searchParams = new URLSearchParams(window.location.search);
+            const allSearchParams = searchParams.toString();
+            window.history.pushState({}, '', `/products?${allSearchParams}`);
+          }
+
         }}
       >
-        <CloseButtonSVG className="w-7 h-7 hover:rotate-90 transition-transform hover:scale-105" />
+        <CloseButtonSVG className="w-7 h-7 stroke hover:stroke-2 transition-transform hover:scale-105" />
+        <CloseButtonSVGOpen className="absolute top-0 left-0 w-7 h-7 pointer-events-none opacity-0" />
+        <CloseButtonSVGAux className="absolute top-0 left-0 w-7 h-7 pointer-events-none opacity-0" />
       </button>
 
       {/* div para mostrar las imagenes pertenecientes al actual individual category que se encuentra en hover. */}

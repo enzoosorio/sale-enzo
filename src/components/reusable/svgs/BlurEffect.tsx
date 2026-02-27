@@ -5,7 +5,7 @@ export const BlurEffect = () => {
       viewBox="0 0 1953 1293"
       fill="none"
       preserveAspectRatio="none"
-      className="blurred fixed -top-1/2 -left-1/3 w-1/2 h-[200vh] blur-[120px] -z-20"
+      className="blurred fixed -top-1/2 -left-[38%] w-1/2 h-[200vh] blur-[120px] -z-20"
     >
       <g id="Blur-effect"
       >

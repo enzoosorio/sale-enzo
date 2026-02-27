@@ -8,11 +8,11 @@ import { BreadcrumbItemCustomProps } from "./Breadcrumbs"
 
 export const BreadcrumbItemCustom = ({ href, label, svgIcon }: BreadcrumbItemCustomProps) => {
   return (
-    <BreadcrumbItem className="text-2xl font-prata hover:bg-orange-200/20 cursor-pointer rounded-sm transition-colors">
+    <BreadcrumbItem className="text-lg font-prata hover:bg-orange-200/20 cursor-pointer rounded-sm transition-colors">
           <BreadcrumbLink asChild>
             <Link href={href}>
             {label && (
-                <span className="flex items-center gap-1">{label}</span>
+                <span className="flex items-center gap-1 capitalize">{label}</span>
             )}
             {svgIcon && (
                svgIcon

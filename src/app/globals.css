@@ -247,15 +247,15 @@
 }
 
 .ellipses-skeleton{
-  animation: pulse-stroke-width 0.5s infinite alternate;
+  animation: pulse-strokeWidth 0.5s infinite alternate;
 }
 
-@keyframes pulse-stroke-width {
+@keyframes pulse-strokeWidth {
   0% {
-    stroke-width: 2;
+    strokeWidth: 2;
   }
   100% {
-    stroke-width: 5;
+    strokeWidth: 5;
   }
 }
 /* ============================

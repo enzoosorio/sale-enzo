@@ -1,10 +1,12 @@
-import { Filters } from "./Filters";
-import { MostRelatedProduct } from "../MostRelatedProduct";
+import { Filters } from "./Filters/Filters";
+import { MostRelatedProduct } from "./MostRelatedProduct";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { SizeFilter } from "./Size/SizeFilter";
+// import { SizeFilter } from "./Size/SizeFilter";
 import { products } from "@/lib/products";
 import { getAvailableSizesByCategory as getAvailableSizes } from "@/utils/filters/getAvailableSizes";
 import gsap from "gsap";
+import { SizeFilter } from "./Filters/Size/SizeFilter";
+import { PriceSlider } from "../Filters/PriceSlider";
 
 interface AsideCategoriesFilterProps {
   categorySelected: string | null;
@@ -93,6 +95,7 @@ export const AsideCategoriesFilter = ({
       <div className="bg-amber-200 text-4xl">
         holaaaaa
       </div>
+      <PriceSlider/>
       {/* parte donde se muestren los filtrados y el most-related product. */}
       {categorySelected && (
         <div className="flex items-start h-max justify-start w-full max-w-4xl p-8 pointer-events-auto gap-8">

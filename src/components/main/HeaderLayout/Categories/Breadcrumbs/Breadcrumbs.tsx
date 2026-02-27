@@ -38,7 +38,7 @@ export function Breadcrumbs() {
   const breadcrumbItems: BreadcrumbItemCustomProps[] = [];
 
   // Home (always present)
-  breadcrumbItems.push({ href: "/home",svgIcon: <MainLogo className="w-10"/>});
+  breadcrumbItems.push({ href: "/home",svgIcon: <MainLogo className="w-8"/>});
 
   // Category level
   if (category) {
@@ -81,7 +81,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <Breadcrumb className="absolute bottom-12 left-12 z-30">
+    <Breadcrumb className="absolute top-10 left-16 z-30">
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={item.href}>

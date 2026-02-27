@@ -1,10 +1,10 @@
 import gsap from "gsap";
 import React, { useEffect, useMemo, useRef, useState, useCallback} from "react";
-import { SplitText } from "gsap/all";
+import { MorphSVGPlugin, SplitText } from "gsap/all";
 import { Categories } from "@/types/products/old_category/categories";
 import { IndividualCategory } from "./IndividualCategory";
 import { BackButton } from "@/components/reusable/svgs/BackButton";
-import { AsideCategoriesFilter } from "./AsideCategories/Filters/AsideProduct&Filters";
+import { AsideCategoriesFilter } from "./AsideCategories/AsideProduct&Filters";
 import { useCategoriesStore } from "@/store/categorySection";
 import { ProductCategory } from "@/schema/categorySchema";
 import { getSubcategoriesByParentId } from "@/utils/filters";
@@ -13,6 +13,7 @@ import { CategoryPhase } from "./CategoriesPanel";
 import { useFiltersStore } from "@/store/filtersStore";
 import { useRouter, useSearchParams } from "next/navigation";
 
+gsap.registerPlugin(MorphSVGPlugin, SplitText);
 
 interface InfiniteScrollCategoriesProps {
   isAnimating: boolean;
@@ -37,7 +38,6 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating, showCate
   const [categorySelected, setCategorySelected] = useState<Categories | null>(null);
   const [subcategories, setSubcategories] = useState<Categories[]>([]);
   const { parentCategories } = useCategoriesStore();
-  const activeTimelineRef = useRef<gsap.core.Timeline | null>(null);
 
   // URL navigation
   const router = useRouter();
@@ -189,8 +189,12 @@ useEffect(() => {
         onComplete: () => {
           setPhase("SUBCATEGORIES");
           gsap.to(".back-button", {
-        pointerEvents: "auto",
-      });
+            pointerEvents: "auto",
+          });
+          gsap.to('#close-svg', {
+            // rotate: 260,
+            morphSVG:"#close-svg-open",
+          })
         },
         onUpdate: () => {
           // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
@@ -597,9 +601,13 @@ useEffect(() => {
           setPhase("PARENTS");
           setIsAnimating(false);
           gsap.to(".back-button", {
-          pointerEvents: "none",
-          opacity: 0,
-        });
+            pointerEvents: "none",
+            opacity: 0,
+          });
+          gsap.to('#close-svg', {
+            // rotate: -260,
+            morphSVG:"#close-svg-aux",
+          })
         },
         onUpdate: () => {
           // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
@@ -724,6 +732,7 @@ useEffect(() => {
   }, [phase, categorySelected]);
 
 
+  // Sync URL params with state on mount and when URL changes (handles direct navigation with params)
   useEffect(() => {
   const category = searchParams.get("category");
   const subcategory = searchParams.get("subcategory");
@@ -732,10 +741,19 @@ useEffect(() => {
 
   if (!category) {
     targetPhase = "PARENTS";
+    gsap.to('#close-svg', {
+      morphSVG:"#close-svg-aux",
+    })
   } else if (category && !subcategory) {
     targetPhase = "SUBCATEGORIES";
+      gsap.to('#close-svg', {
+        morphSVG:"#close-svg-open",
+      })
   } else {
     targetPhase = "ALL_FILTERS";
+    gsap.to('#close-svg', {
+        morphSVG:"#close-svg-open",
+      })
   }
 
   // No interferir con transiciones activas
