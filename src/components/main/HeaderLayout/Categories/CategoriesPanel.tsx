@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { CloseButtonSVG, CloseButtonSVGAux, CloseButtonSVGOpen } from "@/components/reusable/svgs/CloseOpenSVG";
+import { CloseButtonSVG, OpenButtonSVG } from "@/components/reusable/svgs/CloseOpenSVG";
 import { InfiniteScrollCategories } from "./InfiniteScrollCategories";
 import { SplitText } from "gsap/all";
 import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
@@ -12,6 +12,9 @@ import { getParentCategories } from "@/utils/filters";
 import { Breadcrumbs } from "./Breadcrumbs/Breadcrumbs";
 import { BlurEffect } from "@/components/reusable/svgs/BlurEffect";
 import { BlurEffect2 } from "@/components/reusable/svgs/BlurEffect2";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { BolitaEfectoClick } from "@/components/reusable/BolitaEfectoClick";
 
 
 gsap.registerPlugin(useGSAP, SplitText);
@@ -24,6 +27,8 @@ const initImagesPositions = [
   { id: "image5", top: "29%", left: "80%" },
   { id: "image6", top: "55%", left: "74%" },
 ];
+
+const OPEN_SVG_PATH_OFFSET = 47.94404602050781;
 
 // Strict state machine for animation flow
 export type CategoryPhase = 
@@ -40,6 +45,9 @@ export const CategoriesPanel = () => {
   const [phase, setPhase] = useState<CategoryPhase>("PARENTS");
   const { parentCategories, setParentCategories, setIsLoadingCategories, showCategories, setShowCategories } = useCategoriesStore();
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [linkToShopWSearch, setLinkToShopWSearch] = useState<string>("");
+
+  const searchParams = useSearchParams();
 
   useGSAP(() => {
     const section = document.querySelector(".categories-section");
@@ -107,8 +115,21 @@ export const CategoriesPanel = () => {
         setIsLoadingCategories(false);
       }
     };
+
+    const setDashArray = () => {
+      gsap.set("#close-svg-open", {
+        strokeDasharray: OPEN_SVG_PATH_OFFSET,
+        strokeDashoffset: OPEN_SVG_PATH_OFFSET,
+      });
+      gsap.set(".wrapper-dasharray", {
+        right: '6.75rem',
+        pointerEvents: 'none',
+        // opacity: 0,
+      });
+    }
     
     fetchCategories();  
+    setDashArray();
   }, [])
 
   // Bloquear scroll del body cuando las categorías están abiertas
@@ -192,6 +213,13 @@ export const CategoriesPanel = () => {
     };
   }, [showCategories, setShowCategories, setExitImagesByCategory, setIsAnimating]);
 
+  useEffect(() => {
+    const wholeSearch = searchParams.toString();
+    const link = wholeSearch ? `/shop?${wholeSearch}` : "/shop";
+    setLinkToShopWSearch(link);
+
+  }, [searchParams])
+
   return (
     <section
       className="categories-section cursor-auto fixed inset-0 z-50 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
@@ -208,34 +236,31 @@ export const CategoriesPanel = () => {
         showCategories={showCategories}
         phase={phase}
         setPhase={setPhase}
+        openSVGPathOffset={OPEN_SVG_PATH_OFFSET}
       />
-      {/* boton de cerrar el section */}
-      <button
-        className={`w-12 h-12 close-categories-button border-[0.5px] p-3.5 border-black flex items-center justify-center rounded-full 
-          absolute 
-          top-12 right-[10%] 
-          z-50 cursor-pointer `}
-        onClick={() => {
-          // setting showCategories to false is handled in the parent component (HeaderLayout) through the setShowCategories prop, so we just need to call it here.
-          
-          setShowCategories && setShowCategories(false);
-          setExitImagesByCategory(true);
-          setIsAnimating(false);
 
-          if(phase === "SUBCATEGORIES" || phase === "ALL_FILTERS") {
-            // we must also navigate to /products with all the search params included.
-            const searchParams = new URLSearchParams(window.location.search);
-            const allSearchParams = searchParams.toString();
-            window.history.pushState({}, '', `/products?${allSearchParams}`);
-          }
-
-        }}
-      >
-        <CloseButtonSVG className="w-7 h-7 stroke hover:stroke-2 transition-transform hover:scale-105" />
-        <CloseButtonSVGOpen className="absolute top-0 left-0 w-7 h-7 pointer-events-none opacity-0" />
-        <CloseButtonSVGAux className="absolute top-0 left-0 w-7 h-7 pointer-events-none opacity-0" />
-      </button>
-
+      {/* wrapper acciones estilo open - close */}
+      <div className="container-both-actions border w-16 h-16 border-black rounded-full z-50 absolute right-32 top-12 flex items-center justify-center">
+        {/* boton de cerrar el section */}
+        <button
+          className={` relative w-12 h-12 close-categories-button group p-2 flex items-center justify-center rounded-full cursor-pointer `}
+          onClick={() => {
+            // setting showCategories to false is handled in the parent component (HeaderLayout) through the setShowCategories prop, so we just need to call it here.
+            setShowCategories && setShowCategories(false);
+            setExitImagesByCategory(true);
+            setIsAnimating(false);
+          }}
+        >
+          <BolitaEfectoClick/>
+          <CloseButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
+        </button>
+        </div>
+        <div className="wrapper-dasharray z-50 absolute top-12 right-12 w-max h-16  flex items-center justify-center">
+            <Link href={linkToShopWSearch} className="relative group w-12 h-12 p-2 flex items-center justify-center rounded-full">
+              <BolitaEfectoClick/>
+              <OpenButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
+            </Link>
+        </div>
       {/* div para mostrar las imagenes pertenecientes al actual individual category que se encuentra en hover. */}
       <div className="images-wrapper fixed inset-0 z-10 select-none pointer-events-none bg-amber-0 w-full h-screen">
         {imagesByCategory.map((image, index) => (

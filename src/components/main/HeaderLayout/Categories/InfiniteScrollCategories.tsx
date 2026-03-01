@@ -21,9 +21,10 @@ interface InfiniteScrollCategoriesProps {
   showCategories?: boolean;
   phase: CategoryPhase;
   setPhase: React.Dispatch<React.SetStateAction<CategoryPhase>>;
+  openSVGPathOffset: number;
 }
 
-export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating, showCategories, phase, setPhase }: InfiniteScrollCategoriesProps) => {
+export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating, showCategories, phase, setPhase, openSVGPathOffset   }: InfiniteScrollCategoriesProps) => {
   // Dual refs for two separate lists (both always mounted)
   const parentsMenuRef = useRef<HTMLUListElement>(null);
   const subMenuRef = useRef<HTMLUListElement>(null);
@@ -190,11 +191,7 @@ useEffect(() => {
           setPhase("SUBCATEGORIES");
           gsap.to(".back-button", {
             pointerEvents: "auto",
-          });
-          gsap.to('#close-svg', {
-            // rotate: 260,
-            morphSVG:"#close-svg-open",
-          })
+          });          
         },
         onUpdate: () => {
           // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
@@ -594,6 +591,7 @@ useEffect(() => {
         opacity: 0.3,
       });
 
+
       const tl = gsap.timeline({
         onComplete: () => {
           setSubcategories([]);
@@ -604,10 +602,6 @@ useEffect(() => {
             pointerEvents: "none",
             opacity: 0,
           });
-          gsap.to('#close-svg', {
-            // rotate: -260,
-            morphSVG:"#close-svg-aux",
-          })
         },
         onUpdate: () => {
           // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
@@ -741,19 +735,80 @@ useEffect(() => {
 
   if (!category) {
     targetPhase = "PARENTS";
-    gsap.to('#close-svg', {
-      morphSVG:"#close-svg-aux",
-    })
+    const tl = gsap.timeline();
+    tl.to("#close-svg-open", {
+      strokeDashoffset: openSVGPathOffset,
+      duration: 0.6,
+      ease: "power2.in",
+    }, 0);
+    tl.to(".bolita-efecto-click", {
+      opacity: 0,
+      ease: "power2.in",
+    }, 0);
+    tl.to('.wrapper-dasharray', {
+      x: '0rem',
+      pointerEvents: 'none',
+    }, 0.45)
+    tl.to('.container-both-actions', {
+       width: '4rem',
+       x: '0rem',
+       ease: "power2.out",
+     }, 0.5);
+     tl.to('.close-categories-button', {
+       x: '0rem',
+       ease: "power2.out",
+     }, 0.55  );
   } else if (category && !subcategory) {
     targetPhase = "SUBCATEGORIES";
-      gsap.to('#close-svg', {
-        morphSVG:"#close-svg-open",
-      })
+    const tl = gsap.timeline();
+    tl.to('.container-both-actions', {
+        width: '10rem',
+        x: '4rem',
+        ease: "power2.out",
+      }, 0);
+      tl.to('.close-categories-button', {
+        x: '-2rem',
+        ease: "power2.out",
+      }, 0);
+      tl.to(".bolita-efecto-click", {
+      opacity: 1,
+      ease: "power2.in",
+    }, 0.3);
+    tl.to("#close-svg-open", {
+      strokeDashoffset: 0,
+      duration: 0.8,
+      ease: "power2.out",
+    }, 0.3);
+    tl.to('.wrapper-dasharray', {
+      x: '1.5rem',
+      pointerEvents: 'auto',
+    }, 0.3)
   } else {
     targetPhase = "ALL_FILTERS";
-    gsap.to('#close-svg', {
-        morphSVG:"#close-svg-open",
-      })
+    const tl = gsap.timeline();
+
+    tl.to('.container-both-actions', {
+        width: '10rem',
+        x: '4rem',
+        ease: "power2.out",
+      }, 0);
+      tl.to('.close-categories-button', {
+        x: '-2rem',
+        ease: "power2.out",
+      }, 0);
+       tl.to(".bolita-efecto-click", {
+      opacity: 1,
+      ease: "power2.in",
+    }, 0.3);
+    tl.to("#close-svg-open", {
+      strokeDashoffset: 0,
+      duration: 0.8,
+      ease: "power2.out",
+    }, 0.3);
+    tl.to('.wrapper-dasharray', {
+      x: '1.5rem',
+      pointerEvents: 'auto',
+    }, 0.4)
   }
 
   // No interferir con transiciones activas
