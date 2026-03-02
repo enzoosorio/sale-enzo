@@ -8,6 +8,7 @@ import { LogoutButton } from "./LogoutButton"
 import { MainLogo } from "@/components/reusable/svgs/MainLogo"
 import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
+import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations"
 
 interface HeaderBarProps {
     userId? : string | null;
@@ -45,7 +46,8 @@ export const HeaderBar = async ({ userId }: HeaderBarProps) => {
             {/* customed mobile logo */}
             <MobileMainLogo/>
             <Link className="w-max h-max hidden md:block" href={'/home'}>
-                <MainLogo className="w-12"/>
+                {/* <MainLogo className="w-12"/> */}
+                <MainLogoAnimated className="w-12"/>
             </Link>
 
             {/* Desktop Actions - Hidden on mobile */}

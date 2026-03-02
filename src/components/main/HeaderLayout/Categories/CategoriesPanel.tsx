@@ -30,8 +30,9 @@ const initImagesPositions = [
 
 const OPEN_SVG_PATH_OFFSET = 47.94404602050781;
 
-// Strict state machine for animation flow
-export type CategoryPhase = 
+
+  // Strict state machine for animation flow
+  export type CategoryPhase = 
 "PARENTS" |
 "TO_SUB" | 
 "SUBCATEGORIES" | 
@@ -122,7 +123,7 @@ export const CategoriesPanel = () => {
         strokeDashoffset: OPEN_SVG_PATH_OFFSET,
       });
       gsap.set(".wrapper-dasharray", {
-        right: '6.75rem',
+        right: `9.8rem`,
         pointerEvents: 'none',
         // opacity: 0,
       });
@@ -240,7 +241,11 @@ export const CategoriesPanel = () => {
       />
 
       {/* wrapper acciones estilo open - close */}
-      <div className="container-both-actions border w-16 h-16 border-black rounded-full z-50 absolute right-32 top-12 flex items-center justify-center">
+      {/* RIGHT DE ACA MANDA LA POSICION DEL CONTAINER */}
+      <div className={`container-both-actions border
+        w-16 h-16 border-black rounded-full 
+        z-50 absolute right-44 top-12 flex 
+        items-center justify-center`}>
         {/* boton de cerrar el section */}
         <button
           className={` relative w-12 h-12 close-categories-button group p-2 flex items-center justify-center rounded-full cursor-pointer `}
@@ -255,7 +260,10 @@ export const CategoriesPanel = () => {
           <CloseButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
         </button>
         </div>
-        <div className="wrapper-dasharray z-50 absolute top-12 right-12 w-max h-16  flex items-center justify-center">
+        {/* RIGHT DE ACA MANDA LA POSICION DE LA FLECHA INICIAL (EL MOVIMIENTO ANIMADO ES UN "IDA Y VUELTA") */}
+        <div className={`wrapper-dasharray z-50 absolute 
+          top-12 right-20 w-max h-16 
+          flex items-center justify-center`}>
             <Link href={linkToShopWSearch} className="relative group w-12 h-12 p-2 flex items-center justify-center rounded-full">
               <BolitaEfectoClick/>
               <OpenButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />

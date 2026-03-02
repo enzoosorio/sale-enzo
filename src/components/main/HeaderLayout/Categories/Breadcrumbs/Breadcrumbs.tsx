@@ -11,6 +11,7 @@ import { buildSearchParams } from "@/utils/filters/urlFilters";
 import React from "react";
 import { Logo } from "@/components/reusable/svgs/Logo";
 import { MainLogo } from "@/components/reusable/svgs/MainLogo";
+import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
 
 export interface BreadcrumbItemCustomProps {
   href: string;
@@ -38,7 +39,7 @@ export function Breadcrumbs() {
   const breadcrumbItems: BreadcrumbItemCustomProps[] = [];
 
   // Home (always present)
-  breadcrumbItems.push({ href: "/home",svgIcon: <MainLogo className="w-8"/>});
+  breadcrumbItems.push({ href: "/home",svgIcon: <MainLogoAnimated className="w-8"/>});
 
   // Category level
   if (category) {
