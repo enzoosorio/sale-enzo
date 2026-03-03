@@ -1,35 +1,37 @@
-    import { useEffect } from "react";
-    import gsap from "gsap";
+import { useEffect } from "react";
+import gsap from "gsap";
 
-    interface InfiniteScrollOptions {
-    menuRef: React.RefObject<HTMLUListElement | null>;
-    itemsRef: React.RefObject<(HTMLLIElement | null)[]>;
-    itemCount: number;
-    speedDrag: number;
-    isActive?: boolean; // Control whether this scroll system is active
-    }
+interface InfiniteScrollOptions {
+  menuRef: React.RefObject<HTMLUListElement | null>;
+  itemsRef: React.RefObject<(HTMLLIElement | null)[]>;
+  itemCount: number;
+  speedDrag: number;
+  isActive?: boolean; // Control whether this scroll system is active
+}
 
-    /**
-     * Custom hook for infinite vertical scroll with drag and wheel support
-     * Handles positioning, wrapping, and smooth animations for menu items
-     */
-    export function useInfiniteVerticalScroll({
-    menuRef,
-    itemsRef,
-    itemCount,
-    speedDrag,
-    isActive = true,
-    }: InfiniteScrollOptions) {
-    useEffect(() => {
-        if (!menuRef.current || itemCount === 0 || !isActive) return;
+/**
+ * Custom hook for infinite vertical scroll with drag and wheel support
+ * Handles positioning, wrapping, and smooth animations for menu items
+ */
+export function useInfiniteVerticalScroll({
+  menuRef,
+  itemsRef,
+  itemCount,
+  speedDrag,
+  isActive = true,
+}: InfiniteScrollOptions) {
+  useEffect(() => {
+    if (!menuRef.current || itemCount === 0 || !isActive) return;
 
-        const menu = menuRef.current;
-        const items = itemsRef.current.filter((item): item is HTMLLIElement => item !== null);
-        let waitFrameId: number | null = null;
+    const menu = menuRef.current;
+    const items = itemsRef.current.filter(
+      (item): item is HTMLLIElement => item !== null,
+    );
+    let waitFrameId: number | null = null;
 
-        let animationId: number | null = null;
-        let isInitialized = false;
-        
+    let animationId: number | null = null;
+    let isInitialized = false;
+
     // Recursive wait loop until layout is stable
     const waitForLayout = () => {
       const menuRect = menu.getBoundingClientRect();
@@ -37,14 +39,14 @@
       const firstItemHeight = items[0]?.offsetHeight || 0;
 
       // Check all conditions for stable layout
-      const isLayoutReady = 
-        menuHeight > 0 && 
-        menuRect.width > 0 && 
-        items.length === itemCount && 
+      const isLayoutReady =
+        menuHeight > 0 &&
+        menuRect.width > 0 &&
+        items.length === itemCount &&
         firstItemHeight > 0;
 
       if (!isLayoutReady) {
-        console.log('[useInfiniteVerticalScroll] Waiting for layout...', {
+        console.log("[useInfiniteVerticalScroll] Waiting for layout...", {
           menuHeight,
           menuWidth: menuRect.width,
           itemsLength: items.length,
@@ -56,32 +58,32 @@
       }
 
       // Layout is stable, proceed with initialization
-      console.log('[useInfiniteVerticalScroll] Layout ready, initializing...', {
+      console.log("[useInfiniteVerticalScroll] Layout ready, initializing...", {
         menuHeight,
         itemHeight: firstItemHeight,
         itemCount: items.length,
       });
-      
+
       initializeScroll();
     };
 
     if (items.length === 0 || items.length !== itemCount) {
-        waitFrameId = requestAnimationFrame(waitForLayout);
-        return;
-        }
+      waitFrameId = requestAnimationFrame(waitForLayout);
+      return;
+    }
 
     const initializeScroll = () => {
       // Force layout calculation
-      items.forEach(item => item.getBoundingClientRect());
+      items.forEach((item) => item.getBoundingClientRect());
 
       // Dynamically measure item height from first item
       const itemHeight = items[0]?.offsetHeight || 140;
-      
+
       // Use menu height instead of window height
       const containerHeight = menu.offsetHeight;
       const totalMenuHeight = itemHeight * items.length;
 
-      console.log('[useInfiniteVerticalScroll] Initialized with:', {
+      console.log("[useInfiniteVerticalScroll] Initialized with:", {
         itemHeight,
         containerHeight,
         totalMenuHeight,
@@ -105,7 +107,7 @@
             const wrappedY = gsap.utils.wrap(
               -itemHeight * 0.5,
               totalMenuHeight - itemHeight * 0.5,
-              baseY
+              baseY,
             );
             return wrappedY;
           },
@@ -114,7 +116,7 @@
             const wrappedY = gsap.utils.wrap(
               -itemHeight * 0.5,
               totalMenuHeight - itemHeight * 0.5,
-              baseY
+              baseY,
             );
             const isVisible =
               wrappedY >= -itemHeight &&
@@ -131,7 +133,7 @@
         e.stopPropagation();
         e.stopImmediatePropagation();
         currentScrollPosition += -e.deltaY;
-        console.log('wheelin')
+        console.log("wheelin");
       };
 
       let startY = 0;
@@ -142,13 +144,12 @@
       const dragThreshold = 50;
 
       const onDragStart = (e: MouseEvent | TouchEvent) => {
-         console.log('[DRAG] mousedown fired', { menuId: menu.id });
+        console.log("[DRAG] mousedown fired", { menuId: menu.id });
         isDragging = true;
         hasMoved = false;
         if (e instanceof TouchEvent) {
           startY = -e.touches[0].clientY;
         } else {
-          
           startY = -e.clientY;
           menu.classList.add("is-dragging");
           document.body.style.userSelect = "none";
@@ -158,8 +159,8 @@
 
       const onDragMove = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
-        console.log('[DRAG] mousemove fired', { isDragging, hasMoved });
-        console.log('dragging');
+        console.log("[DRAG] mousemove fired", { isDragging, hasMoved });
+        console.log("dragging");
         if (e instanceof TouchEvent) {
           currentY = -e.touches[0].clientY;
         } else {
@@ -206,10 +207,12 @@
         });
       };
 
+      // OJO: removi el passive: false de los event listeners porque no estamos llamando preventDefault en el onWheelScroll, solo stopPropagation. Esto permite que el scroll nativo siga funcionando dentro del menú, pero evita que el evento se propague al contenedor padre que maneja el infinite scroll.
+
       // Attach event listeners only when active
-      menu.addEventListener("wheel", onWheelScroll, { passive: false });
-      menu.addEventListener("mousedown", onDragStart, { passive: false });
-      menu.addEventListener("touchstart", onDragStart, { passive: false });
+      menu.addEventListener("wheel", onWheelScroll);
+      menu.addEventListener("mousedown", onDragStart);
+      menu.addEventListener("touchstart", onDragStart);
 
       menu.addEventListener(
         "touchmove",
@@ -220,10 +223,9 @@
             onDragMove(e);
           }
         },
-        { passive: false }
       );
 
-      window.addEventListener("mousemove", onDragMove, { passive: false });
+      window.addEventListener("mousemove", onDragMove);
       window.addEventListener("mouseup", onDragEnd);
       window.addEventListener("touchend", onDragEnd);
 
@@ -256,13 +258,13 @@
         cancelAnimationFrame(waitFrameId);
         waitFrameId = null;
       }
-      
+
       // Run stored cleanup
       if ((menu as any)._infiniteScrollCleanup) {
         (menu as any)._infiniteScrollCleanup();
         delete (menu as any)._infiniteScrollCleanup;
       }
-      
+
       // Final cleanup of animation frame
       if (animationId !== null) {
         cancelAnimationFrame(animationId);

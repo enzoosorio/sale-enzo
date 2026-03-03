@@ -7,6 +7,8 @@ import { getAvailableSizesByCategory as getAvailableSizes } from "@/utils/filter
 import gsap from "gsap";
 import { SizeFilter } from "./Filters/Size/SizeFilter";
 import { PriceSlider } from "../Filters/PriceSlider";
+import { OverviewProduct } from "@/components/main/filters/OverviewProduct";
+import { AllFiltersPanel } from "@/components/main/filters/AllFiltersPanel";
 
 interface AsideCategoriesFilterProps {
   categorySelected: string | null;
@@ -90,11 +92,10 @@ export const AsideCategoriesFilter = ({
   return (
     <aside
       ref={asideRef}
-      className="aside-filters fixed w-[70%] select-none inset-y-0 h-screen right-0 left-auto flex items-center justify-center"
+      className="aside-filters fixed h-[80%] w-screen max-w-screen bottom-0     flex items-center justify-center"
     >
-      <div className="bg-amber-200 text-4xl">
-        holaaaaa
-      </div>
+      <AllFiltersPanel/>
+      <OverviewProduct/>
       <PriceSlider/>
       {/* parte donde se muestren los filtrados y el most-related product. */}
       {categorySelected && (

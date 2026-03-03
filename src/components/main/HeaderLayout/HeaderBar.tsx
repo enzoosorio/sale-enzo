@@ -45,7 +45,7 @@ export const HeaderBar = async ({ userId }: HeaderBarProps) => {
             </ul>
             {/* customed mobile logo */}
             <MobileMainLogo/>
-            <Link className="w-max h-max hidden md:block" href={'/home'}>
+             <Link className="w-max h-max hidden md:block rounded-full" href={'/home'}>
                 {/* <MainLogo className="w-12"/> */}
                 <MainLogoAnimated className="w-12"/>
             </Link>

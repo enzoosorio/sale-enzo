@@ -12,6 +12,7 @@ import { useInfiniteVerticalScroll } from "@/hooks/useInfiniteVerticalScroll";
 import { CategoryPhase } from "./CategoriesPanel";
 import { useFiltersStore } from "@/store/filtersStore";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createBlurAnimation } from "@/utils/gsap/blur";
 
 gsap.registerPlugin(MorphSVGPlugin, SplitText);
 
@@ -186,6 +187,8 @@ useEffect(() => {
         pointerEvents: "none",
       });
 
+      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
+
       const tl = gsap.timeline({
         onComplete: () => {
           setPhase("SUBCATEGORIES");
@@ -194,35 +197,36 @@ useEffect(() => {
           });          
         },
         onUpdate: () => {
-          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
-          const progress = tl.progress();
-          if(progress > 0.01 && progress < 0.7) {
-            gsap.to(".blurred", {
-              x: () => 400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-          }else if(progress > 0.7) {
-             gsap.to(".blurred", {
-              x: () => -2 * progress,
-              filter: () => `blur(${120 - progress * 10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -40 * progress,
-              filter: () => `blur(${120 - progress * -10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-          }
+          // // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
+          // const progress = tl.progress();
+          // if(progress > 0.01 && progress < 0.7) {
+          //   gsap.to(".blurred", {
+          //     x: () => 400 * progress,
+          //     filter: () => `blur(${120 - progress * 100}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.out",
+          //   });
+          //   gsap.to(".blurred-2", {
+          //     x: () => -400 * progress,
+          //     filter: () => `blur(${120 - progress * 100}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.out",
+          //   });
+          // }else if(progress > 0.7) {
+          //    gsap.to(".blurred", {
+          //     x: () => -2 * progress,
+          //     filter: () => `blur(${120 - progress * 10}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.in",
+          //   });
+          //   gsap.to(".blurred-2", {
+          //     x: () => -40 * progress,
+          //     filter: () => `blur(${120 - progress * -10}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.in",
+          //   });
+          // }
+          animateBlurred(tl.progress());
       }
       });
 
@@ -363,44 +367,19 @@ useEffect(() => {
         opacity: 0.3,
       });
 
+      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
+
       const tl = gsap.timeline({
         onComplete: () => {
           setPhase("ALL_FILTERS");
           gsap.to(".back-button", {
           pointerEvents: "auto",
           opacity: 1,
+          left: '5%'
         });
         },
         onUpdate: () => {
-          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
-          const progress = tl.progress();
-          if(progress > 0.1 && progress < 0.7) {
-            gsap.to(".blurred", {
-              x: () => 400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-          }else if(progress > 0.7) {
-             gsap.to(".blurred", {
-              x: () => -2 * progress,
-              filter: () => `blur(${120 - progress * 10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -40 * progress,
-              filter: () => `blur(${120 - progress * -10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-          }
+          animateBlurred(tl.progress());
       }
       });
 
@@ -475,7 +454,7 @@ useEffect(() => {
       // Keep back button visible for returning to subcategories
       gsap.to(".back-button", {
         opacity: 1,
-        zIndex: 10,
+        zIndex: 70,
         pointerEvents: "auto",
         duration: 0.3,
         ease: "power2.out",
@@ -493,6 +472,8 @@ useEffect(() => {
         opacity: 0.3,
       });
 
+      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
+
       const tl = gsap.timeline({
         onComplete: () => {
           setPhase("SUBCATEGORIES");
@@ -500,38 +481,41 @@ useEffect(() => {
           gsap.to(".back-button", {
           pointerEvents: "auto",
           opacity: 1,
+          left: '25%'
         });
+
         },
         onUpdate: () => {
+          animateBlurred(tl.progress());
           // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
           const progress = tl.progress();
-          if(progress > 0.1 && progress < 0.7) {
-            gsap.to(".blurred", {
-              x: () => 400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-          }else if(progress > 0.7) {
-             gsap.to(".blurred", {
-              x: () => -2 * progress,
-              filter: () => `blur(${120 - progress * 10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -40 * progress,
-              filter: () => `blur(${120 - progress * -10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-          }
+          // if(progress > 0.1 && progress < 0.7) {
+          //   gsap.to(".blurred", {
+          //     x: () => 400 * progress,
+          //     filter: () => `blur(${120 - progress * 100}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.out",
+          //   });
+          //   gsap.to(".blurred-2", {
+          //     x: () => -400 * progress,
+          //     filter: () => `blur(${120 - progress * 100}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.out",
+          //   });
+          // }else if(progress > 0.7) {
+          //    gsap.to(".blurred", {
+          //     x: () => -2 * progress,
+          //     filter: () => `blur(${120 - progress * 10}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.in",
+          //   });
+          //   gsap.to(".blurred-2", {
+          //     x: () => -40 * progress,
+          //     filter: () => `blur(${120 - progress * -10}px)`,
+          //     // duration: 1.5,
+          //     ease: "power3.in",
+          //   });
+          // }
       }
       });
 
@@ -592,6 +576,7 @@ useEffect(() => {
       });
 
 
+      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
       const tl = gsap.timeline({
         onComplete: () => {
           setSubcategories([]);
@@ -604,35 +589,7 @@ useEffect(() => {
           });
         },
         onUpdate: () => {
-          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
-          const progress = tl.progress();
-          if(progress > 0.1 && progress < 0.7) {
-            gsap.to(".blurred", {
-              x: () => 400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -400 * progress,
-              filter: () => `blur(${120 - progress * 100}px)`,
-              // duration: 1.5,
-              ease: "power3.out",
-            });
-          }else if(progress > 0.7) {
-             gsap.to(".blurred", {
-              x: () => -2 * progress,
-              filter: () => `blur(${120 - progress * 10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-            gsap.to(".blurred-2", {
-              x: () => -40 * progress,
-              filter: () => `blur(${120 - progress * -10}px)`,
-              // duration: 1.5,
-              ease: "power3.in",
-            });
-          }
+          animateBlurred(tl.progress());
       }
       });
 
@@ -736,6 +693,20 @@ useEffect(() => {
   if (!category) {
     targetPhase = "PARENTS";
     const tl = gsap.timeline();
+
+    gsap.set('.back-button', {
+      left : "25%"
+    })
+
+    tl.to('.aside-filters', {
+        opacity: 0,
+        x: 50,
+        zIndex: -10,
+        pointerEvents: "none",
+        duration: 0.4,
+        ease: "power2.in",
+      }, 0);
+
     tl.to("#close-svg-open", {
       strokeDashoffset: openSVGPathOffset,
       duration: 0.6,
@@ -761,6 +732,19 @@ useEffect(() => {
   } else if (category && !subcategory) {
     targetPhase = "SUBCATEGORIES";
     const tl = gsap.timeline();
+
+    gsap.set('.back-button', {
+      left : "25%"
+    })
+
+    tl.to('.aside-filters', {
+        opacity: 0,
+        x: 50,
+        zIndex: -10,
+        pointerEvents: "none",
+        duration: 0.4,
+        ease: "power2.in",
+      }, 0);
     tl.to('.container-both-actions', {
         width: '10rem',
         x: '4rem',
@@ -787,6 +771,12 @@ useEffect(() => {
     targetPhase = "ALL_FILTERS";
     const tl = gsap.timeline();
 
+    gsap.set('.back-button', {
+      left : "5%",
+      zIndex: 70,
+      opacity: 1,
+      pointerEvents: "auto",
+    })
     tl.to('.container-both-actions', {
         width: '10rem',
         x: '4rem',
@@ -899,7 +889,7 @@ useEffect(() => {
         <BackButton className="w-10 rotate-180" />
       </button>
 
-    <div className="card-infinite-scroll  flex flex-col h-full items-center justify-center gap-12  px-4 lg:px-8 w-[95%] sm:w-6/12">
+    <div className="card-infinite-scroll relative flex flex-col h-full items-center justify-center gap-12  px-4 lg:px-8 w-[95%] sm:w-6/12">
       
       <div className="relative w-full pt-20 h-dvh rounded-2xl ">
         <div className="flechitas-container absolute right-[10%] top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-10">
@@ -974,9 +964,8 @@ useEffect(() => {
             </li>
           ))}
         </ul>
-        {/* Pass category from global filter store */}
-        <AsideCategoriesFilter categorySelected={category} />
       </div>
+        <AsideCategoriesFilter categorySelected={category}/>
     </div>
    </>
   );

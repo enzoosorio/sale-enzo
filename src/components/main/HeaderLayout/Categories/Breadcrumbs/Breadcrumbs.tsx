@@ -9,8 +9,6 @@ import {
 import { BreadcrumbItemCustom } from "./BreadcrumbItem";
 import { buildSearchParams } from "@/utils/filters/urlFilters";
 import React from "react";
-import { Logo } from "@/components/reusable/svgs/Logo";
-import { MainLogo } from "@/components/reusable/svgs/MainLogo";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
 
 export interface BreadcrumbItemCustomProps {
@@ -82,7 +80,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <Breadcrumb className="absolute top-10 left-16 z-30">
+    <Breadcrumb className="absolute top-14 left-16 z-20">
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={item.href}>
