@@ -444,12 +444,18 @@ useEffect(() => {
           x: 0,
           zIndex: 10,
           pointerEvents: "auto",
-          duration: 0.5,
+          duration: 0.25,
           ease: "power2.out",
           onComplete: () => {
             setIsAnimating(false);
           },
-        });
+        }, 0);
+        tl.to('.card-filters-panel', {
+          y: 0,
+          duration: 0.5,
+          ease: "power2.out",
+          stagger: 0.35,
+        }, '>');
 
       // Keep back button visible for returning to subcategories
       gsap.to(".back-button", {
@@ -520,6 +526,12 @@ useEffect(() => {
       });
 
       // Animate aside out
+      tl.to('.card-filters-panel', {
+        y: '100%',
+        duration: 0.25,
+        ease: "power2.in",
+        stagger: 0.25,
+      }, 0);
       tl.to(asideElement, {
         opacity: 0,
         x: 50,
@@ -527,7 +539,7 @@ useEffect(() => {
         pointerEvents: "none",
         duration: 0.4,
         ease: "power2.in",
-      }, 0);
+      }, "<0.2");
 
       // Show subcategories container
       tl.set(subMenuRef.current, {
@@ -698,6 +710,12 @@ useEffect(() => {
       left : "25%"
     })
 
+     tl.to('.card-filters-panel', {
+          y: '100%',
+          duration: 0.5,
+          ease: "power2.out",
+          stagger: 0.25,
+        }, 0);
     tl.to('.aside-filters', {
         opacity: 0,
         x: 50,
@@ -705,7 +723,7 @@ useEffect(() => {
         pointerEvents: "none",
         duration: 0.4,
         ease: "power2.in",
-      }, 0);
+      }, 0.1);
 
     tl.to("#close-svg-open", {
       strokeDashoffset: openSVGPathOffset,
@@ -737,6 +755,12 @@ useEffect(() => {
       left : "25%"
     })
 
+    tl.to('.card-filters-panel', {
+          y: '100%',
+          duration: 0.5,
+          ease: "power2.out",
+          stagger: 0.25,
+        }, 0);
     tl.to('.aside-filters', {
         opacity: 0,
         x: 50,

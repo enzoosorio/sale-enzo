@@ -2,9 +2,10 @@ import React, { useEffect, useRef } from 'react'
 
 interface CardFiltersPanelProps {
   children?: React.ReactNode;
+  className?: string;
 }
 
-export const CardFiltersPanel = ({ children }: CardFiltersPanelProps) => {
+export const CardFiltersPanel = ({ children, className }: CardFiltersPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export const CardFiltersPanel = ({ children }: CardFiltersPanelProps) => {
   return (
     <div 
       ref={panelRef}
-      className='card-filters-panel absolute overflow-y-auto z-60 left-[10%] bg-amber-200 w-[500px] h-[80vh] top-0'
+      className={`card-filters-panel translate-y-full overflow-y-auto z-60 bg-white border border-black/15 shadow-lg p-8 rounded-t-4xl w-[500px] h-[80vh] ${className || ''}`}
     >
       {children}
     </div>
