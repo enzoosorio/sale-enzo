@@ -362,3 +362,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+.min-max {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.min-max button:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}

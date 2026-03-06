@@ -30,7 +30,11 @@ export const CardFiltersPanel = ({ children, className }: CardFiltersPanelProps)
   return (
     <div 
       ref={panelRef}
-      className={`card-filters-panel translate-y-full overflow-y-auto z-60 bg-white border border-black/15 shadow-lg p-8 rounded-t-4xl w-[500px] h-[80vh] ${className || ''}`}
+      className={`card-filters-panel translate-y-full
+        overflow-y-auto z-60 bg-white border border-black/15 
+        shadow-lg p-8 rounded-t-4xl w-[500px] h-[80vh] ${className || ''}
+        flex flex-col items-start justify-start gap-10
+        `}
     >
       {children}
     </div>

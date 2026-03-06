@@ -11,8 +11,6 @@ export const createBlurAnimation = (
   const set2Filter = gsap.quickTo(selector2, "blur", {ease: "power3.out"});
 
   return (progress: number) => {
-
-    console.log({progress})
     if (progress > 0.1 && progress < 0.98) {
       set1X(400 * progress);
     //   set1Filter(`blur(${120 - progress * 100}px)`);
