@@ -33,13 +33,25 @@ interface CreateProductInput {
   subcategory: SubcategoryInput;
   is_active: boolean;
 
+  // Strict mode for bulk imports
+  // When true: ANY error (including tags) causes complete rollback
+  // When false: Tags are optional, continue on tag errors (default for manual creation)
+  strictMode?: boolean;
+
+  // Skip RAG generation (for synthetic/test data)
+  // When true: Skips expensive OpenAI embedding generation
+  // When false: Generates embeddings for production data (default)
+  skipRAG?: boolean;
+
   // Variants with nested items and images
   variants: Array<{
     size?: string;
     gender?: string;
     fit?: string;
-    // NOTE: main_img_url is NOT included in input
-    // Images are uploaded CLIENT-SIDE after variants are created
+    // NOTE: main_img_url is optional
+    // - If provided (bulk import with external URLs): Use directly
+    // - If not provided (manual product creation): Images uploaded CLIENT-SIDE after variant creation
+    main_img_url?: string;
     main_color_hex: string;
     metadata?: Record<string, string>; // Optional metadata for semantic search enrichment
     
@@ -113,26 +125,39 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       // Category exists - use the ID directly
       categoryId = input.category.id;
     } else {
-      // Category is new - create it
-      const { data: newCategory, error: categoryError } = await supabaseAdmin
+      // Check if category already exists by slug
+      const { data: existingCategory } = await supabaseAdmin
         .from("product_categories")
-        .insert({
-          name: input.category.name,
-          slug: input.category.slug,
-          parent_id: null // Root category
-        })
-        .select()
+        .select("id")
+        .eq("slug", input.category.slug)
+        .is("parent_id", null) // Ensure it's a root category
         .single();
 
-      if (categoryError || !newCategory) {
-        console.error("Error creating category:", categoryError);
-        return {
-          success: false,
-          error: `Failed to create category: ${categoryError?.message || "Unknown error"}`
-        };
-      }
+      if (existingCategory) {
+        // Use existing category
+        categoryId = existingCategory.id;
+      } else {
+        // Category doesn't exist - create it
+        const { data: newCategory, error: categoryError } = await supabaseAdmin
+          .from("product_categories")
+          .insert({
+            name: input.category.name,
+            slug: input.category.slug,
+            parent_id: null // Root category
+          })
+          .select()
+          .single();
 
-      categoryId = newCategory.id;
+        if (categoryError || !newCategory) {
+          console.error("Error creating category:", categoryError);
+          return {
+            success: false,
+            error: `Failed to create category: ${categoryError?.message || "Unknown error"}`
+          };
+        }
+
+        categoryId = newCategory.id;
+      }
     }
 
     // Step 2: Resolve subcategory
@@ -142,26 +167,39 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       // Subcategory exists - use the ID directly
       subcategoryId = input.subcategory.id;
     } else {
-      // Subcategory is new - create it with parent_id = categoryId
-      const { data: newSubcategory, error: subcategoryError } = await supabaseAdmin
+      // Check if subcategory already exists by slug
+      const { data: existingSubcategory } = await supabaseAdmin
         .from("product_categories")
-        .insert({
-          name: input.subcategory.name,
-          slug: input.subcategory.slug,
-          parent_id: categoryId // Link to parent category
-        })
-        .select()
+        .select("id")
+        .eq("slug", input.subcategory.slug)
+        .eq("parent_id", categoryId) // Must match parent category
         .single();
 
-      if (subcategoryError || !newSubcategory) {
-        console.error("Error creating subcategory:", subcategoryError);
-        return {
-          success: false,
-          error: `Failed to create subcategory: ${subcategoryError?.message || "Unknown error"}`
-        };
-      }
+      if (existingSubcategory) {
+        // Use existing subcategory
+        subcategoryId = existingSubcategory.id;
+      } else {
+        // Subcategory doesn't exist - create it with parent_id = categoryId
+        const { data: newSubcategory, error: subcategoryError } = await supabaseAdmin
+          .from("product_categories")
+          .insert({
+            name: input.subcategory.name,
+            slug: input.subcategory.slug,
+            parent_id: categoryId // Link to parent category
+          })
+          .select()
+          .single();
 
-      subcategoryId = newSubcategory.id;
+        if (subcategoryError || !newSubcategory) {
+          console.error("Error creating subcategory:", subcategoryError);
+          return {
+            success: false,
+            error: `Failed to create subcategory: ${subcategoryError?.message || "Unknown error"}`
+          };
+        }
+
+        subcategoryId = newSubcategory.id;
+      }
     }
 
     // Step 3: Create the product
@@ -229,8 +267,9 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       }
 
       // Create variant WITH color cluster assignment
-      // NOTE: main_img_url is set to empty string initially
-      // Images will be uploaded and assigned in Loop 2
+      // NOTE: main_img_url handling:
+      // - If provided in input (e.g., bulk import): Use it directly
+      // - If not provided: Set to empty string for client-side upload
       const { data: variant, error: variantError } = await supabaseAdmin
         .from("product_variants")
         .insert({
@@ -238,7 +277,7 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
           size: variantInput.size || null,
           gender: variantInput.gender || null,
           fit: variantInput.fit || null,
-          main_img_url: "", // Empty initially - Loop 2 will populate this
+          main_img_url: variantInput.main_img_url || "", // Use provided URL or empty for upload
           main_color_hex: variantInput.main_color_hex,
           main_color_category_id: colorClusterResult.color_category_id, // ✅ Cluster assignment
           metadata: variantInput.metadata || null,
@@ -319,23 +358,46 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
             // Tag already exists - use the ID directly (no DB query needed)
             tagsIdsToLink.push(tag.tagId);
           } else {
-            // Tag is new - create it
-            const { data: newTag, error: createTagError } = await supabaseAdmin
+            // Check if tag already exists by slug
+            const { data: existingTag } = await supabaseAdmin
               .from("tags")
-              .insert({
-                name: tag.name,
-                slug: tag.slug
-              })
-              .select()
+              .select("id")
+              .eq("slug", tag.slug)
               .single();
 
-            if (createTagError) {
-              console.error("Error creating new tag:", createTagError);
-              continue; // Skip this tag on error
-            }
+            if (existingTag) {
+              // Use existing tag
+              tagsIdsToLink.push(existingTag.id);
+            } else {
+              // Tag doesn't exist - create it
+              const { data: newTag, error: createTagError } = await supabaseAdmin
+                .from("tags")
+                .insert({
+                  name: tag.name,
+                  slug: tag.slug
+                })
+                .select()
+                .single();
 
-            if (newTag) {
-              tagsIdsToLink.push(newTag.id);
+              if (createTagError) {
+                console.error("Error creating new tag:", createTagError);
+                
+                // Strict mode: Rollback on tag creation errors
+                if (input.strictMode) {
+                  await supabaseAdmin.from("products").delete().eq("id", product.id);
+                  return {
+                    success: false,
+                    error: `Failed to create tag '${tag.name}': ${createTagError.message}`
+                  };
+                }
+                
+                // Non-strict mode: Skip this tag and continue
+                continue;
+              }
+
+              if (newTag) {
+                tagsIdsToLink.push(newTag.id);
+              }
             }
           }
         }
@@ -354,7 +416,18 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
 
         if (tagsError) {
           console.error("Error creating variant tags:", tagsError);
-          // Continue anyway - tags are not critical
+          
+          // Strict mode: Rollback on tag errors (for bulk imports)
+          if (input.strictMode) {
+            await supabaseAdmin.from("products").delete().eq("id", product.id);
+            return {
+              success: false,
+              error: `Failed to create tags: ${tagsError.message}`
+            };
+          }
+          
+          // Non-strict mode: Continue anyway - tags are not critical (for manual creation)
+          console.warn("⚠️ Continuing without tags (non-strict mode)");
         }
       }
     }
@@ -381,8 +454,14 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
     // ========================================
     // Generate semantic profiles for all product items
     // This runs AFTER all product data is complete
-    console.log('🚀 Starting RAG generation for all product items...');
+    // SKIP if this is test/synthetic data (saves OpenAI API costs)
+    if (input.skipRAG) {
+      console.log('⏭️  Skipping RAG generation (test data mode)');
+    } else {
+      console.log('🚀 Starting RAG generation for all product items...');
+    }
     
+    if (!input.skipRAG) {
     try {
       // Query all items with their complete related data
       const { data: itemsWithData, error: queryError } = await supabaseAdmin
@@ -522,6 +601,7 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       // Don't block product creation if RAG fails
       // Product is still created successfully, RAG can be regenerated later
     }
+    } // End of skipRAG check
 
     // Revalidate the products page
     revalidatePath("/admin/products");

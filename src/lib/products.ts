@@ -1,41 +1,5 @@
 import { WholeProductStructure } from "@/types/products/products";
 
-// export interface ProductRow {
-//   id: UUID
-//   name: string
-//   brand: string
-//   description: string | null
-//   category_id: UUID | null
-//   is_active: boolean
-//   created_at: Timestamp
-//   updated_at: Timestamp
-// }
-
-// export interface ProductVariantRow {
-//   id: UUID
-//   product_id: UUID
-//   size: string | null
-//   main_color_hex: string | null
-//   main_color_category_id: UUID | null
-//   main_img_url: string | null
-//   gender: string | null
-//   fit: string | null
-//   metadata: Record<string, any> | null
-//   created_at: Timestamp
-// }
-
-// export interface ProductItemRow {
-//   id: UUID
-//   variant_id: UUID
-//   condition: ProductCondition
-//   price: number
-//   sku: string | null
-//   stock: number
-//   seller_id: UUID | null
-//   status: ProductItemStatus
-//   created_at: Timestamp
-// }
-
 
 export const products : WholeProductStructure[] = [
 {

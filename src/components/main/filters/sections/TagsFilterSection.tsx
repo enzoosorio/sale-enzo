@@ -25,7 +25,7 @@ export const TagsFilterSection = ({
               className={`px-4 min-w-28 py-2.5 border text-base rounded-none transition-colors
                 ${isSelected 
                   ? 'border-black bg-black text-white' 
-                  : 'border-black/20 hover:border-black/40'
+                  : 'border-black/20 hover:border-black/80'
                 }`}
             >
               {tag}

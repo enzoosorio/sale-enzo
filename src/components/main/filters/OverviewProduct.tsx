@@ -29,7 +29,7 @@ export const OverviewProduct = ({
         {/* Product Image */}
         <div className="relative aspect-3/4 w-full bg-neutral-100 rounded-sm overflow-hidden">
           <img
-          src={'/images/products/polo-1.png'}
+          src={'/images/products/polo-prueba.jpg'}
           className='w-full h-full'
           />
           {/* <div className="absolute inset-0 flex items-center justify-center">

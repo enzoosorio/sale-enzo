@@ -1,0 +1,123 @@
+[
+  {
+    "name": "Valid Product - Nike Polo",
+    "description": "Classic cotton polo with embroidered logo",
+    "brand": "Nike",
+    "category": {
+      "name": "Ropa Superior",
+      "slug": "ropa-superior"
+    },
+    "subcategory": {
+      "name": "Polos",
+      "slug": "polos"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "L",
+        "gender": "male",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800",
+        "main_color_hex": "#1E3A8A",
+        "metadata": {
+          "material": "100% cotton",
+          "season": "summer"
+        },
+        "tags": [
+          { "name": "casual", "slug": "casual" },
+          { "name": "sport", "slug": "sport" }
+        ],
+        "secondary_colors": ["#FFFFFF"],
+        "items": [
+          {
+            "condition": "new",
+            "price": 45,
+            "sku": "SKU-VALID-001",
+            "stock": 10,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Invalid Product - Missing Brand",
+    "description": "This product will fail due to missing brand",
+    "brand": "",
+    "category": {
+      "name": "Ropa Superior",
+      "slug": "ropa-superior"
+    },
+    "subcategory": {
+      "name": "Polos",
+      "slug": "polos"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "M",
+        "gender": "male",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800",
+        "main_color_hex": "#DC2626",
+        "metadata": {
+          "material": "cotton"
+        },
+        "tags": [
+          { "name": "test", "slug": "test" }
+        ],
+        "secondary_colors": ["#000000"],
+        "items": [
+          {
+            "condition": "new",
+            "price": 50,
+            "sku": "SKU-FAIL-001",
+            "stock": 5,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Valid Product - Adidas Hoodie",
+    "description": "Warm fleece hoodie for winter",
+    "brand": "Adidas",
+    "category": {
+      "name": "Ropa Superior",
+      "slug": "ropa-superior"
+    },
+    "subcategory": {
+      "name": "Hoodies",
+      "slug": "hoodies"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "XL",
+        "gender": "unisex",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800",
+        "main_color_hex": "#000000",
+        "metadata": {
+          "material": "polyester",
+          "season": "winter"
+        },
+        "tags": [
+          { "name": "winter", "slug": "winter" },
+          { "name": "sport", "slug": "sport" }
+        ],
+        "secondary_colors": ["#FFFFFF"],
+        "items": [
+          {
+            "condition": "new",
+            "price": 80,
+            "sku": "SKU-VALID-002",
+            "stock": 20,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  }
+]

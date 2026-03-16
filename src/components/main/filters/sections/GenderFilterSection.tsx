@@ -26,7 +26,7 @@ export const GenderFilterSection = ({
               className={`px-4 py-2.5 text-base w-full border min-w-1/2 ${gender === 'Unisex' ? "w-full" : "w-1/2"} transition-colors
                 ${isSelected 
                   ? 'border-black bg-black text-white' 
-                  : 'border-black/20 hover:border-black/40'
+                  : 'border-black/20 hover:border-black/80'
                 }`}
             >
               {gender}

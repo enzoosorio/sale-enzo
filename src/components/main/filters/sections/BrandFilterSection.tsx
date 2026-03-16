@@ -25,7 +25,7 @@ export const BrandFilterSection = ({
               className={`px-3 py-2.5 text-base border transition-colors
                 ${isSelected 
                   ? 'border-black bg-black text-white' 
-                  : 'border-black/20 hover:border-black/40'
+                  : 'border-black/20 hover:border-black/80'
                 }`}
             >
               {brand}

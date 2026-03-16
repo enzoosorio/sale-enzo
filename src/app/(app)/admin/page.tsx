@@ -60,6 +60,11 @@ export default function AdminDashboardPage() {
                 description="Crear un nuevo producto"
               />
               <QuickActionButton
+                href="/admin/products/bulk-import"
+                title="Agregar Productos en Bulk"
+                description="Subir múltiples productos con JSON"
+              />
+              <QuickActionButton
                 href="/admin/categories"
                 title="Gestionar Categorías"
                 description="Organizar categorías de productos"

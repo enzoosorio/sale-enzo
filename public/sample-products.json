@@ -1,0 +1,432 @@
+[
+  {
+    "name": "Vintage Nike Polo Shirt",
+    "description": "Classic cotton polo with embroidered logo, perfect for casual wear",
+    "brand": "Nike",
+    "category": {
+      "name": "Ropa Superior",
+      "slug": "ropa-superior"
+    },
+    "subcategory": {
+      "name": "Polos",
+      "slug": "polos"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "L",
+        "gender": "male",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800",
+        "main_color_hex": "#1E3A8A",
+        "metadata": {
+          "material": "100% cotton",
+          "season": "summer",
+          "era": "90s"
+        },
+        "tags": [
+          { "name": "vintage", "slug": "vintage" },
+          { "name": "casual", "slug": "casual" },
+          { "name": "retro", "slug": "retro" }
+        ],
+        "secondary_colors": ["#FFFFFF", "#DC2626"],
+        "items": [
+          {
+            "condition": "used",
+            "price": 45,
+            "sku": "SKU-POL-001",
+            "stock": 3,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Supreme Box Logo Hoodie",
+    "description": "Iconic streetwear hoodie with box logo, heavyweight fleece construction",
+    "brand": "Supreme",
+    "category": {
+      "name": "Ropa Superior",
+      "slug": "ropa-superior"
+    },
+    "subcategory": {
+      "name": "Hoodies",
+      "slug": "hoodies"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "M",
+        "gender": "unisex",
+        "fit": "oversized",
+        "main_img_url": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800",
+        "main_color_hex": "#DC2626",
+        "metadata": {
+          "material": "80% cotton 20% polyester",
+          "season": "winter",
+          "style": "streetwear"
+        },
+        "tags": [
+          { "name": "streetwear", "slug": "streetwear" },
+          { "name": "hype", "slug": "hype" },
+          { "name": "winter", "slug": "winter" }
+        ],
+        "secondary_colors": ["#FFFFFF"],
+        "items": [
+          {
+            "condition": "used",
+            "price": 185,
+            "sku": "SKU-HOD-002",
+            "stock": 1,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Levi's 501 Original Fit Jeans",
+    "description": "Timeless straight-leg denim jeans with button fly, authentic vintage wash",
+    "brand": "Levi's",
+    "category": {
+      "name": "Ropa Inferior",
+      "slug": "ropa-inferior"
+    },
+    "subcategory": {
+      "name": "Jeans",
+      "slug": "jeans"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "32",
+        "gender": "male",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=800",
+        "main_color_hex": "#1E40AF",
+        "metadata": {
+          "material": "99% cotton 1% elastane",
+          "season": "all-season",
+          "wash": "medium indigo"
+        },
+        "tags": [
+          { "name": "classic", "slug": "classic" },
+          { "name": "denim", "slug": "denim" },
+          { "name": "vintage", "slug": "vintage" }
+        ],
+        "secondary_colors": ["#B45309", "#F3F4F6"],
+        "items": [
+          {
+            "condition": "used",
+            "price": 68,
+            "sku": "SKU-JEN-003",
+            "stock": 8,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Nike Dri-FIT Running Shorts",
+    "description": "Lightweight performance shorts with moisture-wicking technology",
+    "brand": "Nike",
+    "category": {
+      "name": "Ropa Inferior",
+      "slug": "ropa-inferior"
+    },
+    "subcategory": {
+      "name": "Shorts",
+      "slug": "shorts"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "M",
+        "gender": "unisex",
+        "fit": "athletic",
+        "main_img_url": "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800",
+        "main_color_hex": "#000000",
+        "metadata": {
+          "material": "polyester",
+          "season": "summer",
+          "technology": "Dri-FIT"
+        },
+        "tags": [
+          { "name": "sport", "slug": "sport" },
+          { "name": "running", "slug": "running" },
+          { "name": "summer", "slug": "summer" }
+        ],
+        "secondary_colors": ["#FFFFFF", "#14B8A6"],
+        "items": [
+          {
+            "condition": "new",
+            "price": 35,
+            "sku": "SKU-SHT-004",
+            "stock": 25,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Vans Old Skool Classic Skate Shoes",
+    "description": "Iconic side-stripe sneakers with canvas and suede upper, original since 1977",
+    "brand": "Vans",
+    "category": {
+      "name": "Calzado",
+      "slug": "calzado"
+    },
+    "subcategory": {
+      "name": "Zapatillas de skate",
+      "slug": "zapatillas-de-skate"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "9.5",
+        "gender": "unisex",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=800",
+        "main_color_hex": "#000000",
+        "metadata": {
+          "material": "canvas and suede",
+          "season": "all-season",
+          "collection": "classic"
+        },
+        "tags": [
+          { "name": "skate", "slug": "skate" },
+          { "name": "streetwear", "slug": "streetwear" },
+          { "name": "classic", "slug": "classic" }
+        ],
+        "secondary_colors": ["#FFFFFF"],
+        "items": [
+          {
+            "condition": "new",
+            "price": 65,
+            "sku": "SKU-SKT-005",
+            "stock": 15,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Dr. Martens 1460 Leather Boots",
+    "description": "Classic 8-eye leather boots with air-cushioned sole, rebellious icon",
+    "brand": "Dr. Martens",
+    "category": {
+      "name": "Calzado",
+      "slug": "calzado"
+    },
+    "subcategory": {
+      "name": "Botas",
+      "slug": "botas"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "42",
+        "gender": "unisex",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=800",
+        "main_color_hex": "#7C2D12",
+        "metadata": {
+          "material": "smooth leather",
+          "season": "winter",
+          "style": "punk"
+        },
+        "tags": [
+          { "name": "vintage", "slug": "vintage" },
+          { "name": "punk", "slug": "punk" },
+          { "name": "winter", "slug": "winter" }
+        ],
+        "secondary_colors": ["#EAB308", "#000000"],
+        "items": [
+          {
+            "condition": "used",
+            "price": 120,
+            "sku": "SKU-BOT-006",
+            "stock": 2,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Carhartt Logo Cap",
+    "description": "Adjustable canvas baseball cap with embroidered logo patch",
+    "brand": "Carhartt",
+    "category": {
+      "name": "Accesorios",
+      "slug": "accesorios"
+    },
+    "subcategory": {
+      "name": "Gorras",
+      "slug": "gorras"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "One Size",
+        "gender": "unisex",
+        "fit": "adjustable",
+        "main_img_url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800",
+        "main_color_hex": "#78350F",
+        "metadata": {
+          "material": "cotton canvas",
+          "season": "all-season",
+          "style": "workwear"
+        },
+        "tags": [
+          { "name": "workwear", "slug": "workwear" },
+          { "name": "casual", "slug": "casual" },
+          { "name": "streetwear", "slug": "streetwear" }
+        ],
+        "secondary_colors": ["#F59E0B"],
+        "items": [
+          {
+            "condition": "new",
+            "price": 28,
+            "sku": "SKU-CAP-007",
+            "stock": 40,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Herschel Little America Backpack",
+    "description": "Classic mountaineering-style backpack with laptop sleeve and signature striped lining",
+    "brand": "Herschel",
+    "category": {
+      "name": "Accesorios",
+      "slug": "accesorios"
+    },
+    "subcategory": {
+      "name": "Mochilas",
+      "slug": "mochilas"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "25L",
+        "gender": "unisex",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800",
+        "main_color_hex": "#1F2937",
+        "metadata": {
+          "material": "polyester",
+          "season": "all-season",
+          "capacity": "25 liters"
+        },
+        "tags": [
+          { "name": "travel", "slug": "travel" },
+          { "name": "school", "slug": "school" },
+          { "name": "minimal", "slug": "minimal" }
+        ],
+        "secondary_colors": ["#B45309"],
+        "items": [
+          {
+            "condition": "used",
+            "price": 95,
+            "sku": "SKU-BAG-008",
+            "stock": 6,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Silk Pajama Set",
+    "description": "Luxurious satin pajama set with contrast piping, button-up top and matching pants",
+    "brand": "Victoria's Secret",
+    "category": {
+      "name": "Random",
+      "slug": "random"
+    },
+    "subcategory": {
+      "name": "Pijamas",
+      "slug": "pijamas"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "M",
+        "gender": "female",
+        "fit": "relaxed",
+        "main_img_url": "https://images.unsplash.com/photo-1596031132862-3f0c4e23f8c6?w=800",
+        "main_color_hex": "#BE185D",
+        "metadata": {
+          "material": "polyester satin",
+          "season": "all-season",
+          "style": "luxury"
+        },
+        "tags": [
+          { "name": "sleepwear", "slug": "sleepwear" },
+          { "name": "luxury", "slug": "luxury" },
+          { "name": "comfort", "slug": "comfort" }
+        ],
+        "secondary_colors": ["#000000", "#FECACA"],
+        "items": [
+          {
+            "condition": "new",
+            "price": 78,
+            "sku": "SKU-PJM-009",
+            "stock": 12,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Patagonia Better Sweater Fleece Jacket",
+    "description": "Cozy fleece jacket with quarter-zip design, excellent for layering outdoors",
+    "brand": "Patagonia",
+    "category": {
+      "name": "Ropa Superior",
+      "slug": "ropa-superior"
+    },
+    "subcategory": {
+      "name": "Chaquetas",
+      "slug": "chaquetas"
+    },
+    "is_active": true,
+    "variants": [
+      {
+        "size": "L",
+        "gender": "male",
+        "fit": "regular",
+        "main_img_url": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800",
+        "main_color_hex": "#047857",
+        "metadata": {
+          "material": "polyester fleece",
+          "season": "fall",
+          "technology": "Better Sweater"
+        },
+        "tags": [
+          { "name": "outdoor", "slug": "outdoor" },
+          { "name": "hiking", "slug": "hiking" },
+          { "name": "sustainable", "slug": "sustainable" }
+        ],
+        "secondary_colors": ["#1E293B"],
+        "items": [
+          {
+            "condition": "used",
+            "price": 140,
+            "sku": "SKU-JKT-010",
+            "stock": 5,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,4 +1,9 @@
+import React from "react";
 import { ReusableFilterSection } from "./ReusableFilterSection";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(useGSAP);
 
 interface SizeFilterSectionProps {
   sizes: string[];
@@ -11,6 +16,7 @@ export const SizeFilterSection = ({
   selectedSizes, 
   onToggleSize 
 }: SizeFilterSectionProps) => {
+
   return (
     <ReusableFilterSection
     title="TALLA"
@@ -23,13 +29,13 @@ export const SizeFilterSection = ({
             <button
               key={size}
               onClick={() => onToggleSize?.(size)}
-              className={`px-4 flex-1 py-2.5 min-w-1/2 text-base border transition-colors
+              className={`relative px-4 overflow-hidden max-h-24 flex-1 py-2.5 min-w-1/2 text-base border transition-colors
                 ${isSelected 
                   ? 'border-black bg-black text-white' 
-                  : 'border-black/20 hover:border-black/40'
+                  : 'border-black/20 hover:border-black/80'
                 }`}
             >
-              {size}
+              {size} 
             </button>
           );
         })}
