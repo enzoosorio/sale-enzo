@@ -123,10 +123,10 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
                     tl.to(sidebarRef.current, {
                         opacity: 0,
                         duration: 0.1,
-                    }, ">0.05")
+                    }, ">0.05").then(() => {
+                        deactivateLayout();
+                    });
 
-                    deactivateLayout();
-                    
         }
 
         // let tl = gsap.timeline({
