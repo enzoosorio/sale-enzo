@@ -1,8 +1,6 @@
     import { redirect } from "next/navigation";
     import { findParentCategoryBySubcategorySlug, validateCategoryHierarchyServer } from "@/utils/filters";
 import { parseSearchParams } from "@/utils/filters/urlFilters";
-import { ProductsLayout } from "@/components/main/products-layout/ProductsLayout";
-import { products } from "@/lib/products";
 
 /**
  * Products Page - Server Component
@@ -18,7 +16,7 @@ import { products } from "@/lib/products";
  * - gender: Gender filter
  * - fit: Fit filter
  */
-export default async function ProductsPage({
+export default async function ProductsTestPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -105,10 +103,63 @@ export default async function ProductsPage({
 
   return (
     <>
-    <ProductsLayout 
-    products={products}
-    title="POLOS"
-    />
+    <div className="min-h-screen p-8">
+      <h1 className="text-4xl font-bold mb-8">Products</h1>
+      
+      {/* Debug: Show current filters */}
+      <div className="mb-8 p-4 bg-gray-100 rounded">
+        <h2 className="text-xl font-semibold mb-2">Current Filters:</h2>
+        <pre className="text-sm">{JSON.stringify(filters, null, 2)}</pre>
+      </div>
+
+      {/* Active Filters Display */}
+      {(filters.category || filters.subcategory) && (
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">
+            {filters.subcategory || filters.category}
+          </h2>
+          
+          {filters.category && filters.subcategory && (
+            <div className="text-gray-600">
+              {filters.category} → {filters.subcategory}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Additional Filters */}
+      {(filters.colors || filters.sizes || filters.gender || filters.fit) && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {filters.colors?.map(color => (
+            <span key={color} className="px-3 py-1 bg-blue-100 rounded-full text-sm">
+              Color: {color}
+            </span>
+          ))}
+          {filters.sizes?.map(size => (
+            <span key={size} className="px-3 py-1 bg-green-100 rounded-full text-sm">
+              Size: {size}
+            </span>
+          ))}
+          {filters.gender && (
+            <span className="px-3 py-1 bg-purple-100 rounded-full text-sm">
+              Gender: {filters.gender}
+            </span>
+          )}
+          {filters.fit && (
+            <span className="px-3 py-1 bg-orange-100 rounded-full text-sm">
+              Fit: {filters.fit}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Products Grid - TODO: Replace with actual product components */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="p-6 border rounded text-center text-gray-500">
+          Products will be displayed here
+        </div>
+      </div>
+    </div>
     </>
   );
 }

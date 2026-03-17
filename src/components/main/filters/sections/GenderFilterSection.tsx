@@ -4,17 +4,22 @@ interface GenderFilterSectionProps {
   genders: string[];
   selectedGender?: string;
   onSelectGender?: (gender: string) => void;
+  className?: string;
+  classNameForWrapper?: string;
 }
 
 export const GenderFilterSection = ({ 
   genders, 
   selectedGender, 
-  onSelectGender 
+  onSelectGender,
+  className,
+  classNameForWrapper,
 }: GenderFilterSectionProps) => {
   return (
    <ReusableFilterSection
    title="GÉNERO"
-   className="min-max"
+   className={`min-max ${className || ""}`}
+   classNameForWrapper={classNameForWrapper}
    >
     
         {genders.map((gender) => {
@@ -23,10 +28,10 @@ export const GenderFilterSection = ({
             <button
               key={gender}
               onClick={() => onSelectGender?.(gender)}
-              className={`px-4 py-2.5 text-base w-full border min-w-1/2 ${gender === 'Unisex' ? "w-full" : "w-1/2"} transition-colors
+              className={`px-4 py-2.5 text-base w-full border border-current text-current min-w-1/2 ${gender === 'Unisex' ? "w-full" : "w-1/2"} transition-colors
                 ${isSelected 
-                  ? 'border-black bg-black text-white' 
-                  : 'border-black/20 hover:border-black/80'
+                  ? 'bg-current text-[#221C1C]' 
+                  : 'opacity-90 hover:opacity-100'
                 }`}
             >
               {gender}

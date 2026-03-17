@@ -144,6 +144,12 @@
   transition-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
 } */
 
+.invisible-total{
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
 .bottom-part{
   will-change: backdrop-filter;
   clipPath: polygon(50% 58%, 0% 100%, 100% 100%);
@@ -218,6 +224,72 @@
       rgba(0, 0, 0, 0) 70%
     );
 }
+
+
+/* ============================================================ */
+
+/* ===== DEFAULT STATE ===== */
+.wrapper-pf {
+  display: flex;
+  width: 100%;
+}
+
+/* SIDEBAR */
+.filters-wrapper {
+  flex-basis: 0%;
+  flex-shrink: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+/* GRID */
+.products-grid {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  transition: none; /* importante: GSAP controla */
+}
+
+/* ===== ACTIVE STATE ===== */
+
+.wrapper-pf.layout-active .filters-wrapper {
+  flex-basis: 33%;
+  visibility: visible;
+  pointer-events: auto;
+  background-color: #221C1C;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.filters-wrapper.opacity-off {
+  opacity: 1;
+}
+
+.wrapper-pf.layout-active .products-grid {
+  flex-basis: 67%;
+}
+
+
+/* ===== HELPERS ===== */
+
+.invisible-total {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.product-card {
+  will-change: transform;
+}
+
+
+/* ============================================================ */
+
+
 
 .gradial-radient-hover{
   background: radial-gradient(
@@ -370,4 +442,8 @@
 
 .min-max button:last-child:nth-child(odd) {
   grid-column: 1 / -1;
+}
+
+.filter-button{
+  box-shadow: inset 2px 1px 4px 0px rgba(0, 0, 0, 25%), 0px 4px 4px 0px rgba(0, 0, 0, 25%),
 }

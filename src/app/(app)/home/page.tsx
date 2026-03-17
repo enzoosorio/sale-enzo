@@ -4,7 +4,6 @@ import { SuperBarraBusqueda } from "@/components/reusable/CTA/SuperBarraBusqueda
 import { products } from "@/lib/products";
 import { useCategoriesStore } from "@/store/categorySection";
 import { ReactLenis, useLenis } from "lenis/react";
-import Image from "next/image";
 import { useEffect } from "react";
 
 export default function Home() {

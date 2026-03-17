@@ -4,17 +4,22 @@ interface BrandFilterSectionProps {
   brands: string[];
   selectedBrands: string[];
   onToggleBrand?: (brand: string) => void;
+  className?: string;
+  classNameForWrapper?: string;
 }
 
 export const BrandFilterSection = ({ 
   brands, 
   selectedBrands, 
-  onToggleBrand 
+  onToggleBrand,
+  className,
+  classNameForWrapper,
 }: BrandFilterSectionProps) => {
   return (
     <ReusableFilterSection
     title="MARCA"
-    className="min-max"
+    className={`min-max ${className || ""}`}
+    classNameForWrapper={classNameForWrapper}
     >
         {brands.map((brand) => {
           const isSelected = selectedBrands.includes(brand);
@@ -22,10 +27,10 @@ export const BrandFilterSection = ({
             <button
               key={brand}
               onClick={() => onToggleBrand?.(brand)}
-              className={`px-3 py-2.5 text-base border transition-colors
+              className={`px-3 py-2.5 text-base border border-current text-current transition-colors
                 ${isSelected 
-                  ? 'border-black bg-black text-white' 
-                  : 'border-black/20 hover:border-black/80'
+                  ? 'bg-current text-[#221C1C]' 
+                  : 'opacity-90 hover:opacity-100'
                 }`}
             >
               {brand}

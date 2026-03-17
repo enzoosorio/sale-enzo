@@ -6,12 +6,16 @@ interface ColorFilterSectionProps {
   colors: Array<{ name: string; hex: string }>;
   selectedColors: string[];
   onToggleColor?: (colorName: string) => void;
+  className?: string;
+  classNameForWrapper?: string;
 }
 
 export const ColorFilterSection = ({ 
   colors, 
   selectedColors, 
-  onToggleColor 
+  onToggleColor,
+  className,
+  classNameForWrapper,
 }: ColorFilterSectionProps) => {
 
   const [keyColorHovered, setKeyColorHovered] = useState(-1);
@@ -23,6 +27,8 @@ export const ColorFilterSection = ({
   return (
    <ReusableFilterSection
    title="COLOR"
+  className={className}
+  classNameForWrapper={classNameForWrapper}
    >
     <>
         {colors.map((color, index) => {
@@ -34,10 +40,10 @@ export const ColorFilterSection = ({
               onMouseLeave={() => setKeyColorHovered(-1)}
               key={color.name}
               onClick={() => onToggleColor?.(color.name)}
-              className={`relative group w-full flex items-center justify-between px-4 py-3 border transition-colors
+              className={`relative group w-full flex items-center justify-between px-4 py-3 border border-current text-current transition-colors
                 ${isSelected 
-                  ? 'border-black bg-black/5' 
-                  : 'border-black/10 hover:border-black/20'
+                  ? 'bg-current/15' 
+                  : 'opacity-90 hover:opacity-100'
                 }`}
             >
               <div className="flex items-center gap-3">
@@ -45,12 +51,12 @@ export const ColorFilterSection = ({
                   className="absolute top-0 left-0 w-0 -z-10 group-hover:w-full transition-all duration-500 h-full" 
                   style={{ backgroundColor: isSelected || keyColorHovered === index ? color.hex : 'transparent' }}
                 />
-                <span className="text-black group-hover:text-white text-base transition-colors"
+                <span className="text-current group-hover:text-white text-base transition-colors"
                 // adding dynamic hover color based on contrast
                   style={{ color: isSelected || keyColorHovered === index ? textColor : 'inherit' }}
                 >{color.name}</span>
               </div>
-              <span className="text-xs text-black/40 group-hover:text-white transition-colors"
+              <span className="text-xs text-current/60 group-hover:text-white transition-colors"
               style={{ color: isSelected || keyColorHovered === index ? textColor : 'inherit'}}
               >{color.hex}</span>
             </button>
