@@ -231,14 +231,17 @@
 /* ===== DEFAULT STATE ===== */
 .wrapper-pf {
   display: flex;
-  width: 100%;
+  width: 100vw;
 }
 
 /* SIDEBAR */
 .filters-wrapper {
   flex-basis: 0%;
+  width: 0vw;
   flex-shrink: 0;
+  
   visibility: hidden;
+  
   pointer-events: none;
   background-color: transparent;
   overflow: hidden;
@@ -247,9 +250,12 @@
 /* GRID */
 .products-grid {
   flex-basis: 100%;
+  
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
+  padding: 4rem 2rem;
+  transform: translate(-1rem, 9rem);
   transition: none; /* importante: GSAP controla */
 }
 
@@ -270,7 +276,9 @@
 }
 
 .wrapper-pf.layout-active .products-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   flex-basis: 67%;
+  transform: translateY(0rem);
 }
 
 
