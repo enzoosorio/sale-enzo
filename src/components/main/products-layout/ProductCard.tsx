@@ -1,4 +1,5 @@
 import { WholeProductStructure } from "@/types/products/products";
+import Link from "next/link";
 
 interface ProductCardProps {
   product: WholeProductStructure;
@@ -6,7 +7,7 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   return (
-    <article className="product-card flex flex-col gap-3 cursor-pointer">
+    <Link  href={`/products/${product.id}`} className="product-card flex flex-col gap-3 cursor-pointer">
       <div className="overflow-hidden  bg-white/90">
         <img
           src={product.variant.main_img_url || "/images/products/polo-1.png"}
@@ -20,6 +21,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         <p className="font-inria text-base">${product.item.price.toFixed(2)}</p>
         <p className="font-inria text-sm uppercase tracking-[0.08em] text-black/60">Size {product.variant.size}</p>
       </div>
-    </article>
+    </Link>
   );
 };

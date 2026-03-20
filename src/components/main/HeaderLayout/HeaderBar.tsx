@@ -5,23 +5,27 @@ import { Favoritos } from "@/components/reusable/svgs/Favoritos"
 import { CategoriesButton } from "./Categories/CategoriesButtonLayout"
 import Link from "next/link"
 import { LogoutButton } from "./LogoutButton"
-import { MainLogo } from "@/components/reusable/svgs/MainLogo"
 import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations"
 
 interface HeaderBarProps {
     userId? : string | null;
+    variant?: "product-detail" | "default";
 }
 
-export const HeaderBar = async ({ userId }: HeaderBarProps) => {
+export const HeaderBar = async ({ userId, variant = "default" }: HeaderBarProps) => {
   // Server-side check if user is admin
   const userIsAdmin = userId ? await isAdmin() : false;
 
   return (
     <>
     {/* todo: mejorar la apariencia del radial gradient */}
-    <header className="w-full sticky gradial-radient min-h-(--navbar-height) z-10 flex items-center justify-center ">
+    <header className={` text-black
+        min-h-(--navbar-height) z-10 flex items-center justify-center
+        ${variant === "product-detail" ? "absolute top-10 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-2xl w-11/12 rounded-sm" : "sticky gradial-radient w-full"}
+        
+        `}>
         <nav className="relative p-2 bg-transparent px-4 md:px-16 xl:px-20 w-full h-full flex items-center justify-between">
             {/* Desktop Navigation - Hidden on mobile */}
             <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata">
