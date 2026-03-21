@@ -50,6 +50,7 @@
   --color-foreground: var(--foreground);
   --color-off-white: #FAF9F6;
   --color-light-yellow-white: #F8F6F0;
+  --color-off-black: #221C1C;
   --font-inria : 'Inria Serif', serif;
   --font-prata: 'Prata', serif;
   --font-nanum: 'Nanum Myeongjo', serif;
@@ -476,4 +477,26 @@
 
 .details-indv-product{
   flex-basis: 52%;
+}
+
+.li-effect {
+  position: relative;
+  display: inline-block; 
+  padding-bottom: 4px; 
+  cursor: pointer;
+}
+
+.li-effect::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0; 
+  height: 1px;
+  background-color: var(--color-off-white); 
+  transition: width 0.3s ease;
+}
+
+.li-effect:hover::after {
+  width: 100%; 
 }

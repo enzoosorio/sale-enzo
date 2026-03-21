@@ -91,9 +91,6 @@ export default function Home() {
       0
     );
 
-    tl.to(".products-wrapper", 
-      { y: -(distanceToMove + (viewportHeight * 1.2)), ease: "none", duration: 1 },
-      0);
 
   }, [])
 

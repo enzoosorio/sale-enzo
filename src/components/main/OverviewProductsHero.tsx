@@ -26,7 +26,7 @@ export const OverviewProductsHero = ({
 
 
   return (
-    <section className="section-overview w-full min-h-60  flex flex-col items-center justify-center py-8 gap-6">
+    <section className="section-overview w-full flex flex-col items-center justify-center py-8 gap-6">
       <div className="products-wrapper w-full max-w-5xl  overflow-hidden xl:max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-8 flex flex-wrap gap-6 items-center justify-center">
         {products &&
           products.map((product, index) => {
