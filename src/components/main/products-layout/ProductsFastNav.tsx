@@ -64,7 +64,7 @@ export const ProductsFastNav = ({ subcategories, containerRef }: ProductsFastNav
             scrollTrigger: {
                 trigger: ".wrapper-pf",
                 start: "top top",
-                end: "bottom bottom",
+                end: "bottom top",
                 pin: '.fast-nav-wrapper',
                 scrub: true,
                 markers: true,
@@ -107,12 +107,14 @@ export const ProductsFastNav = ({ subcategories, containerRef }: ProductsFastNav
                 }
             },
         });
-        tl.to('.fast-nav-wrapper', {
-            y: '-3rem',
-            alignItems: 'center',
-            duration: 0.025,
-            ease: "elastic.out(1,0.75)",
-        }, 0)
+        tl.fromTo('.fast-nav-wrapper',
+                { top: 80 }, // equivalente a top-20 (80px)
+                {
+                    top: 0,
+                    ease: "power2.out",
+                },
+                0
+                )
         tl.fromTo(".fast-nav-wrapper",
             {
                 background: initialBackground,
@@ -130,15 +132,13 @@ export const ProductsFastNav = ({ subcategories, containerRef }: ProductsFastNav
 
     }, [])
 
-    return (
-        <div className="fast-nav-wrapper min-h-32 absolute w-screen z-20 top-12 pl-8 flex items-start justify-start gap-12">
-            <Link href={subcategories[0].href}>
-                <h1
-                    className="subcategory-title hover:text-white transition-colors title-main font-prata text-8xl"
+    return (        
+        <div className="fast-nav-wrapper min-h-32 absolute w-screen z-20 top-20 pl-8 flex items-start justify-start gap-12">
+               <h1
+                    className="subcategory-title hover:text-black/75 transition-colors title-main font-prata text-8xl"
                 >
                     {subcategories[0].name}
                 </h1>
-            </Link>
             {
                 subcategories.length > 1 && (
                     subcategories.slice(1).map((subcategory, index) => (

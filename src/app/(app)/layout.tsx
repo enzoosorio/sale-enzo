@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { MusicPlayer } from "@/components/reusable/CTA/MusicPlayer/MusicPlayer";
 import { createClient } from "@/utils/supabase/server";
-import { Footer } from "@/components/main/Footer";
+import { Footer } from "@/components/main/Footer/Footer";
 
 export const metadata: Metadata = {
   title: "App Layout",

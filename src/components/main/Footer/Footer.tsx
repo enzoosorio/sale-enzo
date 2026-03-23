@@ -15,12 +15,12 @@ export const Footer = () => {
     { name: "Términos y condiciones", href: "#" },
   ];
 
+
   useGSAP(() => {
     ScrollTrigger.create({
       trigger: ".footer",
       start: "top +=500",
       end: "+=400 bottom",
-      markers: true,
       onUpdate: (self) => {
         const progress = self.progress;
         const backgroundColor = gsap.utils.interpolate(
@@ -48,7 +48,7 @@ export const Footer = () => {
   }, []);
 
   return (
-    <section className="footer flex flex-col items-start bg-off-white justify-between w-full py-16 pl-16 pr-20 gap-4 min-h-[600px]">
+    <section className="footer flex flex-col items-start bg-off-white justify-between w-full py-16 pl-16 pr-20 gap-4 min-h-(--footer-height)">
       {/* parte de arriba */}
       <div className="flex items-start justify-between w-full ">
         <h4 className="text-color font-prata text-[8rem] text-black">Sale</h4>

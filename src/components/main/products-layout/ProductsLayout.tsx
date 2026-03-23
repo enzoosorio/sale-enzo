@@ -142,12 +142,17 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
 
 
     return (
-        <main>
-            <section className="products-section bg-off-white w-full min-h-screen overflow-clip">
+        <main className="main-products">
+            <section className="products-section  w-full min-h-screen overflow-clip flex flex-col items-start justify-start gap-0 relative pb-20">    
                 <div
                     ref={containerRef}
-                    className={`wrapper-pf relative grid grid-cols-1 pb-32  w-screen gap-0`}
+                    className={`wrapper-pf relative grid grid-cols-1 grid-rows-2 pb-32  w-screen gap-0`}
                 >
+                    <div className="absolute top-10 left-0 pl-8 translate-y-0 row-span-1">
+                    <p className="font-prata text-sm  px-2 py-1 ">
+                        Polos / Sweatshirts / Pants / Accessories
+                    </p>
+                </div>
                     <ProductsFastNav
                     containerRef={containerRef}
                     subcategories={[
