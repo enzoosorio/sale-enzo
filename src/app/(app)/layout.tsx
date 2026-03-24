@@ -3,6 +3,7 @@ import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { MusicPlayer } from "@/components/reusable/CTA/MusicPlayer/MusicPlayer";
 import { createClient } from "@/utils/supabase/server";
 import { Footer } from "@/components/main/Footer/Footer";
+import { ChatModal } from "@/components/main/AI/Syllie/ChatModal";
 
 export const metadata: Metadata = {
   title: "App Layout",

@@ -19,7 +19,6 @@ interface ProductsFastNavProps {
 
 export const ProductsFastNav = ({ subcategories, containerRef }: ProductsFastNavProps) => {
 
-    // effect for "sticky bar" where I am going to show the "breadcrumbs"
     useGSAP(() => {
 
         let animatingFastBar = false;
@@ -108,7 +107,7 @@ export const ProductsFastNav = ({ subcategories, containerRef }: ProductsFastNav
             },
         });
         tl.fromTo('.fast-nav-wrapper',
-                { top: 80 }, // equivalente a top-20 (80px)
+                { top: 0 }, // equivalente a top-20 (80px)
                 {
                     top: 0,
                     ease: "power2.out",
@@ -133,7 +132,7 @@ export const ProductsFastNav = ({ subcategories, containerRef }: ProductsFastNav
     }, [])
 
     return (        
-        <div className="fast-nav-wrapper min-h-32 absolute w-screen z-20 top-20 pl-8 flex items-start justify-start gap-12">
+        <div className="fast-nav-wrapper min-h-32 absolute w-screen z-20 top-20 pl-8 flex items-center justify-start gap-12">
                <h1
                     className="subcategory-title hover:text-black/75 transition-colors title-main font-prata text-8xl"
                 >
