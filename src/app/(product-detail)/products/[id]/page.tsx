@@ -21,7 +21,7 @@ export default function Page() {
                                 <h3 className='text-base'>Nike</h3>
                                 <h1 className='text-base'>Nike Court Carlos Alcaraz Slam</h1>
                                 <p className='text-base'>120 PEN</p>
-                            </div>
+                            </div> 
                             <div className='flex flex-col items-start justify-center gap-10'>
                                 <p className='text-base font-vidaloka'>L</p>
                                 <p className='text-black/80 font-nanum text-base max-w-[80ch]'>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam, numquam mollitia sit quidem explicabo suscipit! Sit deleniti voluptatibus deserunt aut?</p>

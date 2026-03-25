@@ -22,7 +22,8 @@ export type Message = {
 
 type ChatModalProps = {
   isOpen: boolean;
-  onClose: () => void;
+  setIsOpen: (open: boolean) => void;
+  setFirstAnimationStarting: (show: boolean) => void;
   title?: string;
   subtitle?: string;
   suggestions?: string[];
@@ -48,18 +49,20 @@ const generateId = () =>
 
 export const ChatModal = ({
   isOpen,
+  setIsOpen,
   title = "Syllie",
-  onClose,
+  setFirstAnimationStarting,
   subtitle = "Style Assistant",
   suggestions = DEFAULT_SUGGESTIONS,
 }: ChatModalProps) => {
   const [view, setView] = useState<"chat" | "info">("chat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-
+  const svgFaceRef = useRef<SVGSVGElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingTimeoutsRef = useRef<number[]>([]);
+  const entranceTlRef = useRef<gsap.core.Timeline | null>(null);
 
   useGSAP(() => {
     if (!modalRef.current) return;
@@ -81,6 +84,41 @@ export const ChatModal = ({
     }
   }, [view]);
 
+  useGSAP(() => {
+
+    if (!isOpen || !svgFaceRef.current) return;
+
+    entranceTlRef.current = gsap.timeline({
+      paused: true,
+    });
+
+    entranceTlRef.current.fromTo('.syllie-wrapper-inside-modal',
+      { x: -100 },
+      {
+        x: 0,
+        duration: 1.5,
+        ease: "elastic.out(1.5,1)",
+      }
+    );
+    entranceTlRef.current.play();
+
+  }, [isOpen]);
+
+  const { contextSafe } = useGSAP();
+
+  const onClose = contextSafe(() => {
+    if (entranceTlRef.current) {
+      entranceTlRef.current.reverse().then(() => {
+        setIsOpen(false);
+        setFirstAnimationStarting(false);
+      });
+    } else {
+      // Fallback por si algo falla
+      setIsOpen(false);
+      setFirstAnimationStarting(false);
+    }
+  });
+
   const clearPendingReplies = useCallback(() => {
     pendingTimeoutsRef.current.forEach((timeoutId) => {
       window.clearTimeout(timeoutId);
@@ -92,7 +130,7 @@ export const ChatModal = ({
     const timeoutId = window.setTimeout(() => {
       const randomReply =
         MOCK_ASSISTANT_REPLIES[
-          Math.floor(Math.random() * MOCK_ASSISTANT_REPLIES.length)
+        Math.floor(Math.random() * MOCK_ASSISTANT_REPLIES.length)
         ];
 
       setMessages((prevMessages) => [
@@ -228,193 +266,67 @@ export const ChatModal = ({
           <div className="absolute inset-0 bg-linear-to-b from-white/95 via-white/45 to-white/50" />
         </div>
 
-        <header className="bg-off-white shadow-md relative z-10 my-5 flex items-center justify-between border-b border-black/10 px-10 py-4">
-          <div className="flex items-center gap-3 ">
+        <header className="inner-shadow-for-header bg-white relative z-10 my-5 flex items-center justify-between border-b border-black/10 px-10 py-4">
+          <div className="flex items-center gap-4 ">
             <div className="sillye-chat-position flex w-14">
               {/* syllie face */}
-              <svg viewBox="0 0 52 36" fill="none" className="w-full h-auto">
-                <g id="sillye-3d">
-                  <g
-                    id="cara-con-gradients"
-                    filter="url(#filter0_dii_719_2195)"
-                  >
-                    <path
-                      d="M2.60537 12.5995C1.46415 15.0123 0.614829 16.5413 0.512445 19.2765C0.412271 21.9526 0.916824 24.3364 2.02665 25.9585C3.6282 28.2992 4.85112 29.1914 7.14804 30.5845C9.96322 32.2919 11.9332 32.5187 15.1498 33.1545C19.218 33.9585 25.7493 33.6685 25.7493 33.6685C25.7493 33.6685 32.9077 33.6959 37.3583 32.7456C40.2054 32.1378 42.0409 32.1694 44.4986 30.5845C46.9579 28.9985 48.2833 27.4753 49.472 24.9305C50.4186 22.9038 50.5601 21.5193 50.4814 19.2765C50.3859 16.5499 49.5871 14.9784 48.4625 12.5995C47.4406 10.4378 46.464 8.77709 44.4986 6.94553C42.4593 5.04507 40.505 3.3494 37.3583 2.31951C32.686 0.790342 30.2579 0.445127 25.686 0.506681C21.5333 0.562592 19.087 0.884701 15.1498 2.31951C11.7666 3.55246 9.84055 4.52225 7.14804 6.94553C5.04887 8.8348 3.82111 10.0293 2.60537 12.5995Z"
-                      fill="url(#paint0_radial_719_2195)"
-                    />
-                    <path
-                      d="M2.60537 12.5995C1.46415 15.0123 0.614829 16.5413 0.512445 19.2765C0.412271 21.9526 0.916824 24.3364 2.02665 25.9585C3.6282 28.2992 4.85112 29.1914 7.14804 30.5845C9.96322 32.2919 11.9332 32.5187 15.1498 33.1545C19.218 33.9585 25.7493 33.6685 25.7493 33.6685C25.7493 33.6685 32.9077 33.6959 37.3583 32.7456C40.2054 32.1378 42.0409 32.1694 44.4986 30.5845C46.9579 28.9985 48.2833 27.4753 49.472 24.9305C50.4186 22.9038 50.5601 21.5193 50.4814 19.2765C50.3859 16.5499 49.5871 14.9784 48.4625 12.5995C47.4406 10.4378 46.464 8.77709 44.4986 6.94553C42.4593 5.04507 40.505 3.3494 37.3583 2.31951C32.686 0.790342 30.2579 0.445127 25.686 0.506681C21.5333 0.562592 19.087 0.884701 15.1498 2.31951C11.7666 3.55246 9.84055 4.52225 7.14804 6.94553C5.04887 8.8348 3.82111 10.0293 2.60537 12.5995Z"
-                      fill="url(#paint1_radial_719_2195)"
-                    />
+              <svg className="syllie-wrapper-inside-modal w-full h-auto"
+              ref={svgFaceRef}
+                viewBox="0 0 666 436"
+                fill="none">
+                <g id="syllie-3d-idle">
+                  <g id="face" filter="url(#filter0_dii_719_2185)">
+                    <path d="M28.4593 158.527C13.3039 190.039 2.02492 210.009 0.665273 245.732C-0.665044 280.684 6.03543 311.818 20.7739 333.003C42.0425 363.575 58.2829 375.227 88.786 393.422C126.172 415.721 152.333 418.684 195.05 426.987C249.075 437.489 335.811 433.7 335.811 433.7C335.811 433.7 430.874 434.058 489.978 421.647C527.788 413.708 552.164 414.122 584.801 393.422C617.461 372.708 635.062 352.813 650.848 319.577C663.419 293.108 665.298 275.024 664.254 245.732C662.984 210.121 652.376 189.597 637.442 158.527C623.872 130.294 610.902 108.604 584.801 84.6825C557.719 59.8613 531.767 37.7149 489.978 24.2639C427.931 4.29204 395.685 -0.21667 334.971 0.587262C279.823 1.31749 247.335 5.52443 195.05 24.2639C150.121 40.367 124.543 53.0331 88.786 84.6825C60.909 109.358 44.6043 124.958 28.4593 158.527Z" fill="url(#paint0_radial_719_2185)" />
+                    <path d="M28.4593 158.527C13.3039 190.039 2.02492 210.009 0.665273 245.732C-0.665044 280.684 6.03543 311.818 20.7739 333.003C42.0425 363.575 58.2829 375.227 88.786 393.422C126.172 415.721 152.333 418.684 195.05 426.987C249.075 437.489 335.811 433.7 335.811 433.7C335.811 433.7 430.874 434.058 489.978 421.647C527.788 413.708 552.164 414.122 584.801 393.422C617.461 372.708 635.062 352.813 650.848 319.577C663.419 293.108 665.298 275.024 664.254 245.732C662.984 210.121 652.376 189.597 637.442 158.527C623.872 130.294 610.902 108.604 584.801 84.6825C557.719 59.8613 531.767 37.7149 489.978 24.2639C427.931 4.29204 395.685 -0.21667 334.971 0.587262C279.823 1.31749 247.335 5.52443 195.05 24.2639C150.121 40.367 124.543 53.0331 88.786 84.6825C60.909 109.358 44.6043 124.958 28.4593 158.527Z" fill="url(#paint1_radial_719_2185)" />
                   </g>
-                  <g id="ojo-izq-gradient">
-                    <path
-                      d="M14.985 11.1993C14.0186 11.0024 13.7554 10.9045 12.7948 11.1288C11.1421 11.5149 10.1089 12.2031 9.26163 13.6988C8.46753 15.1007 8.57913 16.2816 8.92818 17.8813C9.21305 19.1869 9.67499 19.8552 10.427 20.9431L10.4424 20.9653C11.6485 22.7101 12.9739 24.2398 14.4803 24.5633C15.6534 24.8152 16.3658 24.9323 17.5087 24.5633C18.7691 24.1563 19.9132 23.3286 20.7758 22.308C21.712 21.2005 21.8376 20.2729 21.7853 18.71C21.7428 17.4412 21.4345 16.9836 20.7758 15.626C20.2167 14.4737 19.7343 13.8691 18.7569 13.056C17.7328 12.2041 16.2816 11.4633 14.985 11.1993Z"
-                      fill="url(#paint2_radial_719_2195)"
-                    />
-                    <path
-                      d="M14.985 11.1993C14.0186 11.0024 13.7554 10.9045 12.7948 11.1288C11.1421 11.5149 10.1089 12.2031 9.26163 13.6988C8.46753 15.1007 8.57913 16.2816 8.92818 17.8813C9.21305 19.1869 9.67499 19.8552 10.427 20.9431L10.4424 20.9653C11.6485 22.7101 12.9739 24.2398 14.4803 24.5633C15.6534 24.8152 16.3658 24.9323 17.5087 24.5633C18.7691 24.1563 19.9132 23.3286 20.7758 22.308C21.712 21.2005 21.8376 20.2729 21.7853 18.71C21.7428 17.4412 21.4345 16.9836 20.7758 15.626C20.2167 14.4737 19.7343 13.8691 18.7569 13.056C17.7328 12.2041 16.2816 11.4633 14.985 11.1993Z"
-                      fill="url(#paint3_radial_719_2195)"
-                    />
+                  <g id="left-eye">
+                    <path d="M192.862 140.231C180.028 137.661 176.534 136.381 163.777 139.312C141.829 144.353 128.108 153.343 116.856 172.877C106.311 191.186 107.793 206.61 112.428 227.503C116.211 244.555 122.346 253.283 132.333 267.492L132.537 267.782C148.554 290.57 166.155 310.549 186.16 314.774C201.739 318.064 211.199 319.594 226.377 314.774C243.116 309.458 258.309 298.647 269.764 285.319C282.197 270.853 283.865 258.739 283.17 238.326C282.607 221.755 278.512 215.779 269.764 198.047C262.34 182.997 255.933 175.102 242.953 164.482C229.354 153.356 210.081 143.68 192.862 140.231Z" fill="url(#paint2_radial_719_2185)" />
+                    <path d="M192.862 140.231C180.028 137.661 176.534 136.381 163.777 139.312C141.829 144.353 128.108 153.343 116.856 172.877C106.311 191.186 107.793 206.61 112.428 227.503C116.211 244.555 122.346 253.283 132.333 267.492L132.537 267.782C148.554 290.57 166.155 310.549 186.16 314.774C201.739 318.064 211.199 319.594 226.377 314.774C243.116 309.458 258.309 298.647 269.764 285.319C282.197 270.853 283.865 258.739 283.17 238.326C282.607 221.755 278.512 215.779 269.764 198.047C262.34 182.997 255.933 175.102 242.953 164.482C229.354 153.356 210.081 143.68 192.862 140.231Z" fill="url(#paint3_radial_719_2185)" />
                   </g>
-                  <path
-                    id="ojo-der-gradient"
-                    d="M35.6566 11.193C36.6222 11.0024 36.8852 10.9075 37.8451 11.1248C39.4965 11.4987 40.5289 12.1653 41.3755 13.6139C42.169 14.9716 42.0575 16.1154 41.7087 17.6648C41.4241 18.9293 40.9625 19.5765 40.211 20.6302L40.1957 20.6517C38.9905 22.3417 37.6661 23.8232 36.1609 24.1365C34.9886 24.3805 34.2768 24.4939 33.1348 24.1365C31.8753 23.7423 30.7321 22.9406 29.8702 21.9522C28.9347 20.8795 28.8092 19.9811 28.8615 18.4674C28.9039 17.2385 29.212 16.7953 29.8702 15.4804C30.4288 14.3644 30.9109 13.7789 31.8876 12.9913C32.9108 12.1662 34.361 11.4488 35.6566 11.193Z"
-                    fill="url(#paint4_radial_719_2195)"
-                  />
+                  <path id="right-eye" d="M467.383 140.15C480.208 137.66 483.7 136.421 496.447 139.259C518.378 144.142 532.088 152.848 543.332 171.768C553.869 189.501 552.388 204.439 547.756 224.675C543.976 241.19 537.846 249.643 527.867 263.405L527.663 263.686C511.658 285.758 494.07 305.108 474.081 309.2C458.513 312.387 449.061 313.868 433.894 309.2C417.169 304.052 401.987 293.581 390.54 280.671C378.118 266.661 376.451 254.928 377.145 235.158C377.708 219.108 381.799 213.32 390.54 196.146C397.959 181.57 404.361 173.923 417.331 163.637C430.92 152.861 450.178 143.49 467.383 140.15Z" fill="url(#paint4_radial_719_2185)" />
                 </g>
                 <defs>
-                  <filter
-                    id="filter0_dii_719_2195"
-                    x="0"
-                    y="-3.5"
-                    width="52"
-                    height="38.7197"
-                    filterUnits="userSpaceOnUse"
-                    colorInterpolationFilters="sRGB"
-                  >
+                  <filter id="filter0_dii_719_2185" x="0" y="-3.5" width="666" height="439.366" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
                     <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feColorMatrix
-                      in="SourceAlpha"
-                      type="matrix"
-                      values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                      result="hardAlpha"
-                    />
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
                     <feOffset dx="0.5" dy="0.5" />
                     <feGaussianBlur stdDeviation="0.5" />
                     <feComposite in2="hardAlpha" operator="out" />
-                    <feColorMatrix
-                      type="matrix"
-                      values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
-                    />
-                    <feBlend
-                      mode="normal"
-                      in2="BackgroundImageFix"
-                      result="effect1_dropShadow_719_2195"
-                    />
-                    <feBlend
-                      mode="normal"
-                      in="SourceGraphic"
-                      in2="effect1_dropShadow_719_2195"
-                      result="shape"
-                    />
-                    <feColorMatrix
-                      in="SourceAlpha"
-                      type="matrix"
-                      values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                      result="hardAlpha"
-                    />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_719_2185" />
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_719_2185" result="shape" />
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
                     <feOffset dx="1" dy="1" />
                     <feGaussianBlur stdDeviation="2" />
-                    <feComposite
-                      in2="hardAlpha"
-                      operator="arithmetic"
-                      k2="-1"
-                      k3="1"
-                    />
-                    <feColorMatrix
-                      type="matrix"
-                      values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
-                    />
-                    <feBlend
-                      mode="normal"
-                      in2="shape"
-                      result="effect2_innerShadow_719_2195"
-                    />
-                    <feColorMatrix
-                      in="SourceAlpha"
-                      type="matrix"
-                      values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                      result="hardAlpha"
-                    />
+                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+                    <feBlend mode="normal" in2="shape" result="effect2_innerShadow_719_2185" />
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
                     <feOffset dx="1" dy="-4" />
                     <feGaussianBlur stdDeviation="2" />
-                    <feComposite
-                      in2="hardAlpha"
-                      operator="arithmetic"
-                      k2="-1"
-                      k3="1"
-                    />
-                    <feColorMatrix
-                      type="matrix"
-                      values="0 0 0 0 0.696154 0 0 0 0 0.696154 0 0 0 0 0.696154 0 0 0 0.25 0"
-                    />
-                    <feBlend
-                      mode="normal"
-                      in2="effect2_innerShadow_719_2195"
-                      result="effect3_innerShadow_719_2195"
-                    />
+                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0.696154 0 0 0 0 0.696154 0 0 0 0 0.696154 0 0 0 0.25 0" />
+                    <feBlend mode="normal" in2="effect2_innerShadow_719_2185" result="effect3_innerShadow_719_2185" />
                   </filter>
-                  <radialGradient
-                    id="paint0_radial_719_2195"
-                    cx="0"
-                    cy="0"
-                    r="1"
-                    gradientTransform="matrix(2.74849 37.4408 -20.9538 1.57934 12.134 -3.72138)"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop stopColor="#4A4A48" />
-                    <stop
-                      offset="0.383855"
-                      stopColor="#444440"
-                      stopOpacity="0.9"
-                    />
-                    <stop offset="1" stopColor="#373732" stopOpacity="0.95" />
+                  <radialGradient id="paint0_radial_719_2185" cx="0" cy="0" r="1" gradientTransform="matrix(268.688 510.037 -290.304 152.743 123.108 -29.9779)" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#A1A19A" stopOpacity="0.5" />
+                    <stop offset="0.567385" stopColor="#676766" />
+                    <stop offset="1" stopColor="#373732" />
                   </radialGradient>
-                  <radialGradient
-                    id="paint1_radial_719_2195"
-                    cx="0"
-                    cy="0"
-                    r="1"
-                    gradientTransform="matrix(30.4651 14.3725 -21.7608 47.8598 5.17442 14.17)"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop stopColor="#6F6F6B" />
-                    <stop
-                      offset="0.506669"
-                      stopColor="#393934"
-                      stopOpacity="0.5"
-                    />
-                    <stop offset="1" stopColor="#5D5D5A" stopOpacity="0.5" />
+                  <radialGradient id="paint1_radial_719_2185" cx="0" cy="0" r="1" gradientTransform="matrix(404.577 187.713 -288.983 625.078 62.5763 179.039)" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#A1A19A" />
+                    <stop offset="0.506669" stopColor="#393934" stopOpacity="0.5" />
+                    <stop offset="1" stopColor="#21211D" stopOpacity="0.5" />
                   </radialGradient>
-                  <radialGradient
-                    id="paint2_radial_719_2195"
-                    cx="0"
-                    cy="0"
-                    r="1"
-                    gradientTransform="matrix(-14.6374 -9.76602 17.6741 -27.4714 22.216 23.336)"
-                    gradientUnits="userSpaceOnUse"
-                  >
+                  <radialGradient id="paint2_radial_719_2185" cx="0" cy="0" r="1" gradientTransform="matrix(-194.384 -127.55 234.712 -358.793 288.891 298.745)" gradientUnits="userSpaceOnUse">
                     <stop offset="0.122263" stopColor="#236A96" />
                     <stop offset="0.853424" stopColor="#A8C1D1" />
                   </radialGradient>
-                  <radialGradient
-                    id="paint3_radial_719_2195"
-                    cx="0"
-                    cy="0"
-                    r="1"
-                    gradientTransform="matrix(-5.04737 -7.71001 13.9532 -9.47288 14.1402 19.738)"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop
-                      offset="0.122263"
-                      stopColor="#236A96"
-                      stopOpacity="0.7"
-                    />
-                    <stop
-                      offset="0.853424"
-                      stopColor="#A8C1D1"
-                      stopOpacity="0.5"
-                    />
+                  <radialGradient id="paint3_radial_719_2185" cx="0" cy="0" r="1" gradientTransform="matrix(-67.0291 -100.697 185.299 -123.722 181.644 251.753)" gradientUnits="userSpaceOnUse">
+                    <stop offset="0.122263" stopColor="#236A96" stopOpacity="0.7" />
+                    <stop offset="0.853424" stopColor="#A8C1D1" stopOpacity="0.5" />
                   </radialGradient>
-                  <radialGradient
-                    id="paint4_radial_719_2195"
-                    cx="0"
-                    cy="0"
-                    r="1"
-                    gradientTransform="matrix(7.06632 -14.906 -14.3873 -7.00247 35.339 21.794)"
-                    gradientUnits="userSpaceOnUse"
-                  >
+                  <radialGradient id="paint4_radial_719_2185" cx="0" cy="0" r="1" gradientTransform="matrix(93.8408 -194.682 -191.064 -91.4565 463.167 278.606)" gradientUnits="userSpaceOnUse">
                     <stop offset="0.0062933" stopColor="#236A96" />
                     <stop offset="1" stopColor="#A8C1D1" />
                   </radialGradient>
@@ -527,16 +439,14 @@ export const ChatModal = ({
                     return (
                       <div
                         key={message.id}
-                        className={`flex w-full animate-in fade-in slide-in-from-bottom-1.5 duration-300 ${
-                          isUser ? "justify-end" : "justify-start"
-                        }`}
+                        className={`flex w-full animate-in fade-in slide-in-from-bottom-1.5 duration-300 ${isUser ? "justify-end" : "justify-start"
+                          }`}
                       >
                         <div
-                          className={`max-w-[84%] rounded-2xl px-4 py-2.5 font-inria text-[0.97rem] leading-relaxed shadow-sm md:max-w-[72%] ${
-                            isUser
-                              ? "rounded-br-md bg-neutral-900 text-neutral-50"
-                              : "rounded-bl-md border border-black/10 bg-white/80 text-neutral-900"
-                          }`}
+                          className={`max-w-[84%] rounded-2xl px-4 py-2.5 font-inria text-[0.97rem] leading-relaxed shadow-sm md:max-w-[72%] ${isUser
+                            ? "rounded-br-md bg-neutral-900 text-neutral-50"
+                            : "rounded-bl-md border border-black/10 bg-white/80 text-neutral-900"
+                            }`}
                         >
                           {message.content}
                         </div>

@@ -5,173 +5,94 @@ import MorphSVGPlugin from "gsap/MorphSVGPlugin";
 import { useGSAP } from "@gsap/react";
 import { useRef, useState } from "react";
 import { ChatModal } from "../AI/Syllie/ChatModal";
+import CustomEase from "gsap/CustomEase";
+gsap.registerPlugin(useGSAP, MorphSVGPlugin, CustomEase);
 
-gsap.registerPlugin(useGSAP, MorphSVGPlugin);
-
-const IDS = ['syllie-3d-clicked', 'syllie-3d-eyes-looking-down', 'syllie-3d-eyes-looking-up', 'syllie-3d-eyes-looking-left'] as const;
-const IDS_DURATION = [0, 0.6, 1.2, 1.8] as const;
+const IDS = ['syllie-3d-clicked', 'syllie-3d-idle', 'syllie-3d-eyes-looking-down', 'syllie-3d-eyes-looking-up'] as const;
+const IDS_DURATION = [0.4, 0.2, 0.5, 0.3] as const;
 
 export const SyllieChat = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
-
+  const [animationStarting, setAnimationStarting] = useState(false);
   const container = useRef<HTMLButtonElement>(null);
-  const mainGradientRef = useRef<SVGRadialGradientElement>(null);
-
-  const mainStop2 = useRef<SVGStopElement>(null);
-  const mainStop3 = useRef<SVGStopElement>(null);
-  const overlayStop1 = useRef<SVGStopElement>(null);
-  const overlayStop2 = useRef<SVGStopElement>(null);
-
-  const FACE_ANIMATION_DURATION = 0.6;
-
-  const matrixProxy = useRef({
-    a: 268.688,
-    b: 510.037,
-    c: -290.304,
-    d: 152.743,
-    e: 123.108,
-    f: -29.9779,
-  });
-
-  const { contextSafe } = useGSAP({ scope: container });
-
-  const updateGradient = () => {
-    const { a, b, c, d, e, f } = matrixProxy.current;
-    mainGradientRef.current?.setAttribute(
-      "gradientTransform",
-      `matrix(${a} ${b} ${c} ${d} ${e} ${f})`,
-    );
-  };
-
-  const handleHoverIn = contextSafe(() => {
-    gsap.to(matrixProxy.current, {
-      a: 96.5,
-      b: 489,
-      c: -278.266,
-      d: 20.6271,
-      e: 155,
-      f: -54.6338,
-      duration: FACE_ANIMATION_DURATION,
-      ease: "power2.out",
-      onUpdate: updateGradient,
-    });
-
-    gsap.to(mainStop2.current, {
-      stopColor: "#444440",
-      stopOpacity: 0.9,
-      duration: FACE_ANIMATION_DURATION,
-    });
-
-    gsap.to(mainStop3.current, {
-      stopOpacity: 0.95,
-      duration: FACE_ANIMATION_DURATION,
-    });
-
-    gsap.to(overlayStop1.current, {
-      attr: { stopColor: "#6F6F6B", stopOpacity: 0.8 },
-      duration: FACE_ANIMATION_DURATION,
-    });
-
-    gsap.to(overlayStop2.current, {
-      attr: { stopOpacity: 0.5 },
-      duration: FACE_ANIMATION_DURATION,
-    });
-  });
-
-  const handleHoverOut = contextSafe(() => {
-    gsap.to(matrixProxy.current, {
-      a: 268.688,
-      b: 510.037,
-      c: -290.304,
-      d: 152.743,
-      e: 123.108,
-      f: -29.9779,
-      duration: FACE_ANIMATION_DURATION,
-      ease: "power2.out",
-      onUpdate: updateGradient,
-    });
-
-    gsap.to(mainStop2.current, {
-      stopColor: "#484847",
-      stopOpacity: 1,
-      duration: FACE_ANIMATION_DURATION,
-    });
-
-    gsap.to(mainStop3.current, {
-      stopOpacity: 1,
-      duration: FACE_ANIMATION_DURATION,
-    });
-
-    gsap.to(overlayStop1.current, {
-      attr: { stopColor: "#40403B" },
-      duration: FACE_ANIMATION_DURATION,
-    });
-
-    gsap.to(overlayStop2.current, {
-      attr: { stopOpacity: 1 },
-      duration: FACE_ANIMATION_DURATION,
-    });
-  });
-
-
-  const handleSyllieOnClick = contextSafe(() => {
-    const tl = gsap.timeline();
-
-    for(let i = 0; i < IDS.length - 1; i++) {
-      tl.to(`#syllie-3d-idle #left-eye path:first-child`, {
-        morphSVG: `#${IDS[i]} #left-eye path:first-child`,
-        duration: FACE_ANIMATION_DURATION,
-        ease: "power2.out",
-      }, i * FACE_ANIMATION_DURATION);
-      tl.to(`#syllie-3d-idle #left-eye path:last-child`, {
-        morphSVG: `#${IDS[i]} #left-eye path:last-child`,
-        duration: FACE_ANIMATION_DURATION,
-        ease: "power2.out",
-      }, i * FACE_ANIMATION_DURATION);
-      tl.to(`#syllie-3d-idle #right-eye`, {
-        morphSVG: `#${IDS[i]} #right-eye`,
-        duration: FACE_ANIMATION_DURATION,
-        ease: "power2.out",
-      }, i * FACE_ANIMATION_DURATION);
-      
-      if(i === 0){
-        tl.to(`#syllie-3d-idle #face`, {
-        rotateY: 100,
-        duration: FACE_ANIMATION_DURATION,
-        ease: "power2.out",
-      }, i * FACE_ANIMATION_DURATION);
-      }else{
-        tl.to(`#syllie-3d-idle #face`, {
-        morphSVG: `#${IDS[i]} #face`,
-        duration: FACE_ANIMATION_DURATION,
-        ease: "power2.out",
-      }, i * FACE_ANIMATION_DURATION);
+  const tl = useRef<gsap.core.Timeline | null>(null);
+  useGSAP(() => {
+    tl.current = gsap.timeline({
+      paused: true,
+      onComplete: () => {
+        setIsChatOpen(true);
       }
-    }
-    tl.to(`#syllie-3d-idle, .syllie-wrapper`, {
-      y: -40,
-      rotateX: 30,
-      duration: 1.2,
-      ease: "back.inOut",
-    }, 0.3)
+    });
 
-      tl.to(container.current, {
-        scale: 1,
-        duration: 0.2,
-        onComplete: () => {
-          setIsChatOpen(true);
-          handleHoverIn();
-        },
-      });
-  });
+    let cumulativeTime = 0;
+
+    for (let i = 0; i < IDS.length; i++) {
+      const phaseDuration = IDS_DURATION[i];
+
+      tl.current.to(`#syllie-3d-idle #left-eye path:first-child`, {
+        morphSVG: `#${IDS[i]} #left-eye path:first-child`,
+        duration: phaseDuration,
+        ease: "power2.out",
+      }, cumulativeTime);
+      tl.current.to(`#syllie-3d-idle #left-eye path:last-child`, {
+        morphSVG: `#${IDS[i]} #left-eye path:last-child`,
+        duration: phaseDuration,
+        ease: "power2.out",
+      }, cumulativeTime);
+      tl.current.to(`#syllie-3d-idle #right-eye`, {
+        morphSVG: `#${IDS[i]} #right-eye`,
+        duration: phaseDuration,
+        ease: "power2.out",
+      }, cumulativeTime);
+
+      if (i === 0) {
+        tl.current.to(`#syllie-3d-idle`, {
+          transformOrigin: "center",
+          rotate: 5,
+          duration: 0.4,
+          ease: "power2.out",
+        }, cumulativeTime);
+        tl.current.to(`#syllie-3d-idle`, {
+          transformOrigin: "center",
+          rotate: 0,
+          duration: 0.2,
+          ease: "power2.out",
+        }, ">0");
+      } else {
+        tl.current.to(`#syllie-3d-idle #face`, {
+          morphSVG: `#${IDS[i]} #face`,
+          duration: phaseDuration,
+          ease: "power2.out",
+        }, cumulativeTime);
+      }
+      cumulativeTime += phaseDuration;
+    }
+
+
+    tl.current.to(`.syllie-wrapper`, {
+      y: -70,
+      x: -2,
+      duration: 1.2,
+      ease: CustomEase.create("custom", "M0,0 C0,0 0.07,-0.083 0.176,-0.131 0.218,-0.172 0.283,-0.177 0.336,-0.168 0.342,-0.167 0.459,-0.096 0.462,-0.095 0.486,-0.083 0.529,0.531 0.554,0.555 0.58,0.581 0.599,0.765 0.623,0.806 0.625,0.81 0.697,0.992 0.7,1 0.728,1.069 0.771,1.128 0.792,1.182 0.817,1.247 0.879,1.124 0.9,1.2 0.924,1.288 1,1.061 1,1.061 "),
+    }, cumulativeTime - 0.8)
+
+  }, [])
+
+
+  useGSAP(() => {
+    if (animationStarting && tl.current) {
+      tl.current?.play();
+      
+    } else {
+      tl.current?.reverse();
+    }
+  }, [animationStarting]);
 
   return (
     <>
       <button
         ref={container}
-        onMouseEnter={() => !isChatOpen && handleHoverIn()}
-        onMouseLeave={() => !isChatOpen && handleHoverOut()}
-        onClick={handleSyllieOnClick}
+        onClick={() => setAnimationStarting((prev) => !prev)}
         className="w-16 flex items-center justify-center rounded-full cursor-pointer"
       >
         <svg
@@ -848,10 +769,8 @@ export const SyllieChat = () => {
       </button>
       <ChatModal
         isOpen={isChatOpen}
-        onClose={() => {
-          setIsChatOpen(false);
-          handleHoverOut();
-        }}
+        setIsOpen={setIsChatOpen}
+        setFirstAnimationStarting={setAnimationStarting}
       />
     </>
   );
