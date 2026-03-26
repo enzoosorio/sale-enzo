@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import gsap from "gsap";
 import { Flip } from "gsap/Flip";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -9,6 +9,7 @@ import { WholeProductStructure } from "@/types/products/products";
 import { ProductGrid } from "./ProductGrid";
 import { AsideFilters } from "./AsideFilters";
 import { ProductsFastNav } from "./ProductsFastNav";
+import { finalBackground, initialBackground } from "@/app/(app)/home/page";
 
 gsap.registerPlugin(useGSAP, Flip, ScrollTrigger);
 
@@ -23,28 +24,146 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
   const gridRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  const tlFastBar = useRef<gsap.core.Timeline | null>(null);
+  const fastNavTriggerRef = useRef<ScrollTrigger | null>(null);
 
-  const lockScroll = () => {
-    document.body.style.overflow = "hidden";
+  const createFastNavScrollTrigger = () => {
+    // Matar cualquier trigger anterior
+    if (fastNavTriggerRef.current) {
+      fastNavTriggerRef.current.kill();
+      fastNavTriggerRef.current = null;
+    }
+    // Matar timeline anterior si existe
+    if (tlFastBar.current) {
+      tlFastBar.current.kill();
+      tlFastBar.current = null;
+    }
+
+    // Resetear estilos de las subcategorías a su estado inicial
+    gsap.set('.other-subcategories-fast-nav', {
+      opacity: 0,
+      pointerEvents: 'none',
+    });
+
+    let animatingFastBar = false;
+
+    // Crear nuevo timeline
+    tlFastBar.current = gsap.timeline({ paused: true });
+    tlFastBar.current.to('.other-subcategories-fast-nav', {
+      opacity: 1,
+      pointerEvents: 'auto',
+      duration: 0.3,
+      stagger: { each: 0.25, from: "start" },
+      ease: "circ.out"
+    }, 0);
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        id: "fastNavTrigger",
+        trigger: ".fast-nav-wrapper",
+        start: "top top",
+        end: () => {
+          const productSection = document.querySelector(".products-section");
+          const sectionHeight = productSection ? productSection.clientHeight : 0;
+          return `+=${sectionHeight - 100}`;
+        },
+        pin: '.fast-nav-wrapper',
+        pinSpacing: false,
+        invalidateOnRefresh: true,
+        scrub: true,
+        markers: true,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          if (progress > 0.105 && !animatingFastBar && tlFastBar.current) {
+            gsap.to(".title-main", {
+              fontSize: "1.8rem",
+              duration: 0.6,
+              ease: "power2.out",
+            });
+            animatingFastBar = true;
+            // Asegurar que la timeline se reproduce desde el principio
+            tlFastBar.current.progress(0).play();
+          } else if (progress <= 0.105 && animatingFastBar && tlFastBar.current) {
+            gsap.to(".title-main", {
+              fontSize: "6rem",
+              duration: 0.3,
+              ease: "power2.out",
+            });
+            animatingFastBar = false;
+            // Reproducir hacia atrás desde el final
+            tlFastBar.current.progress(1).reverse();
+          }
+        }
+      }
+    });
+    tl.to('.fast-nav-wrapper', { top: 0, ease: "power2.out", duration: 0.5 }, 0);
+    tl.fromTo(".fast-nav-wrapper",
+      { background: initialBackground },
+      {
+        background: finalBackground,
+        backdropFilter: "blur(16px)",
+        ease: "elastic.out(1,1)",
+        duration: 0.025,
+      },
+      0
+    );
+
+    fastNavTriggerRef.current = tl.scrollTrigger!;
+
+    // Sincronizar estado inicial con el progress actual del ScrollTrigger
+    if (fastNavTriggerRef.current && fastNavTriggerRef.current.progress > 0.105) {
+      // Forzar estado de animación activado
+      gsap.set(".title-main", { fontSize: "1.8rem", overwrite: true });
+      if (tlFastBar.current) {
+        tlFastBar.current.progress(1);
+      }
+      animatingFastBar = true;
+    } else {
+      // Asegurar que el timeline esté en progreso 0
+      if (tlFastBar.current) {
+        tlFastBar.current.progress(0);
+      }
+    }
+    console.log("FastNav ScrollTrigger creado con ID:");
+    return tl;
   };
-  const unlockScroll = () => {
-    document.body.style.overflow = "";
+
+  const killFastNavTrigger = () => {
+    if (fastNavTriggerRef.current) {
+      fastNavTriggerRef.current.kill();
+      fastNavTriggerRef.current = null;
+    }
+    if (tlFastBar.current) {
+      tlFastBar.current.kill();
+      tlFastBar.current = null;
+    }
+    // Resetear estilos
+    gsap.set('.other-subcategories-fast-nav', {
+      opacity: 0,
+      pointerEvents: 'none',
+    });
+    gsap.killTweensOf(".title-main");
+
   };
 
   useGSAP(() => {
     const activateLayout = () => {
-      if (!containerRef.current || !gridRef.current || !sidebarRef.current)
-        return;
+      if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
 
-      lockScroll();
+      const container = containerRef.current;
+      const currentScroll = window.scrollY;
+
+      killFastNavTrigger();
+
+      gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
 
       const state = Flip.getState([
-        containerRef.current,
+        container,
         gridRef.current,
         sidebarRef.current,
       ]);
 
-      containerRef.current.classList.add("layout-active");
+      container.classList.add("layout-active");
 
       Flip.from(state, {
         duration: 1,
@@ -53,57 +172,36 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
         nested: true,
         stagger: 0.01,
         onComplete: () => {
+          ScrollTrigger.refresh();
+          window.scrollTo(0, currentScroll);
           const tl = gsap.timeline();
-          tl.to(
-            sidebarRef.current,
-            {
-              opacity: 1,
-              duration: 0.1,
-            },
-            0,
-          );
-          tl.to(
-            ".subcategory-title",
-            {
-              color: "#fff",
-              duration: 0.35,
-            },
-            0.05,
-          );
-          tl.to(
-            ".title-main",
-            {
-              opacity: 0,
-              duration: 0.35,
-            },
-            0.06,
-          );
-          tl.to(
-            ".overlay-filters",
-            {
-              x: "-100%",
-              duration: 0.5,
-            },
-            0.05,
-          );
-
-          unlockScroll();
+          tl.to(sidebarRef.current, { opacity: 1, duration: 0.1 }, 0);
+          tl.to(".subcategory-title", { color: "#fff", duration: 0.35 }, 0.05);
+          tl.to(".title-main", { opacity: 0, duration: 0.35 }, 0.06);
+          tl.to(".overlay-filters", { x: "-100%", duration: 0.5 }, 0.05);
+          
+        setIsAnimating(false);
         },
       });
     };
 
     const deactivateLayout = () => {
-      if (!containerRef.current || !gridRef.current || !sidebarRef.current)
-        return;
+      if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
 
-      lockScroll();
+      const container = containerRef.current;
+      const currentScroll = window.scrollY;
+
+      killFastNavTrigger();
+
+      gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
+
       const state = Flip.getState([
-        containerRef.current,
+        container,
         gridRef.current,
         sidebarRef.current,
       ]);
 
-      containerRef.current.classList.remove("layout-active");
+      container.classList.remove("layout-active");
 
       Flip.from(state, {
         duration: 1,
@@ -112,17 +210,24 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
         nested: true,
         stagger: 0.01,
         onComplete: () => {
+          gsap.set(".fast-nav-wrapper", { visibility: "visible", opacity: 1 });
+          createFastNavScrollTrigger();
+
+          ScrollTrigger.refresh();
+          window.scrollTo(0, currentScroll);
+
           gsap.to(".fast-nav-wrapper", {
             opacity: 1,
             pointerEvents: "auto",
             duration: 0.1,
           });
-          unlockScroll();
+          setIsAnimating(false);
         },
       });
     };
 
     if (layoutActive) {
+      setIsAnimating(true);
       const tl = gsap.timeline();
       tl.to(
         ".fast-nav-wrapper",
@@ -136,103 +241,76 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
         activateLayout();
       });
     } else {
-      // making aside filters exit animation before deactivating layout
+      setIsAnimating(true);
       const tl = gsap.timeline();
       tl.to(
         ".subcategory-title",
-        {
-          color: "#221C1C",
-          duration: 0.1,
-        },
+        { color: "#221C1C", duration: 0.1 },
         0,
       ).to(
         ".title-main",
-        {
-          opacity: 1,
-          duration: 0.1,
-        },
+        { opacity: 1, duration: 0.1 },
         0.05,
       );
       tl.to(
         ".overlay-filters",
-        {
-          x: "0%",
-          duration: 0.5,
-        },
+        { x: "0%", duration: 0.5 },
         0,
       );
       tl.to(
         sidebarRef.current,
-        {
-          opacity: 0,
-          duration: 0.1,
-        },
+        { opacity: 0, duration: 0.1 },
         ">0.05",
       ).then(() => {
         deactivateLayout();
+        
       });
     }
   }, [layoutActive]);
 
   return (
     <main className="main-products">
-      <section className="products-section  w-full min-h-screen overflow-clip flex flex-col items-start justify-start gap-0 relative pb-20">
+      <section className="products-section w-full min-h-screen overflow-clip flex flex-col items-start justify-start gap-0 relative pb-20">
         <div
           ref={containerRef}
-          className={`wrapper-pf relative grid grid-cols-1 grid-rows-2 pb-32  w-screen gap-0`}
+          className={`wrapper-pf relative grid grid-cols-1 grid-rows-2 pb-32 w-screen gap-0`}
         >
-            {/* breadcrumbs */}
           <div className="absolute top-14 left-0 pl-8 translate-y-0 row-span-1">
-            <p className="font-prata text-sm  px-2 py-1 ">
+            <p className="font-prata text-sm px-2 py-1">
               Polos / Sweatshirts / Pants / Accessories
             </p>
           </div>
-          <ProductsFastNav
-            containerRef={containerRef}
+            <ProductsFastNav
             subcategories={[
-              {
-                href: "polos",
-                name: "POLOS",
-              },
-              {
-                href: "sweatshirts",
-                name: "SWEATSHIRTS",
-              },
-              {
-                href: "pants",
-                name: "PANTS",
-              },
-              {
-                href: "accessories",
-                name: "ACCESSORIES",
-              },
+              { href: "polos", name: "POLOS" },
+              { href: "sweatshirts", name: "SWEATSHIRTS" },
+              { href: "pants", name: "PANTS" },
+              { href: "accessories", name: "ACCESSORIES" },
             ]}
           />
-          {/* SIDEBAR */}
           <aside
             ref={sidebarRef}
-            className="relative filters-wrapper 
-                        overflow-y-auto px-4 py-3 text-white transition-colors"
+            className="relative filters-wrapper overflow-y-auto px-4 py-3 text-white transition-colors"
           >
-            <h1 className="subcategory-title pl-4 pt-7 font-prata text-6xl ">
+            <h1 className="subcategory-title pl-4 pt-7 font-prata text-6xl">
               {title}
             </h1>
-
             <AsideFilters />
             <div className="overlay-filters fixed inset-0 w-full h-screen bg-off-white" />
           </aside>
-
-          {/* GRID */}
           <ProductGrid ref={gridRef} products={products} />
         </div>
       </section>
-      {/* filters button */}
       <button
         onClick={() => {
+          if (isAnimating) return;
           setLayoutActive(!layoutActive);
         }}
-        className="filter-button fixed bottom-8 right-8 cursor-pointer bg-black/5 stroke 
-            stroke-[rgba(181,179,179,0.6)] backdrop-blur-md shadow rounded-full p-3.5 w-16"
+        className={`filter-button fixed bottom-8 right-8 z-50
+         bg-black/5 stroke stroke-[rgba(181,179,179,0.6)] 
+         backdrop-blur-md shadow rounded-full p-3.5 w-16
+         ${isAnimating ? "pointer-events-none cursor-not-allowed opacity-50" : "pointer-events-auto cursor-pointer opacity-100"}
+         `}
       >
         <svg viewBox="0 0 32 32" fill="none" className="stroke-black">
           <g id="filters-svg">

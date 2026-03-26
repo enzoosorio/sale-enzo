@@ -28,7 +28,7 @@ export const HeaderBar = async ({
       <header
         className={` text-black
         min-h-(--navbar-height) z-10 flex items-center justify-center
-        ${variant === "product-detail" ? "absolute top-10 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-2xl w-11/12 rounded-sm" : "sticky gradial-radient w-full"}
+        ${variant === "product-detail" ? "absolute top-10 left-1/2 -translate-x-1/2 bg-white/15 shadow-xl backdrop-blur-2xl w-11/12 rounded-sm" : "sticky gradial-radient w-full"}
         
         `}
       >

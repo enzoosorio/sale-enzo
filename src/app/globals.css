@@ -504,3 +504,8 @@
 .inner-shadow-for-header {
 box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 195, 195, 20%);
 }
+
+.main-products{
+  min-height: 100vh;
+  position: relative;
+}

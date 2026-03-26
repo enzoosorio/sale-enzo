@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { createClient } from "@/utils/supabase/server";
-import { Footer } from "@/components/main/Footer/Footer";
 
 export const metadata: Metadata = {
   title: "App Layout",
   description: "Layout for the application with header and music player",
 };
 
-export default async function AppLayout({
+export default async function ProductsLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -24,8 +23,6 @@ export default async function AppLayout({
         <div className="flex-1">
           {children}
         </div>
-        {/* <MusicPlayer/> */}
-        <Footer/>
     </main>
   );
 }
