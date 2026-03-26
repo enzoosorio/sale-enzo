@@ -17,7 +17,7 @@ interface ProductsFastNavProps {
 export const ProductsFastNav = ({ subcategories }: ProductsFastNavProps) => {
 
     return (        
-        <div className="fast-nav-wrapper min-h-32 absolute w-screen z-20 top-20 pl-8 flex items-center opacity-0 invisible justify-start gap-12">
+        <div className="fast-nav-wrapper min-h-32 absolute w-screen z-20 top-20 pl-8 flex items-center justify-start gap-12">
                <h1
                     className="subcategory-title hover:text-black/75 transition-colors title-main font-prata text-8xl"
                 >

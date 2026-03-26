@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Flip } from "gsap/Flip";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -26,6 +26,7 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
   const sidebarRef = useRef<HTMLElement>(null);
   const tlFastBar = useRef<gsap.core.Timeline | null>(null);
   const fastNavTriggerRef = useRef<ScrollTrigger | null>(null);
+  const isFirstMount = useRef(true);
 
   const createFastNavScrollTrigger = () => {
     // Matar cualquier trigger anterior
@@ -74,19 +75,19 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
         markers: true,
         onUpdate: (self) => {
           const progress = self.progress;
-          if (progress > 0.105 && !animatingFastBar && tlFastBar.current) {
+          if (progress > 0.03 && !animatingFastBar && tlFastBar.current) {
             gsap.to(".title-main", {
               fontSize: "1.8rem",
-              duration: 0.6,
+              duration: 1.2,
               ease: "power2.out",
             });
             animatingFastBar = true;
             // Asegurar que la timeline se reproduce desde el principio
             tlFastBar.current.progress(0).play();
-          } else if (progress <= 0.105 && animatingFastBar && tlFastBar.current) {
+          } else if (progress <= 0.03 && animatingFastBar && tlFastBar.current) {
             gsap.to(".title-main", {
               fontSize: "6rem",
-              duration: 0.3,
+              duration: 1.2,
               ease: "power2.out",
             });
             animatingFastBar = false;
@@ -125,8 +126,16 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
       }
     }
     console.log("FastNav ScrollTrigger creado con ID:");
+    ScrollTrigger.refresh();
     return tl;
   };
+
+
+  // useEffect para crear el ScrollTrigger al montar el componente
+  useEffect(() => {
+    createFastNavScrollTrigger();
+    return () => killFastNavTrigger();
+  }, []);
 
   const killFastNavTrigger = () => {
     if (fastNavTriggerRef.current) {
@@ -146,85 +155,88 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
 
   };
 
-  useGSAP(() => {
-    const activateLayout = () => {
-      if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
+  const activateLayout = () => {
+    if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
 
-      const container = containerRef.current;
-      const currentScroll = window.scrollY;
+    const container = containerRef.current;
+    const currentScroll = window.scrollY;
 
-      killFastNavTrigger();
+    killFastNavTrigger();
 
-      gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
+    gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
 
-      const state = Flip.getState([
-        container,
-        gridRef.current,
-        sidebarRef.current,
-      ]);
+    const state = Flip.getState([
+      container,
+      gridRef.current,
+      sidebarRef.current,
+    ]);
 
-      container.classList.add("layout-active");
+    container.classList.add("layout-active");
 
-      Flip.from(state, {
-        duration: 1,
-        ease: "power3.inOut",
-        absolute: true,
-        nested: true,
-        stagger: 0.01,
-        onComplete: () => {
-          ScrollTrigger.refresh();
-          window.scrollTo(0, currentScroll);
-          const tl = gsap.timeline();
-          tl.to(sidebarRef.current, { opacity: 1, duration: 0.1 }, 0);
-          tl.to(".subcategory-title", { color: "#fff", duration: 0.35 }, 0.05);
-          tl.to(".title-main", { opacity: 0, duration: 0.35 }, 0.06);
-          tl.to(".overlay-filters", { x: "-100%", duration: 0.5 }, 0.05);
-          
+    Flip.from(state, {
+      duration: 1,
+      ease: "power3.inOut",
+      absolute: true,
+      nested: true,
+      stagger: 0.01,
+      onComplete: () => {
+        ScrollTrigger.refresh();
+        window.scrollTo(0, currentScroll);
+        const tl = gsap.timeline();
+        tl.to(sidebarRef.current, { opacity: 1, duration: 0.1 }, 0);
+        tl.to(".subcategory-title", { color: "#fff", duration: 0.35 }, 0.05);
+        tl.to(".title-main", { opacity: 0, duration: 0.35 }, 0.06);
+        tl.to(".overlay-filters", { x: "-100%", duration: 0.5 }, 0.05);
+
         setIsAnimating(false);
-        },
-      });
-    };
+      },
+    });
+  };
+  const deactivateLayout = () => {
+    if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
 
-    const deactivateLayout = () => {
-      if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
+    const container = containerRef.current;
+    const currentScroll = window.scrollY;
 
-      const container = containerRef.current;
-      const currentScroll = window.scrollY;
+    killFastNavTrigger();
 
-      killFastNavTrigger();
+    gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
 
-      gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
+    const state = Flip.getState([
+      container,
+      gridRef.current,
+      sidebarRef.current,
+    ]);
 
-      const state = Flip.getState([
-        container,
-        gridRef.current,
-        sidebarRef.current,
-      ]);
+    container.classList.remove("layout-active");
 
-      container.classList.remove("layout-active");
+    Flip.from(state, {
+      duration: 1,
+      ease: "power3.inOut",
+      absolute: true,
+      nested: true,
+      stagger: 0.01,
+      onComplete: () => {
+        gsap.set(".fast-nav-wrapper", { visibility: "visible", opacity: 1 });
+        createFastNavScrollTrigger();
 
-      Flip.from(state, {
-        duration: 1,
-        ease: "power3.inOut",
-        absolute: true,
-        nested: true,
-        stagger: 0.01,
-        onComplete: () => {
-          gsap.set(".fast-nav-wrapper", { visibility: "visible", opacity: 1 });
-          createFastNavScrollTrigger();
+        ScrollTrigger.refresh();
+        window.scrollTo(0, currentScroll);
 
-          ScrollTrigger.refresh();
-          window.scrollTo(0, currentScroll);
-
-          gsap.to(".fast-nav-wrapper", {
-            opacity: 1,
-            pointerEvents: "auto",
-            duration: 0.1,
-          });
-          setIsAnimating(false);
-        },
-      });
-    };
+        gsap.to(".fast-nav-wrapper", {
+          opacity: 1,
+          pointerEvents: "auto",
+          duration: 0.1,
+        });
+        setIsAnimating(false);
+      },
+    });
+  };
+  useGSAP(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return; // No ejecutar animaciones al montar
+    }
 
     if (layoutActive) {
       setIsAnimating(true);
@@ -263,7 +275,7 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
         ">0.05",
       ).then(() => {
         deactivateLayout();
-        
+
       });
     }
   }, [layoutActive]);
@@ -280,7 +292,7 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
               Polos / Sweatshirts / Pants / Accessories
             </p>
           </div>
-            <ProductsFastNav
+          <ProductsFastNav
             subcategories={[
               { href: "polos", name: "POLOS" },
               { href: "sweatshirts", name: "SWEATSHIRTS" },
