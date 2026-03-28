@@ -29,7 +29,7 @@ export const BrandFilterSection = ({
               onClick={() => onToggleBrand?.(brand)}
               className={`px-3 py-2.5 text-base border border-current text-current transition-colors
                 ${isSelected 
-                  ? 'bg-current text-[#221C1C]' 
+                  ? 'bg-off-black text-off-white' 
                   : 'opacity-90 hover:opacity-100'
                 }`}
             >

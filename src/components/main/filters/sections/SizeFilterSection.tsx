@@ -32,7 +32,7 @@ export const SizeFilterSection = ({
               onClick={() => onToggleSize?.(size)}
               className={`relative px-4 overflow-hidden max-h-24 flex-1 py-2.5 min-w-1/2 text-base border border-current text-current transition-colors
                 ${isSelected 
-                  ? 'bg-current text-[#221C1C]' 
+                  ? 'bg-off-black text-off-white' 
                   : 'opacity-90 hover:opacity-100'
                 }`}
             >

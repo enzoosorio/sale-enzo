@@ -30,7 +30,7 @@ export const GenderFilterSection = ({
               onClick={() => onSelectGender?.(gender)}
               className={`px-4 py-2.5 text-base w-full border border-current text-current min-w-1/2 ${gender === 'Unisex' ? "w-full" : "w-1/2"} transition-colors
                 ${isSelected 
-                  ? 'bg-current text-[#221C1C]' 
+                  ? 'bg-off-black text-off-white' 
                   : 'opacity-90 hover:opacity-100'
                 }`}
             >

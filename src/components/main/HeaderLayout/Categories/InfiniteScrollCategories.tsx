@@ -315,6 +315,14 @@ useEffect(() => {
       setPhase("TO_SUBCATEGORIES");
       setIsAnimating(true);
       params.delete("subcategory");
+      params.delete("tag");
+      params.delete("color");
+      params.delete("size");
+      params.delete("brand");
+      params.delete("gender");
+      params.delete("fit");
+      params.delete("minPrice");
+      params.delete("maxPrice");
       router.replace(`?${params.toString()}`, { scroll: false });
     } else if (hasCategory) {
       // Back from SUBCATEGORIES to PARENTS
