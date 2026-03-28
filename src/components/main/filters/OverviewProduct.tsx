@@ -1,12 +1,10 @@
 import React from 'react'
 import { CardFiltersPanel } from './CardFiltersPanel'
-import Image from 'next/image'
+import { type RpcMostRelatedVariant } from '@/utils/filters/rpcCategoryFilters'
 
 interface OverviewProductProps {
-  image: string;
-  name: string;
-  price: number;
-  size?: string;
+  variant?: RpcMostRelatedVariant;
+  isLoading?: boolean;
 }
 
 // Mock data for demonstration
@@ -18,18 +16,28 @@ const mockProduct = {
 };
 
 export const OverviewProduct = ({ 
-  image = mockProduct.image,
-  name = mockProduct.name,
-  price = mockProduct.price,
-  size = mockProduct.size
-}: Partial<OverviewProductProps> = {}) => {
+  variant,
+  isLoading = false,
+}: OverviewProductProps = {}) => {
+  const image = variant?.main_img_url || '/images/products/polo-prueba.jpg';
+  const name = variant?.product_name || mockProduct.name;
+  const price = typeof variant?.price === 'number' ? variant.price : mockProduct.price;
+  const size = variant?.size || mockProduct.size;
+
   return (
     <CardFiltersPanel className="flex flex-col items-center justify-center">
       <div className="w-full space-y-6">
+        {isLoading && (
+          <div className="w-full text-sm text-black/60 border border-black/10 px-4 py-3">
+            Buscando producto relacionado...
+          </div>
+        )}
+
         {/* Product Image */}
         <div className="relative aspect-3/4 w-full bg-neutral-100 rounded-sm overflow-hidden">
           <img
-          src={'/images/products/polo-prueba.jpg'}
+          src={image}
+          alt={name}
           className='w-full h-full'
           />
           {/* <div className="absolute inset-0 flex items-center justify-center">
@@ -79,6 +87,12 @@ export const OverviewProduct = ({
         <button className='border-[0.5] cursor-pointer bg-black text-white w-full py-2'>
           Comprar ahora
         </button>
+
+        {!isLoading && !variant && (
+          <p className="text-xs text-black/60">
+            No hay coincidencias para los filtros actuales.
+          </p>
+        )}
       </div>
     </CardFiltersPanel>
   )

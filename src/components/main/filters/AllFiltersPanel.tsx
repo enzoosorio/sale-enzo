@@ -5,70 +5,108 @@ import { BrandFilterSection } from './sections/BrandFilterSection'
 import { GenderFilterSection } from './sections/GenderFilterSection'
 import { TagsFilterSection } from './sections/TagsFilterSection'
 import { PriceFilterSection } from './sections/PriceFilterSection'
-import { useState } from 'react'
+import { type RpcAvailableFilters } from '@/utils/filters/rpcCategoryFilters'
 
-interface PriceFilterProps{
-  min: number;
-  max: number;
-  value: [number, number];
-  onChange?: (value: [number, number]) => void;
+interface AllFiltersPanelProps {
+  isLoading?: boolean;
+  availableFilters?: RpcAvailableFilters;
+  selectedSizes?: string[];
+  selectedColors?: string[];
+  selectedBrands?: string[];
+  selectedTags?: string[];
+  selectedGender?: string;
+  priceValue?: [number, number];
+  onToggleSize?: (size: string) => void;
+  onToggleColor?: (color: string) => void;
+  onToggleBrand?: (brand: string) => void;
+  onToggleTag?: (tag: string) => void;
+  onSelectGender?: (gender: string) => void;
+  onChangePrice?: (value: [number, number]) => void;
 }
 
-// Mock data for demonstration
-const mockSizes = ['S', 'M', 'L'];
-const mockColors = [
-  { name: 'Smooch Rouge', hex: '#249458' },
-  { name: 'Rosado Salmón', hex: '#D63B57' },
-  { name: 'Negro Profundo', hex: '#1F1F1a' },
-  { name: 'Azul Light', hex: '#E2E4F7' },
-];
-const mockBrands = ['Nike', 'Adidas', 'Under Armour', 'Reebok', 'New Balance'];
-const mockGenders = ['Masculino', 'Femenino', 'Unisex'];
-const mockTags = ['Deportivo', 'Soporte tradicional', 'Casual', 'Vintage', 'Oversize', 'Soporte tradicional2', 'Soporte tradicional3'];
+export const AllFiltersPanel = ({
+  isLoading = false,
+  availableFilters,
+  selectedSizes = [],
+  selectedColors = [],
+  selectedBrands = [],
+  selectedTags = [],
+  selectedGender,
+  priceValue = [0, 150],
+  onToggleSize,
+  onToggleColor,
+  onToggleBrand,
+  onToggleTag,
+  onSelectGender,
+  onChangePrice,
+}: AllFiltersPanelProps) => {
+  const sizeOptions = availableFilters?.sizes.map((size) => size.value) || [];
+  const colorOptions =
+    availableFilters?.colors.map((color) => ({
+      name: color.label,
+      hex: color.representative_hex,
+    })) || [];
+  const brandOptions = availableFilters?.brands.map((brand) => brand.value) || [];
+  const genderOptions = availableFilters?.genders.map((gender) => gender.value) || [];
+  const tagOptions = availableFilters?.tags.map((tag) => tag.slug) || [];
 
-export const AllFiltersPanel = () => {
+  const priceMin = availableFilters?.price_range.min ?? 0;
+  const priceMax = availableFilters?.price_range.max ?? 150;
+  const safeMin = Number.isFinite(priceMin) ? Number(priceMin) : 0;
+  const safeMax = Number.isFinite(priceMax) ? Number(priceMax) : 150;
 
-  const [priceValue, setPriceValue] = useState<[number,number]>([0, 150]);
+  const rangeMin = Math.floor(Math.min(safeMin, safeMax));
+  const rangeMax = Math.ceil(Math.max(safeMin, safeMax));
+  const normalizedMax = rangeMin === rangeMax ? rangeMax + 1 : rangeMax;
+
+  const normalizedPriceValue: [number, number] = [
+    Math.min(Math.max(priceValue[0], rangeMin), normalizedMax),
+    Math.min(Math.max(priceValue[1], rangeMin), normalizedMax),
+  ].sort((a, b) => a - b) as [number, number];
 
   return (
     <CardFiltersPanel className='px-2'>
+      {isLoading && (
+        <div className='w-full text-sm text-black/60 border border-black/10 px-4 py-3'>
+          Cargando filtros dinamicos...
+        </div>
+      )}
+
       <SizeFilterSection 
-        sizes={mockSizes}
-        selectedSizes={[]}
-        onToggleSize={(size) => console.log('Toggle size:', size)}
+        sizes={sizeOptions}
+        selectedSizes={selectedSizes}
+        onToggleSize={onToggleSize}
       />
       
       <ColorFilterSection 
-        colors={mockColors}
-        selectedColors={[]}
-        onToggleColor={(color) => console.log('Toggle color:', color)}
+        colors={colorOptions}
+        selectedColors={selectedColors}
+        onToggleColor={onToggleColor}
       />
       
       <BrandFilterSection 
-        brands={mockBrands}
-        selectedBrands={[]}
-        onToggleBrand={(brand) => console.log('Toggle brand:', brand)}
+        brands={brandOptions}
+        selectedBrands={selectedBrands}
+        onToggleBrand={onToggleBrand}
       />
       
       <GenderFilterSection 
-        genders={mockGenders}
-        selectedGender={undefined}
-        onSelectGender={(gender) => console.log('Select gender:', gender)}
+        genders={genderOptions}
+        selectedGender={selectedGender}
+        onSelectGender={onSelectGender}
       />
       
       <TagsFilterSection 
-        tags={mockTags}
-        selectedTags={[]}
-        onToggleTag={(tag) => console.log('Toggle tag:', tag)}
+        tags={tagOptions}
+        selectedTags={selectedTags}
+        onToggleTag={onToggleTag}
       />
       
       <PriceFilterSection 
-        min={0}
-        max={150}
-        value={priceValue}
-        onChange={(value) => {
-          setPriceValue(value)
-        }}
+        min={rangeMin}
+        max={normalizedMax}
+        value={normalizedPriceValue}
+        onChange={onChangePrice}
       />
     </CardFiltersPanel>
   )

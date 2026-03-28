@@ -1,8 +1,7 @@
 "use client";
-import { useState } from "react";
 import { CategoriesPanel } from "./CategoriesPanel";
 import { useCategoriesStore } from "@/store/categorySection";
-
+import { createPortal } from "react-dom";
 export const CategoriesButton = () => {
   const { showCategories, setShowCategories } = useCategoriesStore();
 
@@ -19,7 +18,12 @@ export const CategoriesButton = () => {
       >
         Categorías
       </button>
-      <CategoriesPanel/>
+      {
+        showCategories && createPortal(
+          <CategoriesPanel />,
+          document.body
+        )
+      }
     </>
   );
 };

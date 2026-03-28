@@ -197,35 +197,6 @@ useEffect(() => {
           });          
         },
         onUpdate: () => {
-          // // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
-          // const progress = tl.progress();
-          // if(progress > 0.01 && progress < 0.7) {
-          //   gsap.to(".blurred", {
-          //     x: () => 400 * progress,
-          //     filter: () => `blur(${120 - progress * 100}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.out",
-          //   });
-          //   gsap.to(".blurred-2", {
-          //     x: () => -400 * progress,
-          //     filter: () => `blur(${120 - progress * 100}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.out",
-          //   });
-          // }else if(progress > 0.7) {
-          //    gsap.to(".blurred", {
-          //     x: () => -2 * progress,
-          //     filter: () => `blur(${120 - progress * 10}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.in",
-          //   });
-          //   gsap.to(".blurred-2", {
-          //     x: () => -40 * progress,
-          //     filter: () => `blur(${120 - progress * -10}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.in",
-          //   });
-          // }
           animateBlurred(tl.progress());
       }
       });
@@ -493,35 +464,6 @@ useEffect(() => {
         },
         onUpdate: () => {
           animateBlurred(tl.progress());
-          // we will add an cohersive animation to the UI, the goal is to communicate the user that something is loading.
-          const progress = tl.progress();
-          // if(progress > 0.1 && progress < 0.7) {
-          //   gsap.to(".blurred", {
-          //     x: () => 400 * progress,
-          //     filter: () => `blur(${120 - progress * 100}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.out",
-          //   });
-          //   gsap.to(".blurred-2", {
-          //     x: () => -400 * progress,
-          //     filter: () => `blur(${120 - progress * 100}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.out",
-          //   });
-          // }else if(progress > 0.7) {
-          //    gsap.to(".blurred", {
-          //     x: () => -2 * progress,
-          //     filter: () => `blur(${120 - progress * 10}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.in",
-          //   });
-          //   gsap.to(".blurred-2", {
-          //     x: () => -40 * progress,
-          //     filter: () => `blur(${120 - progress * -10}px)`,
-          //     // duration: 1.5,
-          //     ease: "power3.in",
-          //   });
-          // }
       }
       });
 
@@ -638,17 +580,18 @@ useEffect(() => {
       }, 0.2);
 
       // Show parents container
-      // if (parentsMenuRef.current) {
+      if (parentsMenuRef.current) {
         tl.set(parentsMenuRef.current, {
           zIndex: 10,
           // opacity: 1,
           pointerEvents: "auto",
         }, 0.5);
-      // }
+      }
     }
     //changing parents opacity because we are hiding it
     if (phase === "PARENTS") {
       if (parentsMenuRef.current) {
+        console.log("Setting parents visible in PARENTS phase");
         gsap.set(parentsMenuRef.current, {
           opacity: 1,
           pointerEvents: "auto",

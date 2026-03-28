@@ -29,8 +29,8 @@ export const PriceFilterSection = ({
         id="price-range-slider"
         value={value}
         onValueChange={onChange}
-        min={0}
-        max={150}
+        min={min}
+        max={max}
         step={1}
       />
     </ReusableFilterSection>

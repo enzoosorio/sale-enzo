@@ -37,6 +37,15 @@ export {
   type ColorOption,
 } from './getAvailableColors';
 
+// Exportar utilidades RPC para filtros dinámicos
+export {
+  getCategoryFiltersPayload,
+  type CategoryFiltersRpcPayload,
+  type CategoryFiltersRpcParams,
+  type RpcAvailableFilters,
+  type RpcMostRelatedVariant,
+} from './rpcCategoryFilters';
+
 // Exportar tipos adicionales
 export type {
   FilterState,

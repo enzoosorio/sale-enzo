@@ -251,7 +251,7 @@ function validateProductCompleteness(product: BulkProductInput, index: number): 
   }
 
   // Validate condition is one of the allowed values
-  const ALLOWED_CONDITIONS = ['new', 'used'];
+  const ALLOWED_CONDITIONS = ['new', 'like-new', 'semi-used', 'used', 'worn'];
   if (!ALLOWED_CONDITIONS.includes(item.condition.toLowerCase())) {
     throw new Error(
       `Product #${index + 1}: 'item.condition' must be one of: ${ALLOWED_CONDITIONS.join(', ')} (got '${item.condition}')`

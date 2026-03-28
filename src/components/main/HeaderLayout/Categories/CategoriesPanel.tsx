@@ -67,6 +67,7 @@ export const CategoriesPanel = () => {
           section,
           {
             clipPath: "inset(0% 0% 0% 0%)",
+            zIndex: 70,
             duration: 0.5,
             ease: "power2.out",
           },
@@ -223,12 +224,11 @@ export const CategoriesPanel = () => {
 
   return (
     <section
-      className="categories-section cursor-auto fixed inset-0 z-50 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
+      className="categories-section cursor-auto fixed inset-0 z-60 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
       style={{ 
         display: "none",
         clipPath: "inset(100% 0% 0% 0%)",
-        // zIndex: 10,
-        isolation: 'isolate',
+        zIndex: 80,
       }}
     >
       <InfiniteScrollCategories

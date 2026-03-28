@@ -8,6 +8,17 @@ const nextConfig: NextConfig = {
         hostname: 'hdbhvgxogazmawphpcnj.supabase.co',
         port: '',
         pathname: '/storage/v1/object/public/**',
+        
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+        port: '',
       },
     ],
   },
