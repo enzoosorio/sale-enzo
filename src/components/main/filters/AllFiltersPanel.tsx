@@ -6,6 +6,12 @@ import { GenderFilterSection } from './sections/GenderFilterSection'
 import { TagsFilterSection } from './sections/TagsFilterSection'
 import { PriceFilterSection } from './sections/PriceFilterSection'
 import { type RpcAvailableFilters } from '@/utils/filters/rpcCategoryFilters'
+// import { FastNavSection } from './sections/FastNavSection'
+
+
+// interface AvailableFilters extends RpcAvailableFilters {
+//   subcategories: string[];
+// }
 
 interface AllFiltersPanelProps {
   isLoading?: boolean;
@@ -15,6 +21,7 @@ interface AllFiltersPanelProps {
   selectedBrands?: string[];
   selectedTags?: string[];
   selectedGender?: string;
+  selectedSubcategories?: string[];
   priceValue?: [number, number];
   onToggleSize?: (size: string) => void;
   onToggleColor?: (color: string) => void;
@@ -22,6 +29,7 @@ interface AllFiltersPanelProps {
   onToggleTag?: (tag: string) => void;
   onSelectGender?: (gender: string) => void;
   onChangePrice?: (value: [number, number]) => void;
+  onToggleSubcategory?: (subcategoryId: string) => void;
 }
 
 export const AllFiltersPanel = ({
@@ -32,6 +40,7 @@ export const AllFiltersPanel = ({
   selectedBrands = [],
   selectedTags = [],
   selectedGender,
+  selectedSubcategories = [],
   priceValue = [0, 150],
   onToggleSize,
   onToggleColor,
@@ -39,6 +48,7 @@ export const AllFiltersPanel = ({
   onToggleTag,
   onSelectGender,
   onChangePrice,
+  onToggleSubcategory,
 }: AllFiltersPanelProps) => {
   const sizeOptions = availableFilters?.sizes.map((size) => size.value) || [];
   const colorOptions =
@@ -48,7 +58,10 @@ export const AllFiltersPanel = ({
     })) || [];
   const brandOptions = availableFilters?.brands.map((brand) => brand.value) || [];
   const genderOptions = availableFilters?.genders.map((gender) => gender.value) || [];
-  const tagOptions = availableFilters?.tags.map((tag) => tag.slug) || [];
+  const tagOptions =
+    availableFilters?.tags
+      .map((tag) => tag.slug || tag.name)
+      .filter(Boolean) || [];
 
   const priceMin = availableFilters?.price_range.min ?? 0;
   const priceMax = availableFilters?.price_range.max ?? 150;
@@ -66,11 +79,18 @@ export const AllFiltersPanel = ({
 
   return (
     <CardFiltersPanel className='px-2'>
+      {/* TODO: PARA EL ISLOADING, AGREGAR UN SKELETON EN VEZ DE COLOCAR ESE CARGANDO FEO */}
       {isLoading && (
         <div className='w-full text-sm text-black/60 border border-black/10 px-4 py-3'>
           Cargando filtros dinamicos...
         </div>
       )}
+
+      {/* <FastNavSection
+        selectedSubcategories={selectedSubcategories}
+        subcategories={availableFilters?.subcategories || []}
+        onToggleSubcategory={onToggleSubcategory}
+      /> */}
 
       <SizeFilterSection 
         sizes={sizeOptions}

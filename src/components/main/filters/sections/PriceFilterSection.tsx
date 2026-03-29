@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { ReusableFilterSection } from "./ReusableFilterSection";
 
@@ -14,6 +15,33 @@ export const PriceFilterSection = ({
   value, 
   onChange 
 }: PriceFilterSectionProps) => {
+  const [localValue, setLocalValue] = useState<[number, number]>(value);
+  const isUserInteractingRef = useRef(false);
+
+  useEffect(() => {
+    const sameValue = localValue[0] === value[0] && localValue[1] === value[1];
+
+    if (sameValue) {
+      isUserInteractingRef.current = false;
+      return;
+    }
+
+    if (!isUserInteractingRef.current) {
+      setLocalValue(value);
+    }
+  }, [localValue, value]);
+
+  useEffect(() => {
+    if (!onChange) return;
+    if (localValue[0] === value[0] && localValue[1] === value[1]) return;
+
+    const timeout = window.setTimeout(() => {
+      onChange(localValue);
+      isUserInteractingRef.current = false;
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [localValue, onChange, value]);
 
   return (
     <ReusableFilterSection
@@ -27,8 +55,12 @@ export const PriceFilterSection = ({
         </div>
         <Slider
         id="price-range-slider"
-        value={value}
-        onValueChange={onChange}
+        value={localValue}
+        onValueChange={(nextValue) => {
+          if (nextValue.length !== 2) return;
+          isUserInteractingRef.current = true;
+          setLocalValue([nextValue[0], nextValue[1]]);
+        }}
         min={min}
         max={max}
         step={1}

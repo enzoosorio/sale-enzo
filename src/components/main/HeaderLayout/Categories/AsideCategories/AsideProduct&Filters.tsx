@@ -9,7 +9,7 @@ import {
   getCategoryFiltersPayload,
   type CategoryFiltersRpcPayload,
 } from "@/utils/filters/rpcCategoryFilters";
-import { parseSearchParams } from "@/utils/filters/urlFilters";
+import { buildSearchParams, parseSearchParams } from "@/utils/filters/urlFilters";
 
   interface AsideCategoriesFilterProps {
     categorySelected: string | null;
@@ -31,6 +31,41 @@ export const AsideCategoriesFilter = ({
     () => parseSearchParams(new URLSearchParams(searchParams.toString())),
     [searchParams],
   );
+
+  const replaceWithParams = useCallback(
+    (params: URLSearchParams) => {
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router],
+  );
+
+  useEffect(() => {
+    const sanitizedFilters = parseSearchParams(new URLSearchParams(searchParams.toString()));
+    const sanitizedKnownParams = buildSearchParams(sanitizedFilters);
+    const mergedParams = new URLSearchParams(searchParams.toString());
+
+    [
+      "category",
+      "subcategory",
+      "color",
+      "size",
+      "brand",
+      "tag",
+      "gender",
+      "fit",
+      "minPrice",
+      "maxPrice",
+    ].forEach((key) => mergedParams.delete(key));
+
+    sanitizedKnownParams.forEach((value, key) => {
+      mergedParams.append(key, value);
+    });
+
+    if (mergedParams.toString() !== searchParams.toString()) {
+      replaceWithParams(mergedParams);
+    }
+  }, [replaceWithParams, searchParams]);
 
   // Initialize aside state on mount
   useEffect(() => {
@@ -86,21 +121,45 @@ export const AsideCategoriesFilter = ({
     };
   }, [parsedFilters]);
 
-  const replaceWithParams = useCallback(
-    (params: URLSearchParams) => {
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    },
-    [pathname, router],
-  );
+  useEffect(() => {
+    console.log("SELECTED TAGS:", parsedFilters.tags || []);
+  }, [parsedFilters.tags]);
+
+  useEffect(() => {
+    if (!payload) return;
+    console.log("AVAILABLE TAGS:", payload.available_filters.tags);
+    console.log(
+      "VARIANT TAGS:",
+      payload.variants.map((variant) => variant.tags),
+    );
+    console.log("RPC DEBUG:", payload.debug);
+  }, [payload]);
+
+  const normalizedRange = useMemo<[number, number]>(() => {
+    const min = payload?.available_filters.price_range.min ?? 0;
+    const max = payload?.available_filters.price_range.max ?? 150;
+    const safeMin = Number.isFinite(min) ? Number(min) : 0;
+    const safeMax = Number.isFinite(max) ? Number(max) : 150;
+    const rangeMin = Math.floor(Math.min(safeMin, safeMax));
+    const rangeMax = Math.ceil(Math.max(safeMin, safeMax));
+    const normalizedMax = rangeMin === rangeMax ? rangeMax + 1 : rangeMax;
+    return [rangeMin, normalizedMax];
+  }, [payload?.available_filters.price_range.max, payload?.available_filters.price_range.min]);
 
   const toggleMultiParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      const normalized = value.trim();
+      const normalized = value.trim().toLowerCase();
       if (!normalized) return;
 
-      const currentValues = params.getAll(key);
+      const currentValues = Array.from(
+        new Set(
+          params
+            .getAll(key)
+            .map((item) => item.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      );
       const hasValue = currentValues.includes(normalized);
       const nextValues = hasValue
         ? currentValues.filter((item) => item !== normalized)
@@ -116,7 +175,7 @@ export const AsideCategoriesFilter = ({
   const toggleSingleParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      const normalized = value.trim();
+      const normalized = value.trim().toLowerCase();
       if (!normalized) return;
 
       const current = params.get(key);
@@ -133,13 +192,48 @@ export const AsideCategoriesFilter = ({
 
   const handlePriceChange = useCallback(
     (value: [number, number]) => {
+      const [rangeMin, rangeMax] = normalizedRange;
+      const [nextMinRaw, nextMaxRaw] = [value[0], value[1]].sort(
+        (a, b) => a - b,
+      ) as [number, number];
+      const nextMin = Math.min(Math.max(nextMinRaw, rangeMin), rangeMax);
+      const nextMax = Math.min(Math.max(nextMaxRaw, rangeMin), rangeMax);
+
       const params = new URLSearchParams(searchParams.toString());
-      params.set("minPrice", String(value[0]));
-      params.set("maxPrice", String(value[1]));
-      replaceWithParams(params);
+
+      if (nextMin !== rangeMin) {
+        params.set("minPrice", String(nextMin));
+      } else {
+        params.delete("minPrice");
+      }
+
+      if (nextMax !== rangeMax) {
+        params.set("maxPrice", String(nextMax));
+      } else {
+        params.delete("maxPrice");
+      }
+
+      if (params.toString() !== searchParams.toString()) {
+        replaceWithParams(params);
+      }
     },
-    [replaceWithParams, searchParams],
+    [normalizedRange, replaceWithParams, searchParams],
   );
+
+  const resetInvalidFilters = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("tag");
+    params.delete("color");
+    params.delete("size");
+    params.delete("brand");
+    params.delete("gender");
+    params.delete("fit");
+    params.delete("minPrice");
+    params.delete("maxPrice");
+    replaceWithParams(params);
+  }, [replaceWithParams, searchParams]);
+
+  const isInvalidCombination = payload?.invalid_filter_combination === true;
 
   return (
     <aside
@@ -156,8 +250,8 @@ export const AsideCategoriesFilter = ({
         selectedTags={parsedFilters.tags || []}
         selectedGender={parsedFilters.gender}
         priceValue={[
-          parsedFilters.minPrice ?? payload?.available_filters.price_range.min ?? 0,
-          parsedFilters.maxPrice ?? payload?.available_filters.price_range.max ?? 150,
+          parsedFilters.minPrice ?? normalizedRange[0],
+          parsedFilters.maxPrice ?? normalizedRange[1],
         ]}
         onToggleSize={(size) => toggleMultiParam("size", size)}
         onToggleColor={(color) => toggleMultiParam("color", color)}
@@ -169,6 +263,8 @@ export const AsideCategoriesFilter = ({
       <OverviewProduct
         isLoading={isLoadingFilters}
         variant={payload?.most_related_variant || undefined}
+        isEmpty={isInvalidCombination}
+        onReset={resetInvalidFilters}
       />
     </aside>
   );

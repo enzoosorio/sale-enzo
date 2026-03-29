@@ -18,6 +18,42 @@ export interface UrlFilters {
   maxPrice?: number;
 }
 
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+const normalizeText = (value: string | null): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim().toLowerCase();
+  return normalized || undefined;
+};
+
+const normalizeSlug = (value: string | null): string | undefined => {
+  const normalized = normalizeText(value);
+  if (!normalized) return undefined;
+  return SLUG_PATTERN.test(normalized) ? normalized : undefined;
+};
+
+const normalizeArray = (values: string[]): string[] | undefined => {
+  const normalizedValues = Array.from(
+    new Set(
+      values
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
+
+  return normalizedValues.length > 0 ? normalizedValues : undefined;
+};
+
+const parsePrice = (raw: string | null): number | undefined => {
+  if (typeof raw !== "string") return undefined;
+  const normalized = raw.trim();
+  if (!normalized) return undefined;
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return parsed;
+};
+
 /**
  * Parse URLSearchParams into a normalized UrlFilters object
  * 
@@ -25,26 +61,24 @@ export interface UrlFilters {
  * @returns Normalized filter object with undefined for missing values
  */
 export function parseSearchParams(params: URLSearchParams): UrlFilters {
-  const category = params.get("category");
-  const subcategory = params.get("subcategory");
-  const colors = params.getAll("color");
-  const sizes = params.getAll("size");
-  const brands = params.getAll("brand");
-  const tags = params.getAll("tag");
-  const gender = params.get("gender");
-  const fit = params.get("fit");
-  const minPriceRaw = params.get("minPrice");
-  const maxPriceRaw = params.get("maxPrice");
-  const minPrice = minPriceRaw ? Number(minPriceRaw) : undefined;
-  const maxPrice = maxPriceRaw ? Number(maxPriceRaw) : undefined;
+  const category = normalizeSlug(params.get("category"));
+  const subcategory = normalizeSlug(params.get("subcategory"));
+  const colors = normalizeArray(params.getAll("color"));
+  const sizes = normalizeArray(params.getAll("size"));
+  const brands = normalizeArray(params.getAll("brand"));
+  const tags = normalizeArray(params.getAll("tag"));
+  const gender = normalizeText(params.get("gender"));
+  const fit = normalizeText(params.get("fit"));
+  const minPrice = parsePrice(params.get("minPrice"));
+  const maxPrice = parsePrice(params.get("maxPrice"));
 
   return {
     ...(category && { category }),
     ...(subcategory && { subcategory }),
-    ...(colors.length > 0 && { colors }),
-    ...(sizes.length > 0 && { sizes }),
-    ...(brands.length > 0 && { brands }),
-    ...(tags.length > 0 && { tags }),
+    ...(colors && { colors }),
+    ...(sizes && { sizes }),
+    ...(brands && { brands }),
+    ...(tags && { tags }),
     ...(gender && { gender }),
     ...(fit && { fit }),
     ...(Number.isFinite(minPrice) && { minPrice }),

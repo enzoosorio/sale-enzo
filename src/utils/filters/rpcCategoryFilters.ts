@@ -46,6 +46,8 @@ export interface RpcVariantSummary {
   price: number | null;
   category_slug: string | null;
   subcategory_slug: string | null;
+  tag_count?: number;
+  has_tags?: boolean;
   tags: RpcTagFilter[];
   colors: RpcColorFilter[];
 }
@@ -63,6 +65,24 @@ export interface CategoryFiltersRpcPayload {
   variants: RpcVariantSummary[];
   available_filters: RpcAvailableFilters;
   most_related_variant: RpcMostRelatedVariant | null;
+  invalid_filter_combination?: boolean;
+  debug?: {
+    selected_tags_input?: string[];
+    selected_tags_valid?: string[];
+    invalid_selected_tags?: string[];
+    base_variants_count?: number;
+    filtered_variants_no_price_count?: number;
+    variants_count?: number;
+    variants_with_tags?: number;
+    variants_without_tags?: number;
+    tags_in_variants?: RpcTagFilter[];
+    variant_tag_signals?: Array<{
+      variant_id: string;
+      tag_count: number;
+      has_tags: boolean;
+      debug_tags?: string;
+    }>;
+  };
 }
 
 export interface CategoryFiltersRpcParams {

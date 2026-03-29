@@ -5,6 +5,8 @@ import { type RpcMostRelatedVariant } from '@/utils/filters/rpcCategoryFilters'
 interface OverviewProductProps {
   variant?: RpcMostRelatedVariant;
   isLoading?: boolean;
+  isEmpty?: boolean;
+  onReset?: () => void;
 }
 
 // Mock data for demonstration
@@ -18,11 +20,33 @@ const mockProduct = {
 export const OverviewProduct = ({ 
   variant,
   isLoading = false,
+  isEmpty = false,
+  onReset,
 }: OverviewProductProps = {}) => {
   const image = variant?.main_img_url || '/images/products/polo-prueba.jpg';
   const name = variant?.product_name || mockProduct.name;
   const price = typeof variant?.price === 'number' ? variant.price : mockProduct.price;
   const size = variant?.size || mockProduct.size;
+
+  if (isEmpty) {
+    return (
+      <CardFiltersPanel className="flex flex-col items-center justify-center">
+        <div className="w-full space-y-4 text-center">
+          <h2 className="font-prata text-xl leading-tight">No products match your filters</h2>
+          <p className="text-sm text-black/60">
+            Try removing one filter or reset your secondary filters.
+          </p>
+          <button
+            type="button"
+            onClick={onReset}
+            className="border border-black/30 px-4 py-2 text-sm cursor-pointer"
+          >
+            Reset filters
+          </button>
+        </div>
+      </CardFiltersPanel>
+    );
+  }
 
   return (
     <CardFiltersPanel className="flex flex-col items-center justify-center">
