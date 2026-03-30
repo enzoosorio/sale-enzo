@@ -10,7 +10,6 @@ import { ProductCategory } from "@/schema/categorySchema";
 import { getSubcategoriesByParentId } from "@/utils/filters";
 import { useInfiniteVerticalScroll } from "@/hooks/useInfiniteVerticalScroll";
 import { CategoryPhase } from "./CategoriesPanel";
-import { useFiltersStore } from "@/store/filtersStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createBlurAnimation } from "@/utils/gsap/blur";
 
@@ -44,9 +43,6 @@ export const InfiniteScrollCategories = ({ isAnimating, setIsAnimating, showCate
   // URL navigation
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  // Global filter state (category, subcategory are no longer used for writes - URL is source of truth)
-  const { category, subcategory } = useFiltersStore();
 
   // Adapt ProductCategory[] from DB to Categories[] format expected by UI
   const categories: Categories[] = useMemo(() => {
@@ -940,7 +936,7 @@ useEffect(() => {
           ))}
         </ul>
       </div>
-        <AsideCategoriesFilter categorySelected={category}/>
+        <AsideCategoriesFilter categorySelected={categorySelected?.slug ?? null}/>
     </div>
    </>
   );

@@ -255,6 +255,7 @@ export const CategoriesPanel = () => {
             setShowCategories && setShowCategories(false);
             setExitImagesByCategory(true);
             setIsAnimating(false);
+            document.body.style.overflow = ""; // Restaurar scroll del body
           }}
         >
           <BolitaEfectoClick/>

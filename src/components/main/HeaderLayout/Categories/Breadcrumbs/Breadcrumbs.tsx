@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
@@ -42,6 +40,7 @@ export function Breadcrumbs() {
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLLIElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const basePath = pathname.startsWith("/products") ? pathname : "/products";
 
   // Read filter values from URL
   const category = searchParams.get("category");
@@ -159,9 +158,9 @@ export function Breadcrumbs() {
 
       setIsDropdownOpen(false);
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      router.replace(query ? `${basePath}?${query}` : basePath, { scroll: false });
     },
-    [pathname, router, searchParams],
+    [basePath, router, searchParams],
   );
 
   // Build breadcrumb items dynamically
@@ -174,7 +173,7 @@ export function Breadcrumbs() {
   if (category) {
     const categoryParams = buildSearchParams({ category });
     breadcrumbItems.push({
-      href: `?${categoryParams.toString()}`,
+      href: `${basePath}?${categoryParams.toString()}`,
       label: category,
     });
   }
@@ -183,7 +182,7 @@ export function Breadcrumbs() {
   if (subcategory && category) {
     const subcategoryParams = buildSearchParams({ category, subcategory });
     breadcrumbItems.push({
-      href: `?${subcategoryParams.toString()}`,
+      href: `${basePath}?${subcategoryParams.toString()}`,
       label: subcategory,
     });
   }

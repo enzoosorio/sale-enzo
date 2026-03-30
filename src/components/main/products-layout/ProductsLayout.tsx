@@ -12,7 +12,6 @@ import { ProductsFastNav, type ProductsFastNavItem } from "./ProductsFastNav";
 import { finalBackground, initialBackground } from "@/app/(app)/home/page";
 import { AllFiltersPanel } from "@/components/main/filters/AllFiltersPanel";
 import {
-  getCategoryFiltersPayload,
   type CategoryFiltersRpcPayload,
   type RpcNavigationNode,
 } from "@/utils/filters/rpcCategoryFilters";
@@ -23,6 +22,7 @@ gsap.registerPlugin(useGSAP, Flip, ScrollTrigger);
 
 interface ProductsLayoutProps {
   products: WholeProductStructure[];
+  initialFiltersPayload: CategoryFiltersRpcPayload;
 }
 
 const formatNavLabel = (input: string) =>
@@ -32,15 +32,16 @@ const formatNavLabel = (input: string) =>
     .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
     .join(" ");
 
-export const ProductsLayout = ({ products }: ProductsLayoutProps) => {
+export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [layoutActive, setLayoutActive] = useState(false);
-  const [payload, setPayload] = useState<CategoryFiltersRpcPayload | null>(null);
-  const [isLoadingFilters, setIsLoadingFilters] = useState(false);
+
+  const payload = initialFiltersPayload;
+  const isLoadingFilters = false;
 
   const gridRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,47 +89,6 @@ export const ProductsLayout = ({ products }: ProductsLayoutProps) => {
       replaceWithParams(mergedParams);
     }
   }, [replaceWithParams, searchParams]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadDynamicFilters = async () => {
-      setIsLoadingFilters(true);
-      try {
-        const data = await getCategoryFiltersPayload({
-          category: parsedFilters.category,
-          subcategory: parsedFilters.subcategory,
-          tags: parsedFilters.tags,
-          colors: parsedFilters.colors,
-          brands: parsedFilters.brands,
-          sizes: parsedFilters.sizes,
-          gender: parsedFilters.gender,
-          fit: parsedFilters.fit,
-          minPrice: parsedFilters.minPrice,
-          maxPrice: parsedFilters.maxPrice,
-        });
-
-        if (isMounted) {
-          setPayload(data);
-        }
-      } catch (error) {
-        console.error("Error loading dynamic filters payload:", error);
-        if (isMounted) {
-          setPayload(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingFilters(false);
-        }
-      }
-    };
-
-    loadDynamicFilters();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [parsedFilters]);
 
   const normalizedRange = useMemo<[number, number]>(() => {
     const min = payload?.available_filters.price_range.min ?? 0;
@@ -243,6 +203,8 @@ export const ProductsLayout = ({ products }: ProductsLayoutProps) => {
     [parsedFilters.category, replaceWithParams, searchParams],
   );
 
+  const hasSubcategorySelected =
+    typeof parsedFilters.subcategory === "string" && parsedFilters.subcategory.length > 0;
   const mainSlug = parsedFilters.subcategory ?? parsedFilters.category ?? "all";
 
   const clearHierarchyHref = useMemo(() => {
@@ -253,15 +215,15 @@ export const ProductsLayout = ({ products }: ProductsLayoutProps) => {
   }, [parsedFilters, pathname]);
 
   const headerNavigationItems = useMemo<ProductsFastNavItem[]>(() => {
-    const source: RpcNavigationNode[] = parsedFilters.category
-      ? payload?.navigation.subcategories || []
-      : payload?.navigation.categories || [];
+    const source: RpcNavigationNode[] = hasSubcategorySelected
+      ? payload.navigation.subcategories || []
+      : payload.navigation.categories || [];
 
     return source.map((entry) => {
       const { category: _, subcategory: __, ...rest } = parsedFilters;
       const nextFilters = {
         ...rest,
-        ...(parsedFilters.category
+        ...(hasSubcategorySelected && parsedFilters.category
           ? { category: parsedFilters.category, subcategory: entry.slug }
           : { category: entry.slug }),
       };
@@ -274,7 +236,7 @@ export const ProductsLayout = ({ products }: ProductsLayoutProps) => {
         href: query ? `${pathname}?${query}` : pathname,
       };
     });
-  }, [parsedFilters, payload?.navigation.categories, payload?.navigation.subcategories, pathname]);
+  }, [hasSubcategorySelected, parsedFilters, payload.navigation.categories, payload.navigation.subcategories, pathname]);
 
   const mainFastNavItem = useMemo<ProductsFastNavItem>(() => {
     const matched = headerNavigationItems.find((item) => item.slug === mainSlug);

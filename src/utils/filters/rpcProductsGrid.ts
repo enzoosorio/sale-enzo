@@ -61,7 +61,7 @@ export async function getProductsForGrid(
 ): Promise<ProductsGridPayload> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("get_products_for_grid", {
+  const { data, error } = await supabase.rpc("get_products_for_grid_v2", {
     p_category_slug: params.category?.trim().toLowerCase() || null,
     p_subcategory_slug: params.subcategory?.trim().toLowerCase() || null,
     p_selected_tags: normalizeArray(params.tags),
@@ -83,7 +83,7 @@ export async function getProductsForGrid(
   });
 
   if (error) {
-    throw new Error(`RPC get_products_for_grid failed: ${error.message}`);
+    throw new Error(`RPC get_products_for_grid_v2 failed: ${error.message}`);
   }
 
   const fallback: RawProductsGridPayload = {

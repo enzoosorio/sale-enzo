@@ -1,8 +1,9 @@
-    import { redirect } from "next/navigation";
-    import { findParentCategoryBySubcategorySlug, validateCategoryHierarchyServer } from "@/utils/filters";
+  import { redirect } from "next/navigation";
+  import { findParentCategoryBySubcategorySlug, validateCategoryHierarchyServer } from "@/utils/filters";
 import { parseSearchParams } from "@/utils/filters/urlFilters";
 import { ProductsLayout } from "@/components/main/products-layout/ProductsLayout";
-    import { getProductsForGrid } from "@/utils/filters/rpcProductsGrid";
+  import { getProductsForGrid } from "@/utils/filters/rpcProductsGrid";
+  import { getCategoryFiltersPayloadServer } from "@/utils/filters/rpcCategoryFiltersServer";
 
 /**
  * Products Page - Server Component
@@ -26,8 +27,6 @@ export default async function ProductsPage({
   // Await searchParams (Next.js 15+ requirement)
   const params = await searchParams;
 
-  console.log({params})
-  
   // Convert to URLSearchParams
   const urlSearchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -107,24 +106,38 @@ export default async function ProductsPage({
   const limit = 24;
   const offset = (page - 1) * limit;
 
-  const { products } = await getProductsForGrid({
-    category: filters.category,
-    subcategory: filters.subcategory,
-    tags: filters.tags,
-    colors: filters.colors,
-    brands: filters.brands,
-    sizes: filters.sizes,
-    gender: filters.gender,
-    fit: filters.fit,
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
-    limit,
-    offset,
-  });
+  const [productsPayload, filtersPayload] = await Promise.all([
+    getProductsForGrid({
+      category: filters.category,
+      subcategory: filters.subcategory,
+      tags: filters.tags,
+      colors: filters.colors,
+      brands: filters.brands,
+      sizes: filters.sizes,
+      gender: filters.gender,
+      fit: filters.fit,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      limit,
+      offset,
+    }),
+    getCategoryFiltersPayloadServer({
+      category: filters.category,
+      subcategory: filters.subcategory,
+      tags: filters.tags,
+      colors: filters.colors,
+      brands: filters.brands,
+      sizes: filters.sizes,
+      gender: filters.gender,
+      fit: filters.fit,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+    }),
+  ]);
 
   return (
     <>
-    <ProductsLayout products={products} />
+      <ProductsLayout products={productsPayload.products} initialFiltersPayload={filtersPayload} />
     </>
   );
 }

@@ -83,12 +83,12 @@ export const AllFiltersPanel = ({
     Math.min(Math.max(priceValue[1], rangeMin), normalizedMax),
   ].sort((a, b) => a - b) as [number, number];
 
-  const hasCategorySelected = typeof selectedCategory === 'string' && selectedCategory.length > 0;
-  const navigationItems = hasCategorySelected
+  const hasSubcategorySelected = typeof selectedSubcategory === 'string' && selectedSubcategory.length > 0;
+  const navigationItems = hasSubcategorySelected
     ? (navigation?.subcategories || [])
     : (navigation?.categories || []);
 
-  const selectedNavigationSlugs = hasCategorySelected
+  const selectedNavigationSlugs = hasSubcategorySelected
     ? (selectedSubcategory ? [selectedSubcategory] : [])
     : (selectedCategory ? [selectedCategory] : []);
 
@@ -102,11 +102,11 @@ export const AllFiltersPanel = ({
       )}
 
       <FastNavSection
-        title={hasCategorySelected ? 'SUBCATEGORIES' : 'CATEGORIES'}
+        title={hasSubcategorySelected ? 'SUBCATEGORIES' : 'CATEGORIES'}
         items={navigationItems}
         selectedSlugs={selectedNavigationSlugs}
         onSelectItem={(slug) => {
-          if (hasCategorySelected) {
+          if (hasSubcategorySelected) {
             onSelectSubcategory?.(slug);
             return;
           }
