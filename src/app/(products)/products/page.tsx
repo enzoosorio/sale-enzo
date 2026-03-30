@@ -2,7 +2,7 @@
     import { findParentCategoryBySubcategorySlug, validateCategoryHierarchyServer } from "@/utils/filters";
 import { parseSearchParams } from "@/utils/filters/urlFilters";
 import { ProductsLayout } from "@/components/main/products-layout/ProductsLayout";
-import { products } from "@/lib/products";
+    import { getProductsForGrid } from "@/utils/filters/rpcProductsGrid";
 
 /**
  * Products Page - Server Component
@@ -25,6 +25,8 @@ export default async function ProductsPage({
 }) {
   // Await searchParams (Next.js 15+ requirement)
   const params = await searchParams;
+
+  console.log({params})
   
   // Convert to URLSearchParams
   const urlSearchParams = new URLSearchParams();
@@ -43,6 +45,9 @@ export default async function ProductsPage({
   // PHASE 4: Hierarchical Validation
   // ============================================================
   
+  // TODO: Refactor this logic into a separate server-side function for cleanliness and testability.
+  //  TODO 2: Consider edge cases, such as non-existent subcategories or categories, and how to handle them gracefully.
+  //  TODO 3: Consider all extra filters like brand, color, etc. and ensure they are preserved during redirects.
   // Case 1: Subcategory exists but category doesn't
   // → Auto-inject parent category and redirect
   if (filters.subcategory && !filters.category) {
@@ -96,19 +101,30 @@ export default async function ProductsPage({
     }
   }
 
-  // ============================================================
-  // Filters are valid - Fetch and display products
-  // ============================================================
+  const pageValue = Array.isArray(params.page) ? params.page[0] : params.page;
+  const parsedPage = Number(pageValue);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+  const limit = 24;
+  const offset = (page - 1) * limit;
 
-  // TODO: Implement product fetching based on filters
-  // const products = await getFilteredProducts(filters);
+  const { products } = await getProductsForGrid({
+    category: filters.category,
+    subcategory: filters.subcategory,
+    tags: filters.tags,
+    colors: filters.colors,
+    brands: filters.brands,
+    sizes: filters.sizes,
+    gender: filters.gender,
+    fit: filters.fit,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    limit,
+    offset,
+  });
 
   return (
     <>
-    <ProductsLayout 
-    products={products}
-    title="POLOS"
-    />
+    <ProductsLayout products={products} />
     </>
   );
 }

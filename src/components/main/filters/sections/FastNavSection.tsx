@@ -1,42 +1,48 @@
 import { ReusableFilterSection } from "./ReusableFilterSection";
 
 interface FastSubcategoriesSectionProps {
-  subcategories: string[];
-  selectedSubcategories: string[];
-  onToggleSubcategory?: (subcategoryId: string) => void;
+  title?: string;
+  items: Array<{
+    slug: string;
+    name: string;
+    count?: number;
+  }>;
+  selectedSlugs: string[];
+  onSelectItem?: (slug: string) => void;
   className?: string;
   classNameForWrapper?: string;
 }
 
 export const FastNavSection = ({ 
-  subcategories, 
-  selectedSubcategories, 
-  onToggleSubcategory,
+  title = "SUBCATEGORIES",
+  items,
+  selectedSlugs,
+  onSelectItem,
   className,
   classNameForWrapper,
 }: FastSubcategoriesSectionProps) => {
   return (
     <ReusableFilterSection
-    title="SUBCATEGORIES"
+    title={title}
     className={`flex flex-wrap gap-x-4 gap-y-8 ${className || ""}`}
     classNameForWrapper={classNameForWrapper}
     >
-        {subcategories.length === 0 && (
-          <p className="px-4 text-sm text-black/60">No subcategories available</p>
+        {items.length === 0 && (
+          <p className="px-4 text-sm text-black/60">No navigation items available</p>
         )}
-        {subcategories.map((subcategoryId) => {
-          const isSelected = selectedSubcategories.includes(subcategoryId);
+        {items.map((item) => {
+          const isSelected = selectedSlugs.includes(item.slug);
           return (
             <button
-              key={subcategoryId}
-              onClick={() => onToggleSubcategory?.(subcategoryId)}
+              key={item.slug}
+              onClick={() => onSelectItem?.(item.slug)}
               className={`px-4 min-w-28 py-2.5 border border-current text-current text-base rounded-none transition-colors
                 ${isSelected 
                   ? 'bg-off-black text-off-white' 
                   : 'opacity-90 hover:opacity-100'
                 }`}
             >
-              {subcategoryId}
+              {item.name}
             </button>
           );
         })}

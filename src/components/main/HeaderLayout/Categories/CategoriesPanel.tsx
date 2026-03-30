@@ -217,7 +217,7 @@ export const CategoriesPanel = () => {
 
   useEffect(() => {
     const wholeSearch = searchParams.toString();
-    const link = wholeSearch ? `/shop?${wholeSearch}` : "/shop";
+    const link = wholeSearch ? `/products?${wholeSearch}` : "/products";
     setLinkToShopWSearch(link);
 
   }, [searchParams])
@@ -247,6 +247,7 @@ export const CategoriesPanel = () => {
         z-50 absolute right-44 top-12 flex 
         items-center justify-center`}>
         {/* boton de cerrar el section */}
+        {/* TODO: AL MOMENTO DE CERRAR, RESETEAR LAS URLSEARCHPARAMS. vamos a ver que tan bien es esto*/}
         <button
           className={` relative w-12 h-12 close-categories-button group p-2 flex items-center justify-center rounded-full cursor-pointer `}
           onClick={() => {

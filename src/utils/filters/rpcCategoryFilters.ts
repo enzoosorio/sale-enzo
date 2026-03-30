@@ -24,6 +24,17 @@ export interface RpcPriceRange {
   max: number | null;
 }
 
+export interface RpcNavigationNode {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+export interface RpcNavigation {
+  categories: RpcNavigationNode[];
+  subcategories: RpcNavigationNode[];
+}
+
 export interface RpcAvailableFilters {
   tags: RpcTagFilter[];
   colors: RpcColorFilter[];
@@ -32,24 +43,6 @@ export interface RpcAvailableFilters {
   genders: CategoryFilterOptionWithCount[];
   fits: CategoryFilterOptionWithCount[];
   price_range: RpcPriceRange;
-}
-
-export interface RpcVariantSummary {
-  variant_id: string;
-  product_id: string;
-  product_name: string;
-  brand: string | null;
-  main_img_url: string | null;
-  size: string | null;
-  gender: string | null;
-  fit: string | null;
-  price: number | null;
-  category_slug: string | null;
-  subcategory_slug: string | null;
-  tag_count?: number;
-  has_tags?: boolean;
-  tags: RpcTagFilter[];
-  colors: RpcColorFilter[];
 }
 
 export interface RpcMostRelatedVariant {
@@ -62,8 +55,8 @@ export interface RpcMostRelatedVariant {
 }
 
 export interface CategoryFiltersRpcPayload {
-  variants: RpcVariantSummary[];
   available_filters: RpcAvailableFilters;
+  navigation: RpcNavigation;
   most_related_variant: RpcMostRelatedVariant | null;
   invalid_filter_combination?: boolean;
   debug?: {
@@ -139,7 +132,6 @@ export async function getCategoryFiltersPayload(
   }
 
   const fallback: CategoryFiltersRpcPayload = {
-    variants: [],
     available_filters: {
       tags: [],
       colors: [],
@@ -148,6 +140,10 @@ export async function getCategoryFiltersPayload(
       genders: [],
       fits: [],
       price_range: { min: null, max: null },
+    },
+    navigation: {
+      categories: [],
+      subcategories: [],
     },
     most_related_variant: null,
   };

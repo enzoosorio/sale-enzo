@@ -1,32 +1,304 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { Flip } from "gsap/Flip";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { WholeProductStructure } from "@/types/products/products";
 import { ProductGrid } from "./ProductGrid";
-import { AsideFilters } from "./AsideFilters";
-import { ProductsFastNav } from "./ProductsFastNav";
+import { ProductsFastNav, type ProductsFastNavItem } from "./ProductsFastNav";
 import { finalBackground, initialBackground } from "@/app/(app)/home/page";
+import { AllFiltersPanel } from "@/components/main/filters/AllFiltersPanel";
+import {
+  getCategoryFiltersPayload,
+  type CategoryFiltersRpcPayload,
+  type RpcNavigationNode,
+} from "@/utils/filters/rpcCategoryFilters";
+import { buildSearchParams, parseSearchParams } from "@/utils/filters/urlFilters";
+import { Breadcrumbs } from "@/components/main/HeaderLayout/Categories/Breadcrumbs/Breadcrumbs";
 
 gsap.registerPlugin(useGSAP, Flip, ScrollTrigger);
 
 interface ProductsLayoutProps {
   products: WholeProductStructure[];
-  title: string;
 }
 
-export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
+const formatNavLabel = (input: string) =>
+  input
+    .split("-")
+    .filter(Boolean)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(" ");
+
+export const ProductsLayout = ({ products }: ProductsLayoutProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [isAnimating, setIsAnimating] = useState(false);
   const [layoutActive, setLayoutActive] = useState(false);
+  const [payload, setPayload] = useState<CategoryFiltersRpcPayload | null>(null);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(false);
+
   const gridRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const tlFastBar = useRef<gsap.core.Timeline | null>(null);
   const fastNavTriggerRef = useRef<ScrollTrigger | null>(null);
   const isFirstMount = useRef(true);
+
+  const parsedFilters = useMemo(
+    () => parseSearchParams(new URLSearchParams(searchParams.toString())),
+    [searchParams],
+  );
+
+  const replaceWithParams = useCallback(
+    (params: URLSearchParams) => {
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router],
+  );
+
+  useEffect(() => {
+    const sanitizedFilters = parseSearchParams(new URLSearchParams(searchParams.toString()));
+    const sanitizedKnownParams = buildSearchParams(sanitizedFilters);
+    const mergedParams = new URLSearchParams(searchParams.toString());
+
+    [
+      "category",
+      "subcategory",
+      "color",
+      "size",
+      "brand",
+      "tag",
+      "gender",
+      "fit",
+      "minPrice",
+      "maxPrice",
+    ].forEach((key) => mergedParams.delete(key));
+
+    sanitizedKnownParams.forEach((value, key) => {
+      mergedParams.append(key, value);
+    });
+
+    if (mergedParams.toString() !== searchParams.toString()) {
+      replaceWithParams(mergedParams);
+    }
+  }, [replaceWithParams, searchParams]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDynamicFilters = async () => {
+      setIsLoadingFilters(true);
+      try {
+        const data = await getCategoryFiltersPayload({
+          category: parsedFilters.category,
+          subcategory: parsedFilters.subcategory,
+          tags: parsedFilters.tags,
+          colors: parsedFilters.colors,
+          brands: parsedFilters.brands,
+          sizes: parsedFilters.sizes,
+          gender: parsedFilters.gender,
+          fit: parsedFilters.fit,
+          minPrice: parsedFilters.minPrice,
+          maxPrice: parsedFilters.maxPrice,
+        });
+
+        if (isMounted) {
+          setPayload(data);
+        }
+      } catch (error) {
+        console.error("Error loading dynamic filters payload:", error);
+        if (isMounted) {
+          setPayload(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingFilters(false);
+        }
+      }
+    };
+
+    loadDynamicFilters();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [parsedFilters]);
+
+  const normalizedRange = useMemo<[number, number]>(() => {
+    const min = payload?.available_filters.price_range.min ?? 0;
+    const max = payload?.available_filters.price_range.max ?? 150;
+    const safeMin = Number.isFinite(min) ? Number(min) : 0;
+    const safeMax = Number.isFinite(max) ? Number(max) : 150;
+    const rangeMin = Math.floor(Math.min(safeMin, safeMax));
+    const rangeMax = Math.ceil(Math.max(safeMin, safeMax));
+    const normalizedMax = rangeMin === rangeMax ? rangeMax + 1 : rangeMax;
+    return [rangeMin, normalizedMax];
+  }, [payload?.available_filters.price_range.max, payload?.available_filters.price_range.min]);
+
+  const toggleMultiParam = useCallback(
+    (key: string, value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) return;
+
+      const currentValues = Array.from(
+        new Set(
+          params
+            .getAll(key)
+            .map((item) => item.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      );
+
+      const hasValue = currentValues.includes(normalized);
+      const nextValues = hasValue
+        ? currentValues.filter((item) => item !== normalized)
+        : [...currentValues, normalized];
+
+      params.delete(key);
+      nextValues.forEach((item) => params.append(key, item));
+      replaceWithParams(params);
+    },
+    [replaceWithParams, searchParams],
+  );
+
+  const toggleSingleParam = useCallback(
+    (key: string, value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) return;
+
+      const current = params.get(key);
+      if (current === normalized) {
+        params.delete(key);
+      } else {
+        params.set(key, normalized);
+      }
+
+      replaceWithParams(params);
+    },
+    [replaceWithParams, searchParams],
+  );
+
+  const handlePriceChange = useCallback(
+    (value: [number, number]) => {
+      const [rangeMin, rangeMax] = normalizedRange;
+      const [nextMinRaw, nextMaxRaw] = [value[0], value[1]].sort(
+        (a, b) => a - b,
+      ) as [number, number];
+
+      const nextMin = Math.min(Math.max(nextMinRaw, rangeMin), rangeMax);
+      const nextMax = Math.min(Math.max(nextMaxRaw, rangeMin), rangeMax);
+
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (nextMin !== rangeMin) {
+        params.set("minPrice", String(nextMin));
+      } else {
+        params.delete("minPrice");
+      }
+
+      if (nextMax !== rangeMax) {
+        params.set("maxPrice", String(nextMax));
+      } else {
+        params.delete("maxPrice");
+      }
+
+      if (params.toString() !== searchParams.toString()) {
+        replaceWithParams(params);
+      }
+    },
+    [normalizedRange, replaceWithParams, searchParams],
+  );
+
+  const selectCategory = useCallback(
+    (categorySlug: string) => {
+      const normalized = categorySlug.trim().toLowerCase();
+      if (!normalized) return;
+
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("category", normalized);
+      params.delete("subcategory");
+      replaceWithParams(params);
+    },
+    [replaceWithParams, searchParams],
+  );
+
+  const selectSubcategory = useCallback(
+    (subcategorySlug: string) => {
+      const normalized = subcategorySlug.trim().toLowerCase();
+      if (!normalized || !parsedFilters.category) return;
+
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("category", parsedFilters.category);
+      params.set("subcategory", normalized);
+      replaceWithParams(params);
+    },
+    [parsedFilters.category, replaceWithParams, searchParams],
+  );
+
+  const mainSlug = parsedFilters.subcategory ?? parsedFilters.category ?? "all";
+
+  const clearHierarchyHref = useMemo(() => {
+    const { category: _, subcategory: __, ...rest } = parsedFilters;
+    const baseParams = buildSearchParams(rest);
+    const query = baseParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [parsedFilters, pathname]);
+
+  const headerNavigationItems = useMemo<ProductsFastNavItem[]>(() => {
+    const source: RpcNavigationNode[] = parsedFilters.category
+      ? payload?.navigation.subcategories || []
+      : payload?.navigation.categories || [];
+
+    return source.map((entry) => {
+      const { category: _, subcategory: __, ...rest } = parsedFilters;
+      const nextFilters = {
+        ...rest,
+        ...(parsedFilters.category
+          ? { category: parsedFilters.category, subcategory: entry.slug }
+          : { category: entry.slug }),
+      };
+      const nextParams = buildSearchParams(nextFilters);
+      const query = nextParams.toString();
+
+      return {
+        slug: entry.slug,
+        name: entry.name,
+        href: query ? `${pathname}?${query}` : pathname,
+      };
+    });
+  }, [parsedFilters, payload?.navigation.categories, payload?.navigation.subcategories, pathname]);
+
+  const mainFastNavItem = useMemo<ProductsFastNavItem>(() => {
+    const matched = headerNavigationItems.find((item) => item.slug === mainSlug);
+    if (matched) return matched;
+
+    if (mainSlug === "all") {
+      return {
+        slug: "all",
+        name: "ALL",
+        href: clearHierarchyHref,
+      };
+    }
+
+    return {
+      slug: mainSlug,
+      name: formatNavLabel(mainSlug),
+      href: clearHierarchyHref,
+    };
+  }, [clearHierarchyHref, headerNavigationItems, mainSlug]);
+
+  useEffect(() => {
+    console.log("Payload de filtros actualizado:", payload);
+    console.log("Productos totales recibidos del catalogo:", products.length);
+  }, [products, payload]);
 
   const createFastNavScrollTrigger = () => {
     // Matar cualquier trigger anterior
@@ -125,11 +397,9 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
         tlFastBar.current.progress(0);
       }
     }
-    console.log("FastNav ScrollTrigger creado con ID:");
     ScrollTrigger.refresh();
     return tl;
   };
-
 
   // useEffect para crear el ScrollTrigger al montar el componente
   useEffect(() => {
@@ -287,27 +557,44 @@ export const ProductsLayout = ({ products, title }: ProductsLayoutProps) => {
           ref={containerRef}
           className={`wrapper-pf relative grid grid-cols-1 grid-rows-2 pb-32 w-screen gap-0`}
         >
-          <div className="absolute top-14 left-0 pl-8 translate-y-0 row-span-1">
-            <p className="font-prata text-sm px-2 py-1">
-              Polos / Sweatshirts / Pants / Accessories
-            </p>
+          <div className="absolute -top-4 -left-4 w-full z-30">
+            <Breadcrumbs />
           </div>
           <ProductsFastNav
-            subcategories={[
-              { href: "polos", name: "POLOS" },
-              { href: "sweatshirts", name: "SWEATSHIRTS" },
-              { href: "pants", name: "PANTS" },
-              { href: "accessories", name: "ACCESSORIES" },
-            ]}
+            items={headerNavigationItems}
+            mainItem={mainFastNavItem}
           />
           <aside
             ref={sidebarRef}
             className="relative filters-wrapper overflow-y-auto px-4 py-3 text-white transition-colors"
           >
             <h1 className="subcategory-title pl-4 pt-7 font-prata text-6xl">
-              {title}
+              {mainFastNavItem.name}
             </h1>
-            <AsideFilters />
+            <AllFiltersPanel
+              isLoading={isLoadingFilters}
+              availableFilters={payload?.available_filters}
+              navigation={payload?.navigation}
+              selectedCategory={parsedFilters.category}
+              selectedSubcategory={parsedFilters.subcategory}
+              selectedSizes={parsedFilters.sizes || []}
+              selectedColors={parsedFilters.colors || []}
+              selectedBrands={parsedFilters.brands || []}
+              selectedTags={parsedFilters.tags || []}
+              selectedGender={parsedFilters.gender}
+              priceValue={[
+                parsedFilters.minPrice ?? normalizedRange[0],
+                parsedFilters.maxPrice ?? normalizedRange[1],
+              ]}
+              onSelectCategory={selectCategory}
+              onSelectSubcategory={selectSubcategory}
+              onToggleSize={(size) => toggleMultiParam("size", size)}
+              onToggleColor={(color) => toggleMultiParam("color", color)}
+              onToggleBrand={(brand) => toggleMultiParam("brand", brand)}
+              onToggleTag={(tag) => toggleMultiParam("tag", tag)}
+              onSelectGender={(gender) => toggleSingleParam("gender", gender)}
+              onChangePrice={handlePriceChange}
+            />
             <div className="overlay-filters fixed inset-0 w-full h-screen bg-off-white" />
           </aside>
           <ProductGrid ref={gridRef} products={products} />

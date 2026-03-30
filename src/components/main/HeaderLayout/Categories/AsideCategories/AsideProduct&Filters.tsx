@@ -128,10 +128,6 @@ export const AsideCategoriesFilter = ({
   useEffect(() => {
     if (!payload) return;
     console.log("AVAILABLE TAGS:", payload.available_filters.tags);
-    console.log(
-      "VARIANT TAGS:",
-      payload.variants.map((variant) => variant.tags),
-    );
     console.log("RPC DEBUG:", payload.debug);
   }, [payload]);
 

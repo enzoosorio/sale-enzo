@@ -5,8 +5,8 @@ import { BrandFilterSection } from './sections/BrandFilterSection'
 import { GenderFilterSection } from './sections/GenderFilterSection'
 import { TagsFilterSection } from './sections/TagsFilterSection'
 import { PriceFilterSection } from './sections/PriceFilterSection'
-import { type RpcAvailableFilters } from '@/utils/filters/rpcCategoryFilters'
-// import { FastNavSection } from './sections/FastNavSection'
+import { FastNavSection } from './sections/FastNavSection'
+import { type RpcAvailableFilters, type RpcNavigation } from '@/utils/filters/rpcCategoryFilters'
 
 
 // interface AvailableFilters extends RpcAvailableFilters {
@@ -16,39 +16,45 @@ import { type RpcAvailableFilters } from '@/utils/filters/rpcCategoryFilters'
 interface AllFiltersPanelProps {
   isLoading?: boolean;
   availableFilters?: RpcAvailableFilters;
+  navigation?: RpcNavigation;
+  selectedCategory?: string;
+  selectedSubcategory?: string;
   selectedSizes?: string[];
   selectedColors?: string[];
   selectedBrands?: string[];
   selectedTags?: string[];
   selectedGender?: string;
-  selectedSubcategories?: string[];
   priceValue?: [number, number];
+  onSelectCategory?: (categorySlug: string) => void;
+  onSelectSubcategory?: (subcategorySlug: string) => void;
   onToggleSize?: (size: string) => void;
   onToggleColor?: (color: string) => void;
   onToggleBrand?: (brand: string) => void;
   onToggleTag?: (tag: string) => void;
   onSelectGender?: (gender: string) => void;
   onChangePrice?: (value: [number, number]) => void;
-  onToggleSubcategory?: (subcategoryId: string) => void;
 }
 
 export const AllFiltersPanel = ({
   isLoading = false,
   availableFilters,
+  navigation,
+  selectedCategory,
+  selectedSubcategory,
   selectedSizes = [],
   selectedColors = [],
   selectedBrands = [],
   selectedTags = [],
   selectedGender,
-  selectedSubcategories = [],
   priceValue = [0, 150],
+  onSelectCategory,
+  onSelectSubcategory,
   onToggleSize,
   onToggleColor,
   onToggleBrand,
   onToggleTag,
   onSelectGender,
   onChangePrice,
-  onToggleSubcategory,
 }: AllFiltersPanelProps) => {
   const sizeOptions = availableFilters?.sizes.map((size) => size.value) || [];
   const colorOptions =
@@ -77,6 +83,15 @@ export const AllFiltersPanel = ({
     Math.min(Math.max(priceValue[1], rangeMin), normalizedMax),
   ].sort((a, b) => a - b) as [number, number];
 
+  const hasCategorySelected = typeof selectedCategory === 'string' && selectedCategory.length > 0;
+  const navigationItems = hasCategorySelected
+    ? (navigation?.subcategories || [])
+    : (navigation?.categories || []);
+
+  const selectedNavigationSlugs = hasCategorySelected
+    ? (selectedSubcategory ? [selectedSubcategory] : [])
+    : (selectedCategory ? [selectedCategory] : []);
+
   return (
     <CardFiltersPanel className='px-2'>
       {/* TODO: PARA EL ISLOADING, AGREGAR UN SKELETON EN VEZ DE COLOCAR ESE CARGANDO FEO */}
@@ -86,11 +101,18 @@ export const AllFiltersPanel = ({
         </div>
       )}
 
-      {/* <FastNavSection
-        selectedSubcategories={selectedSubcategories}
-        subcategories={availableFilters?.subcategories || []}
-        onToggleSubcategory={onToggleSubcategory}
-      /> */}
+      <FastNavSection
+        title={hasCategorySelected ? 'SUBCATEGORIES' : 'CATEGORIES'}
+        items={navigationItems}
+        selectedSlugs={selectedNavigationSlugs}
+        onSelectItem={(slug) => {
+          if (hasCategorySelected) {
+            onSelectSubcategory?.(slug);
+            return;
+          }
+          onSelectCategory?.(slug);
+        }}
+      />
 
       <SizeFilterSection 
         sizes={sizeOptions}
