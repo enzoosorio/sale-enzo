@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { CloseButtonSVG, OpenButtonSVG } from "@/components/reusable/svgs/CloseOpenSVG";
@@ -31,15 +31,15 @@ const initImagesPositions = [
 const OPEN_SVG_PATH_OFFSET = 47.94404602050781;
 
 
-  // Strict state machine for animation flow
-  export type CategoryPhase = 
-"PARENTS" |
-"TO_SUB" | 
-"SUBCATEGORIES" | 
-"TO_ALL_FILTERS"|
-"ALL_FILTERS" |
-"TO_SUBCATEGORIES" |
-"TO_PARENTS";
+// Strict state machine for animation flow
+export type CategoryPhase =
+  "PARENTS" |
+  "TO_SUB" |
+  "SUBCATEGORIES" |
+  "TO_ALL_FILTERS" |
+  "ALL_FILTERS" |
+  "TO_SUBCATEGORIES" |
+  "TO_PARENTS";
 
 export const CategoriesPanel = () => {
   const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
@@ -47,8 +47,39 @@ export const CategoriesPanel = () => {
   const { parentCategories, setParentCategories, setIsLoadingCategories, showCategories, setShowCategories } = useCategoriesStore();
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [linkToShopWSearch, setLinkToShopWSearch] = useState<string>("");
+  const lockedScrollYRef = useRef<number | null>(null);
 
   const searchParams = useSearchParams();
+
+  const lockBodyScroll = () => {
+    if (lockedScrollYRef.current !== null) return;
+
+    const scrollY = window.scrollY;
+    lockedScrollYRef.current = scrollY;
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+  };
+
+  const unlockBodyScroll = () => {
+    const lockedScrollY = lockedScrollYRef.current ?? 0;
+
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
+
+    window.scrollTo(0, lockedScrollY);
+    lockedScrollYRef.current = null;
+  };
+
+  const closePanel = () => {
+    setShowCategories && setShowCategories(false);
+    setExitImagesByCategory(true);
+    setIsAnimating(false);
+    unlockBodyScroll();
+  };
 
   useGSAP(() => {
     const section = document.querySelector(".categories-section");
@@ -106,7 +137,7 @@ export const CategoriesPanel = () => {
     const fetchCategories = async () => {
       // Solo cargar si no hay categorías ya cargadas
       if (parentCategories.length > 0) return;
-      
+
       try {
         setIsLoadingCategories(true);
         const categories = await getParentCategories();
@@ -129,30 +160,22 @@ export const CategoriesPanel = () => {
         // opacity: 0,
       });
     }
-    
-    fetchCategories();  
+
+    fetchCategories();
     setDashArray();
   }, [])
 
   // Bloquear scroll del body cuando las categorías están abiertas
   useEffect(() => {
     if (showCategories) {
-      // Guardar posición actual del scroll
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
+      lockBodyScroll();
     } else {
-      // Restaurar posición del scroll
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
+      unlockBodyScroll();
     }
+
+    return () => {
+      unlockBodyScroll();
+    };
   }, [showCategories])
 
   const positions = ["20", "15", "10", "10", "15", "0"];
@@ -164,7 +187,7 @@ export const CategoriesPanel = () => {
         top: initImagesPositions[index].top,
         left: initImagesPositions[index].left,
       });
-     
+
       gsap.set(`.overlay-image-effect`, {
         position: "absolute",
         top: 0,
@@ -176,13 +199,13 @@ export const CategoriesPanel = () => {
       });
     });
 
-    if (imagesByCategory.length !== 0 && !exitImagesByCategory){
+    if (imagesByCategory.length !== 0 && !exitImagesByCategory) {
       gsap.to(".overlay-image-effect", {
         y: "100%",
         duration: 1,
         ease: "power3.out",
       });
-    } else if( exitImagesByCategory ) {
+    } else if (exitImagesByCategory) {
       gsap.to(".overlay-image-effect", {
         y: "0%",
         duration: 0.15,
@@ -199,12 +222,10 @@ export const CategoriesPanel = () => {
   // NOW we are going to listen the escape key to close the categories section, this is a common UX pattern that users expect, and it will enhance the user experience by allowing them to quickly exit the categories view without having to click the close button. We will add an event listener for the 'keydown' event and check if the pressed key is 'Escape'. If it is, we will trigger the same function that is called when the close button is clicked.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if(!showCategories) return;
+      if (!showCategories) return;
       if (e.key === "Escape") {
         console.log('escape')
-        setShowCategories && setShowCategories(false);
-        setExitImagesByCategory(true);
-        setIsAnimating(false);
+        closePanel();
       }
     };
 
@@ -225,7 +246,7 @@ export const CategoriesPanel = () => {
   return (
     <section
       className="categories-section cursor-auto fixed inset-0 z-60 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
-      style={{ 
+      style={{
         display: "none",
         clipPath: "inset(100% 0% 0% 0%)",
         zIndex: 80,
@@ -251,26 +272,28 @@ export const CategoriesPanel = () => {
         <button
           className={` relative w-12 h-12 close-categories-button group p-2 flex items-center justify-center rounded-full cursor-pointer `}
           onClick={() => {
-            // setting showCategories to false is handled in the parent component (HeaderLayout) through the setShowCategories prop, so we just need to call it here.
-            setShowCategories && setShowCategories(false);
-            setExitImagesByCategory(true);
-            setIsAnimating(false);
-            document.body.style.overflow = ""; // Restaurar scroll del body
+            closePanel();
           }}
         >
-          <BolitaEfectoClick/>
+          <BolitaEfectoClick />
           <CloseButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
         </button>
-        </div>
-        {/* RIGHT DE ACA MANDA LA POSICION DE LA FLECHA INICIAL (EL MOVIMIENTO ANIMADO ES UN "IDA Y VUELTA") */}
-        <div className={`wrapper-dasharray z-50 absolute 
+      </div>
+      {/* RIGHT DE ACA MANDA LA POSICION DE LA FLECHA INICIAL (EL MOVIMIENTO ANIMADO ES UN "IDA Y VUELTA") */}
+      <div className={`wrapper-dasharray z-50 absolute 
           top-12 right-20 w-max h-16 
           flex items-center justify-center`}>
-            <Link href={linkToShopWSearch} className="relative group w-12 h-12 p-2 flex items-center justify-center rounded-full">
-              <BolitaEfectoClick/>
-              <OpenButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
-            </Link>
-        </div>
+        <Link
+          href={linkToShopWSearch}
+          onClick={() => {
+            closePanel();
+          }}
+          className="relative group w-12 h-12 p-2 flex items-center justify-center rounded-full"
+        >
+          <BolitaEfectoClick />
+          <OpenButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
+        </Link>
+      </div>
       {/* div para mostrar las imagenes pertenecientes al actual individual category que se encuentra en hover. */}
       <div className="images-wrapper fixed inset-0 z-10 select-none pointer-events-none bg-amber-0 w-full h-screen">
         {imagesByCategory.map((image, index) => (
@@ -289,10 +312,10 @@ export const CategoriesPanel = () => {
         ))}
       </div>
       {/* Breadcrumbs */}
-        <Breadcrumbs/>
+      <Breadcrumbs />
       {/* blur effect when loading */}
-      <BlurEffect/> 
-      <BlurEffect2/> 
+      <BlurEffect />
+      <BlurEffect2 />
     </section>
   );
 };
