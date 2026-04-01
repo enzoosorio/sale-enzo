@@ -121,15 +121,11 @@ export const AsideCategoriesFilter = ({
     };
   }, [parsedFilters]);
 
+  //TODO: BORRAR ESTE USEEFFECT, SOLO PARA DEBUGGING
   useEffect(() => {
-    console.log("SELECTED TAGS:", parsedFilters.tags || []);
+    // console.log("SELECTED TAGS:", parsedFilters.tags || []);
   }, [parsedFilters.tags]);
 
-  useEffect(() => {
-    if (!payload) return;
-    console.log("AVAILABLE TAGS:", payload.available_filters.tags);
-    console.log("RPC DEBUG:", payload.debug);
-  }, [payload]);
 
   const normalizedRange = useMemo<[number, number]>(() => {
     const min = payload?.available_filters.price_range.min ?? 0;

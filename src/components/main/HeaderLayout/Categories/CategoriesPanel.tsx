@@ -34,13 +34,14 @@ const OPEN_SVG_PATH_OFFSET = 47.94404602050781;
 // Strict state machine for animation flow
 export type CategoryPhase =
   "PARENTS" |
-  "TO_SUB" |
   "SUBCATEGORIES" |
   "TO_ALL_FILTERS" |
   "ALL_FILTERS" |
   "TO_SUBCATEGORIES" |
   "TO_PARENTS";
 
+
+  
 export const CategoriesPanel = () => {
   const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
   const [phase, setPhase] = useState<CategoryPhase>("PARENTS");
@@ -81,13 +82,11 @@ export const CategoriesPanel = () => {
     unlockBodyScroll();
   };
 
+  
+
   useGSAP(() => {
     const section = document.querySelector(".categories-section");
     if (!section) return;
-
-    const splittedText = SplitText.create(".individual-category", {
-      type: "lines",
-    });
 
     if (showCategories) {
       gsap.timeline()
@@ -104,17 +103,6 @@ export const CategoriesPanel = () => {
           },
           0
         )
-        .from(
-          splittedText.lines,
-          {
-            opacity: 1,
-            y: 100,
-            stagger: 0.05,
-            duration: 0.5,
-            ease: "power2.out",
-          },
-          0.3
-        );
     } else {
       gsap.timeline()
         .to(
