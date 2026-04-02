@@ -19,6 +19,7 @@ import { CategoryPhase } from "./CategoriesPanel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createBlurAnimation } from "@/utils/gsap/blur";
 import { useSplitText } from "@/hooks/useSplitText";
+import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(MorphSVGPlugin, SplitText);
 
@@ -44,7 +45,6 @@ export const InfiniteScrollCategories = ({
   const subMenuRef = useRef<HTMLUListElement>(null);
   const parentsItemsRef = useRef<(HTMLLIElement | null)[]>([]);
   const subItemsRef = useRef<(HTMLLIElement | null)[]>([]);
-const [subScrollKey, setSubScrollKey] = useState(0);
   // SplitText refs for proper cleanup
   const parentsSplitRef = useSplitText(parentsMenuRef, ".individual-category", {
     type: "lines",
@@ -54,18 +54,15 @@ const [subScrollKey, setSubScrollKey] = useState(0);
   });
   // const subSplitRef = useRef<SplitText | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [speedDrag, setSpeedDrag] = useState(1.2);
   const [categorySelected, setCategorySelected] = useState<Categories | null>(
     null,
   );
   const [subcategories, setSubcategories] = useState<Categories[]>([]);
+  const [isLoadingSubcategories, setIsLoadingSubcategories] = useState(false);
+  const timelineDashArrayRef = useRef<gsap.core.Timeline | null>(null);
+  const subcategoriesCacheRef = useRef<Map<string, Categories[]>>(new Map());
   const { parentCategories } = useCategoriesStore();
-  const [subKey, setSubKey] = useState(0);
-
-
-  useEffect(() => {
-  setSubKey(prev => prev + 1);
-}, [subcategories.length]);
+  const speedDrag = isMobile ? 1.5 : 1.2;
 
   // URL navigation
   const router = useRouter();
@@ -89,6 +86,99 @@ const [subScrollKey, setSubScrollKey] = useState(0);
     subItemsRef.current = [];
   }, [subcategories]);
 
+  useGSAP(() => {
+    // Initializing the dash array animation timeline for the open/close button
+    timelineDashArrayRef.current = gsap.timeline({ paused: true });
+
+      //  timelineDashArrayRef.current.to(
+      //   "#close-svg-open",
+      //   {
+      //     strokeDashoffset: openSVGPathOffset,
+      //     duration: 0.6,
+      //     ease: "power2.in",
+      //   },
+      //   0,
+      // );
+      // timelineDashArrayRef.current.to(
+      //   ".bolita-efecto-click",
+      //   {
+      //     opacity: 0,
+      //     ease: "power2.in",
+      //   },
+      //   0,
+      // );
+      // timelineDashArrayRef.current.to(
+      //   ".wrapper-dasharray",
+      //   {
+      //     x: "0rem",
+      //     pointerEvents: "none",
+      //   },
+      //   0.45,
+      // );
+      // timelineDashArrayRef.current.to(
+      //   ".container-both-actions",
+      //   {
+      //     width: "4rem",
+      //     x: "0rem",
+      //     ease: "power2.out",
+      //   },
+      //   0.5,
+      // );
+      // timelineDashArrayRef.current.to(
+      //   ".close-categories-button",
+      //   {
+      //     x: "0rem",
+      //     ease: "power2.out",
+      //   },
+      //   0.55,
+      // );
+
+      timelineDashArrayRef.current.to(
+        ".container-both-actions",
+        {
+          width: "10rem",
+          x: "4rem",
+          ease: "power2.out",
+        },
+        0,
+      );
+      timelineDashArrayRef.current.to(
+        ".close-categories-button",
+        {
+          x: "-2rem",
+          ease: "power2.out",
+        },
+        0,
+      );
+      timelineDashArrayRef.current.to(
+        ".bolita-efecto-click",
+        {
+          opacity: 1,
+          ease: "power2.in",
+        },
+        0.3,
+      );
+      timelineDashArrayRef.current.to(
+        "#close-svg-open",
+        {
+          strokeDashoffset: 0,
+          duration: 0.8,
+          ease: "power2.out",
+        },
+        0.3,
+      );
+      timelineDashArrayRef.current.to(
+        ".wrapper-dasharray",
+        {
+          x: "1.5rem",
+          pointerEvents: "auto",
+        },
+        0.3,
+      );
+
+
+  }, { scope : ".categories-section"})
+
   // Use infinite scroll hook for parents list
   useInfiniteVerticalScroll({
     menuRef: parentsMenuRef,
@@ -99,21 +189,93 @@ const [subScrollKey, setSubScrollKey] = useState(0);
     showCategories: showCategories || false,
   });
 
-  const isSubScrollReady =
-    showCategories &&
-    phase === "SUBCATEGORIES" &&
-    subcategories.length > 0 &&
-    subItemsRef.current.filter(Boolean).length === subcategories.length;
-
   // Use infinite scroll hook for subcategories list
   useInfiniteVerticalScroll({
     menuRef: subMenuRef,
     itemsRef: subItemsRef,
     itemCount: subcategories.length,
     speedDrag,
-    isActive: isSubScrollReady,
+    isActive:
+      !!showCategories &&
+      phase === "SUBCATEGORIES" &&
+      subcategories.length > 0,
     showCategories: showCategories || false,
   });
+
+  // Deterministic visual baseline for stable phases.
+  useEffect(() => {
+    if (!showCategories || !parentsMenuRef.current || !subMenuRef.current) return;
+
+    if (phase === "PARENTS") {
+      gsap.set(parentsMenuRef.current, {
+        opacity: 1,
+        zIndex: 10,
+        pointerEvents: "auto",
+      });
+      gsap.set(subMenuRef.current, {
+        opacity: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+      });
+      gsap.set(".back-button", {
+        left: "25%",
+        opacity: 0,
+        zIndex: -10,
+        pointerEvents: "none",
+      });
+      timelineDashArrayRef.current?.reverse();
+    }
+    // quiza esta aproximacion sea buena, pero debo fijarme en los casos en los que se reciben directamente en el URL los params para entrar a las subcategorias o a los filtros, porque ahi se saltarian las animaciones de salida de los padres o de las subcategorias respectivamente, por lo que habria que asegurarse de setear los estilos correctamente para evitar que se muestren los padres o subcategorias debajo de las subcategorias o filtros respectivamente.
+    if (phase === "SUBCATEGORIES") {
+      const hasCategoryParam = !!searchParams.get("category");
+      const shouldShowSubMenu =
+        subcategories.length > 0 || isLoadingSubcategories || hasCategoryParam;
+
+      gsap.set(parentsMenuRef.current, {
+        opacity: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+      });
+      gsap.set(subMenuRef.current, {
+        opacity: shouldShowSubMenu ? 1 : 0,
+        zIndex: 10,
+        pointerEvents: subcategories.length > 0 ? "auto" : "none",
+      });
+      gsap.set(".back-button", {
+        left: "25%",
+        opacity: 1,
+        zIndex: 10,
+        pointerEvents: "auto",
+      });
+      timelineDashArrayRef.current?.play(0);
+    }
+
+    if (phase === "ALL_FILTERS") {
+      gsap.set(parentsMenuRef.current, {
+        opacity: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+      });
+      gsap.set(subMenuRef.current, {
+        opacity: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+      });
+      gsap.set(".back-button", {
+        left: "5%",
+        opacity: 1,
+        zIndex: 70,
+        pointerEvents: "auto",
+      });
+        timelineDashArrayRef.current?.play(0);
+    }
+  }, [
+    phase,
+    showCategories,
+    subcategories.length,
+    isLoadingSubcategories,
+    searchParams,
+  ]);
 
   // Handle parent category click
   const handleParentClick = useCallback(
@@ -164,35 +326,70 @@ const [subScrollKey, setSubScrollKey] = useState(0);
     [phase, setPhase, setIsAnimating, router, searchParams],
   );
 
-  // Fetch subcategories when transitioning to subcategories
+  // Fetch subcategories whenever a category is selected and panel is open.
+  // This also covers direct URL entry to SUBCATEGORIES/ALL_FILTERS without
+  // passing through TO_SUBCATEGORIES.
   useEffect(() => {
+    let isCancelled = false;
+    const categorySlug = searchParams.get("category");
+
     const fetchSubcategories = async () => {
-      if (categorySelected && phase !== "PARENTS" && phase !== "TO_PARENTS") {
-        try {
-          const fetchedSubcategories = await getSubcategoriesByParentId(
-            categorySelected.id,
-          );
-          const formattedSubcategories: Categories[] = fetchedSubcategories.map(
-            (sub: ProductCategory) => ({
-              id: sub.id,
-              name: sub.name.toUpperCase(),
-              slug: sub.slug,
-            }),
-          );
-          setSubcategories(formattedSubcategories);
-        } catch (error) {
-          console.error("Error fetching subcategories:", error);
-          setSubcategories([]);
-          // Reset on error
-          setPhase("PARENTS");
-          setIsAnimating(false);
-          setCategorySelected(null);
+      if (!showCategories || !categorySelected || !categorySlug) {
+        return;
+      }
+
+      const cachedSubcategories = subcategoriesCacheRef.current.get(
+        categorySelected.id,
+      );
+      if (cachedSubcategories) {
+        setSubcategories(cachedSubcategories);
+        setIsLoadingSubcategories(false);
+        return;
+      }
+
+      try {
+        setIsLoadingSubcategories(true);
+        const fetchedSubcategories = await getSubcategoriesByParentId(
+          categorySelected.id,
+        );
+        if (isCancelled) return;
+        const formattedSubcategories: Categories[] = fetchedSubcategories.map(
+          (sub: ProductCategory) => ({
+            id: sub.id,
+            name: sub.name.toUpperCase(),
+            slug: sub.slug,
+          }),
+        );
+
+        subcategoriesCacheRef.current.set(categorySelected.id, formattedSubcategories);
+        setSubcategories(formattedSubcategories);
+      } catch (error) {
+        if (isCancelled) return;
+        console.error("Error fetching subcategories:", error);
+        setSubcategories([]);
+        // Reset on error
+        setPhase("PARENTS");
+        setIsAnimating(false);
+        setCategorySelected(null);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingSubcategories(false);
         }
       }
     };
 
     fetchSubcategories();
-  }, [categorySelected, phase]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    categorySelected,
+    searchParams,
+    showCategories,
+    setIsAnimating,
+    setPhase,
+  ]);
 
 
   // Parent exit animation (TO_SUB phase)
@@ -406,19 +603,6 @@ const [subScrollKey, setSubScrollKey] = useState(0);
       );
 
       // making sure this styles
-    } else if (phase !== "ALL_FILTERS" && subMenuRef.current) {
-      gsap.set(parentsMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
-
-      // Ensure subcategories are hidden when not in transition to filters
-      gsap.set(subMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
     }
   }, [phase, setPhase]);
 
@@ -576,6 +760,7 @@ const [subScrollKey, setSubScrollKey] = useState(0);
       const tl = gsap.timeline({
         onComplete: () => {
           setSubcategories([]);
+          setIsLoadingSubcategories(false);
           setCategorySelected(null);
           setPhase("PARENTS");
           setIsAnimating(false);
@@ -668,7 +853,7 @@ const [subScrollKey, setSubScrollKey] = useState(0);
         }
       });
     }
-  }, [phase, categorySelected]);
+  }, [phase, categorySelected?.slug, showCategories]);
 
   // Sync URL params with state on mount and when URL changes (handles direct navigation with params)
   useEffect(() => {
@@ -711,48 +896,51 @@ const [subScrollKey, setSubScrollKey] = useState(0);
         0.1,
       );
 
-      tl.to(
-        "#close-svg-open",
-        {
-          strokeDashoffset: openSVGPathOffset,
-          duration: 0.6,
-          ease: "power2.in",
-        },
-        0,
-      );
-      tl.to(
-        ".bolita-efecto-click",
-        {
-          opacity: 0,
-          ease: "power2.in",
-        },
-        0,
-      );
-      tl.to(
-        ".wrapper-dasharray",
-        {
-          x: "0rem",
-          pointerEvents: "none",
-        },
-        0.45,
-      );
-      tl.to(
-        ".container-both-actions",
-        {
-          width: "4rem",
-          x: "0rem",
-          ease: "power2.out",
-        },
-        0.5,
-      );
-      tl.to(
-        ".close-categories-button",
-        {
-          x: "0rem",
-          ease: "power2.out",
-        },
-        0.55,
-      );
+      // using the timeline reference to reverse the dash array animation in case we come back to the parents phase directly from the ALL_FILTERS phase, so we skip the subcategory exit animation where the dash array animation is reversed.
+      // timelineDashArrayRef.current?.reverse();
+
+      // tl.to(
+      //   "#close-svg-open",
+      //   {
+      //     strokeDashoffset: openSVGPathOffset,
+      //     duration: 0.6,
+      //     ease: "power2.in",
+      //   },
+      //   0,
+      // );
+      // tl.to(
+      //   ".bolita-efecto-click",
+      //   {
+      //     opacity: 0,
+      //     ease: "power2.in",
+      //   },
+      //   0,
+      // );
+      // tl.to(
+      //   ".wrapper-dasharray",
+      //   {
+      //     x: "0rem",
+      //     pointerEvents: "none",
+      //   },
+      //   0.45,
+      // );
+      // tl.to(
+      //   ".container-both-actions",
+      //   {
+      //     width: "4rem",
+      //     x: "0rem",
+      //     ease: "power2.out",
+      //   },
+      //   0.5,
+      // );
+      // tl.to(
+      //   ".close-categories-button",
+      //   {
+      //     x: "0rem",
+      //     ease: "power2.out",
+      //   },
+      //   0.55,
+      // );
     } else if (category && !subcategory) {
       targetPhase = "SUBCATEGORIES";
       const tl = gsap.timeline();
@@ -783,48 +971,49 @@ const [subScrollKey, setSubScrollKey] = useState(0);
         },
         0,
       );
-      tl.to(
-        ".container-both-actions",
-        {
-          width: "10rem",
-          x: "4rem",
-          ease: "power2.out",
-        },
-        0,
-      );
-      tl.to(
-        ".close-categories-button",
-        {
-          x: "-2rem",
-          ease: "power2.out",
-        },
-        0,
-      );
-      tl.to(
-        ".bolita-efecto-click",
-        {
-          opacity: 1,
-          ease: "power2.in",
-        },
-        0.3,
-      );
-      tl.to(
-        "#close-svg-open",
-        {
-          strokeDashoffset: 0,
-          duration: 0.8,
-          ease: "power2.out",
-        },
-        0.3,
-      );
-      tl.to(
-        ".wrapper-dasharray",
-        {
-          x: "1.5rem",
-          pointerEvents: "auto",
-        },
-        0.3,
-      );
+      // tl.to(
+      //   ".container-both-actions",
+      //   {
+      //     width: "10rem",
+      //     x: "4rem",
+      //     ease: "power2.out",
+      //   },
+      //   0,
+      // );
+      // tl.to(
+      //   ".close-categories-button",
+      //   {
+      //     x: "-2rem",
+      //     ease: "power2.out",
+      //   },
+      //   0,
+      // );
+      // tl.to(
+      //   ".bolita-efecto-click",
+      //   {
+      //     opacity: 1,
+      //     ease: "power2.in",
+      //   },
+      //   0.3,
+      // );
+      // tl.to(
+      //   "#close-svg-open",
+      //   {
+      //     strokeDashoffset: 0,
+      //     duration: 0.8,
+      //     ease: "power2.out",
+      //   },
+      //   0.3,
+      // );
+      // tl.to(
+      //   ".wrapper-dasharray",
+      //   {
+      //     x: "1.5rem",
+      //     pointerEvents: "auto",
+      //   },
+      //   0.3,
+      // );
+      // timelineDashArrayRef.current?.play(0);
     } else {
       targetPhase = "ALL_FILTERS";
       const tl = gsap.timeline();
@@ -835,48 +1024,49 @@ const [subScrollKey, setSubScrollKey] = useState(0);
         opacity: 1,
         pointerEvents: "auto",
       });
-      tl.to(
-        ".container-both-actions",
-        {
-          width: "10rem",
-          x: "4rem",
-          ease: "power2.out",
-        },
-        0,
-      );
-      tl.to(
-        ".close-categories-button",
-        {
-          x: "-2rem",
-          ease: "power2.out",
-        },
-        0,
-      );
-      tl.to(
-        ".bolita-efecto-click",
-        {
-          opacity: 1,
-          ease: "power2.in",
-        },
-        0.3,
-      );
-      tl.to(
-        "#close-svg-open",
-        {
-          strokeDashoffset: 0,
-          duration: 0.8,
-          ease: "power2.out",
-        },
-        0.3,
-      );
-      tl.to(
-        ".wrapper-dasharray",
-        {
-          x: "1.5rem",
-          pointerEvents: "auto",
-        },
-        0.4,
-      );
+      // tl.to(
+      //   ".container-both-actions",
+      //   {
+      //     width: "10rem",
+      //     x: "4rem",
+      //     ease: "power2.out",
+      //   },
+      //   0,
+      // );
+      // tl.to(
+      //   ".close-categories-button",
+      //   {
+      //     x: "-2rem",
+      //     ease: "power2.out",
+      //   },
+      //   0,
+      // );
+      // tl.to(
+      //   ".bolita-efecto-click",
+      //   {
+      //     opacity: 1,
+      //     ease: "power2.in",
+      //   },
+      //   0.3,
+      // );
+      // tl.to(
+      //   "#close-svg-open",
+      //   {
+      //     strokeDashoffset: 0,
+      //     duration: 0.8,
+      //     ease: "power2.out",
+      //   },
+      //   0.3,
+      // );
+      // tl.to(
+      //   ".wrapper-dasharray",
+      //   {
+      //     x: "1.5rem",
+      //     pointerEvents: "auto",
+      //   },
+      //   0.4,
+      // );
+      // timelineDashArrayRef.current?.play(0);
     }
 
     if (phase === targetPhase) return;
@@ -892,7 +1082,7 @@ const [subScrollKey, setSubScrollKey] = useState(0);
   if (subMenuRef.current) gsap.killTweensOf(subMenuRef.current);
   console.log('acadawoindaodwn')
     setPhase(targetPhase);
-  }, [searchParams, showCategories]);
+  }, [searchParams, showCategories, phase, openSVGPathOffset, setPhase]);
 
   useEffect(() => {
     const categorySlug = searchParams.get("category");
@@ -906,8 +1096,14 @@ const [subScrollKey, setSubScrollKey] = useState(0);
     // Si ya está seleccionado, no hacer nada
     if (categorySelected?.slug === matchedCategory.slug) return;
 
-    setCategorySelected(matchedCategory);
-  }, [searchParams, categories]);
+    const frameId = requestAnimationFrame(() => {
+      setCategorySelected(matchedCategory);
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [searchParams, categories, categorySelected?.slug]);
 
   // Cleanup animations when panel closes
 useEffect(() => {
@@ -944,15 +1140,6 @@ useEffect(() => {
       window.removeEventListener("resize", checkIsMobile);
     };
   }, []);
-
-  // Adjust speedDrag based on device type
-  useEffect(() => {
-    if (isMobile) {
-      setSpeedDrag(1.5);
-    } else {
-      setSpeedDrag(1.2);
-    }
-  }, [isMobile]);
 
   return (
     <>
@@ -1014,7 +1201,6 @@ useEffect(() => {
 
           {/* Subcategories List - Always Mounted */}
           <ul
-           key={subKey}
             ref={subMenuRef}
             className="subcategories-menu cursor-grab absolute top-0 left-0  w-full h-full select-none"   
           >

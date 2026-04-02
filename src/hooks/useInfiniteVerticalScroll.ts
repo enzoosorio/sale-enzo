@@ -10,6 +10,10 @@ interface InfiniteScrollOptions {
   showCategories?: boolean;
 }
 
+type MenuWithInfiniteCleanup = HTMLUListElement & {
+  _infiniteScrollCleanup?: () => void;
+};
+
 export function useInfiniteVerticalScroll({
   menuRef,
   itemsRef,
@@ -21,7 +25,7 @@ export function useInfiniteVerticalScroll({
   useEffect(() => {
     if (!menuRef.current || itemCount === 0 || !isActive) return;
 
-    const menu = menuRef.current;
+    const menu = menuRef.current as MenuWithInfiniteCleanup;
 
     let waitFrameId: number | null = null;
     let animationId: number | null = null;
@@ -173,17 +177,19 @@ export function useInfiniteVerticalScroll({
         });
       };
 
-      menu.addEventListener("wheel", onWheelScroll);
-      menu.addEventListener("mousedown", onDragStart);
-      menu.addEventListener("touchstart", onDragStart);
-
-      menu.addEventListener("touchmove", (e: TouchEvent) => {
+      const onTouchMove = (e: TouchEvent) => {
         if (isDragging) {
+          e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
           onDragMove(e);
         }
-      });
+      };
+
+      menu.addEventListener("wheel", onWheelScroll, { passive: false });
+      menu.addEventListener("mousedown", onDragStart);
+      menu.addEventListener("touchstart", onDragStart);
+      menu.addEventListener("touchmove", onTouchMove, { passive: false });
 
       window.addEventListener("mousemove", onDragMove);
       window.addEventListener("mouseup", onDragEnd);
@@ -191,12 +197,13 @@ export function useInfiniteVerticalScroll({
 
       animate();
 
-      (menu as any)._infiniteScrollCleanup = () => {
+      menu._infiniteScrollCleanup = () => {
         if (animationId !== null) cancelAnimationFrame(animationId);
 
         menu.removeEventListener("wheel", onWheelScroll);
         menu.removeEventListener("mousedown", onDragStart);
         menu.removeEventListener("touchstart", onDragStart);
+        menu.removeEventListener("touchmove", onTouchMove);
         window.removeEventListener("mousemove", onDragMove);
         window.removeEventListener("mouseup", onDragEnd);
         window.removeEventListener("touchend", onDragEnd);
@@ -243,9 +250,9 @@ export function useInfiniteVerticalScroll({
     return () => {
       if (waitFrameId !== null) cancelAnimationFrame(waitFrameId);
 
-      if ((menu as any)._infiniteScrollCleanup) {
-        (menu as any)._infiniteScrollCleanup();
-        delete (menu as any)._infiniteScrollCleanup;
+      if (menu._infiniteScrollCleanup) {
+        menu._infiniteScrollCleanup();
+        delete menu._infiniteScrollCleanup;
       }
 
       if (animationId !== null) cancelAnimationFrame(animationId);
