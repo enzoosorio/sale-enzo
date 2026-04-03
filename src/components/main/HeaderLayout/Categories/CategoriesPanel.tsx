@@ -300,7 +300,7 @@ export const CategoriesPanel = () => {
         ))}
       </div>
       {/* Breadcrumbs */}
-      <Breadcrumbs />
+      <Breadcrumbs id="bread-in-panel" />
       {/* blur effect when loading */}
       <BlurEffect />
       <BlurEffect2 />

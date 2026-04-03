@@ -17,6 +17,7 @@ import {
 } from "@/utils/filters/rpcCategoryFilters";
 import { buildSearchParams, parseSearchParams } from "@/utils/filters/urlFilters";
 import { Breadcrumbs } from "@/components/main/HeaderLayout/Categories/Breadcrumbs/Breadcrumbs";
+import { AsideFilters } from "./AsideFilters";
 
 gsap.registerPlugin(useGSAP, Flip, ScrollTrigger);
 
@@ -262,13 +263,24 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     console.log("Productos totales recibidos del catalogo:", products.length);
   }, [products, payload]);
 
-  const createFastNavScrollTrigger = () => {
-    // Matar cualquier trigger anterior
+  const createFastNavScrollTrigger = useCallback(() => {
+    // Verificar que los elementos existan en el DOM
+    const fastNavWrapper = document.querySelector('.fast-nav-wrapper');
+    const otherSubcategories = document.querySelectorAll('.other-subcategories-fast-nav');
+    
+    if (!fastNavWrapper) {
+      console.warn('ProductsFastNav: fast-nav-wrapper no encontrado');
+      return;
+    }
+
+    // Guardar el scroll actual
+    const currentScroll = window.scrollY;
+    
+    // Matar cualquier trigger anterior COMPLETAMENTE
     if (fastNavTriggerRef.current) {
       fastNavTriggerRef.current.kill();
       fastNavTriggerRef.current = null;
     }
-    // Matar timeline anterior si existe
     if (tlFastBar.current) {
       tlFastBar.current.kill();
       tlFastBar.current = null;
@@ -300,7 +312,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
         end: () => {
           const productSection = document.querySelector(".products-section");
           const sectionHeight = productSection ? productSection.clientHeight : 0;
-          return `+=${sectionHeight - 100}`;
+          return `+=${sectionHeight}`;
         },
         pin: '.fast-nav-wrapper',
         pinSpacing: false,
@@ -311,12 +323,11 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           const progress = self.progress;
           if (progress > 0.03 && !animatingFastBar && tlFastBar.current) {
             gsap.to(".title-main", {
-              fontSize: "1.8rem",
+              fontSize: "3rem",
               duration: 1.2,
               ease: "power2.out",
             });
             animatingFastBar = true;
-            // Asegurar que la timeline se reproduce desde el principio
             tlFastBar.current.progress(0).play();
           } else if (progress <= 0.03 && animatingFastBar && tlFastBar.current) {
             gsap.to(".title-main", {
@@ -325,7 +336,6 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
               ease: "power2.out",
             });
             animatingFastBar = false;
-            // Reproducir hacia atrás desde el final
             tlFastBar.current.progress(1).reverse();
           }
         }
@@ -347,29 +357,51 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
 
     // Sincronizar estado inicial con el progress actual del ScrollTrigger
     if (fastNavTriggerRef.current && fastNavTriggerRef.current.progress > 0.105) {
-      // Forzar estado de animación activado
-      gsap.set(".title-main", { fontSize: "1.8rem", overwrite: true });
+      gsap.set(".title-main", { fontSize: "3rem", overwrite: true });
       if (tlFastBar.current) {
         tlFastBar.current.progress(1);
       }
       animatingFastBar = true;
     } else {
-      // Asegurar que el timeline esté en progreso 0
       if (tlFastBar.current) {
         tlFastBar.current.progress(0);
       }
     }
+    
+    // Refresh después de crear todo
     ScrollTrigger.refresh();
+    
+    // Restaurar scroll si es necesario
+    window.scrollTo(0, currentScroll);
+    
     return tl;
-  };
-
-  // useEffect para crear el ScrollTrigger al montar el componente
-  useEffect(() => {
-    createFastNavScrollTrigger();
-    return () => killFastNavTrigger();
   }, []);
 
-  const killFastNavTrigger = () => {
+  // useEffect para crear el ScrollTrigger al montar el componente Y cuando cambian los items
+  useEffect(() => {
+    // Delay para asegurar que React termine de actualizar el DOM
+    const timer = setTimeout(() => {
+      ScrollTrigger.getAll().forEach(trigger => {
+        if (trigger.vars.id === "fastNavTrigger") {
+          trigger.kill();
+        }
+      });
+      createFastNavScrollTrigger();
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [headerNavigationItems, mainFastNavItem, createFastNavScrollTrigger]);
+  
+  // Cleanup en unmount
+  // useEffect(() => {
+  //   return () => {
+  //     killFastNavTrigger();
+  //   };
+  // }, [killFastNavTrigger]);
+
+  const killFastNavTrigger = useCallback(() => {
     if (fastNavTriggerRef.current) {
       fastNavTriggerRef.current.kill();
       fastNavTriggerRef.current = null;
@@ -378,14 +410,13 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
       tlFastBar.current.kill();
       tlFastBar.current = null;
     }
-    // Resetear estilos
+    // Solo resetear estilos específicos, no usar clearProps
     gsap.set('.other-subcategories-fast-nav', {
       opacity: 0,
       pointerEvents: 'none',
     });
     gsap.killTweensOf(".title-main");
-
-  };
+  }, []);
 
   const activateLayout = () => {
     if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
@@ -460,6 +491,11 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           pointerEvents: "auto",
           duration: 0.1,
         });
+         gsap.to("#bread-in-layout", {
+          opacity: 1,
+          pointerEvents: "auto",
+          duration: 0.1,
+        });
         setIsAnimating(false);
       },
     });
@@ -473,6 +509,15 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     if (layoutActive) {
       setIsAnimating(true);
       const tl = gsap.timeline();
+      tl.to(
+        "#bread-in-layout",
+        {
+          opacity: 0,
+          pointerEvents: "none",
+          duration: 0.25,
+        },
+        0,
+      )
       tl.to(
         ".fast-nav-wrapper",
         {
@@ -514,13 +559,13 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
 
   return (
     <main className="main-products">
-      <section className="products-section w-full min-h-screen overflow-clip flex flex-col items-start justify-start gap-0 relative pb-20">
+      <section className="products-section w-full min-h-screen overflow-clip flex flex-col items-start justify-start gap-0 relative ">
         <div
           ref={containerRef}
-          className={`wrapper-pf relative grid grid-cols-1 grid-rows-2 pb-32 w-screen gap-0`}
+          className={`wrapper-pf relative grid grid-cols-1 grid-rows-2 w-screen gap-0`}
         >
           <div className="absolute -top-4 -left-4 w-full z-30">
-            <Breadcrumbs />
+            <Breadcrumbs id="bread-in-layout" />
           </div>
           <ProductsFastNav
             items={headerNavigationItems}
@@ -528,13 +573,13 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           />
           <aside
             ref={sidebarRef}
-            className="relative filters-wrapper overflow-y-auto px-4 py-3 text-white transition-colors"
+            className="relative filters-wrapper overflow-y-auto text-white transition-colors"
           >
-            <h1 className="subcategory-title pl-4 pt-7 font-prata text-6xl">
+            <h1 className="subcategory-title pt-10 pb-6 px-4 bg-black/30  font-prata text-6xl bg-">
               {mainFastNavItem.name}
             </h1>
-            <AllFiltersPanel
-              isLoading={isLoadingFilters}
+            <AsideFilters
+            isLoading={isLoadingFilters}
               availableFilters={payload?.available_filters}
               navigation={payload?.navigation}
               selectedCategory={parsedFilters.category}

@@ -101,19 +101,6 @@ export const AllFiltersPanel = ({
         </div>
       )}
 
-      <FastNavSection
-        title={hasSubcategorySelected ? 'SUBCATEGORIES' : 'CATEGORIES'}
-        items={navigationItems}
-        selectedSlugs={selectedNavigationSlugs}
-        onSelectItem={(slug) => {
-          if (hasSubcategorySelected) {
-            onSelectSubcategory?.(slug);
-            return;
-          }
-          onSelectCategory?.(slug);
-        }}
-      />
-
       <SizeFilterSection 
         sizes={sizeOptions}
         selectedSizes={selectedSizes}

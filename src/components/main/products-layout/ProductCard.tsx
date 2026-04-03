@@ -7,8 +7,8 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   return (
-    <Link  href={`/products/${product.id}`} className="product-card flex flex-col gap-3 cursor-pointer">
-      <div className="overflow-hidden  bg-white/90">
+    <Link  href={`/products/${product.id}`} className="product-card h-max flex flex-col gap-3 cursor-pointer">
+      <div className="overflow-hidden bg-white/90">
         <img
           src={product.variant.main_img_url || "/images/products/polo-1.png"}
           alt={product.name}

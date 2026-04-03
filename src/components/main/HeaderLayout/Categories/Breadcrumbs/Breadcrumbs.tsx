@@ -16,7 +16,6 @@ import { usePathname, useRouter } from "next/navigation";
 export interface BreadcrumbItemCustomProps {
   href: string;
   label?: string;
-  //svg
   svgIcon?: React.ReactNode;
 }
 
@@ -34,14 +33,18 @@ interface ActiveFilterEntry {
  * URL-driven breadcrumb navigation
  * Reflects current filter state from URL search parameters
  */
-export function Breadcrumbs() {
+
+interface BreadcrumbsProps {
+  id: string;
+}
+
+export function Breadcrumbs({ id }: BreadcrumbsProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLLIElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const basePath = pathname.startsWith("/products") ? pathname : "/products";
-
   // Read filter values from URL
   const category = searchParams.get("category");
   const subcategory = searchParams.get("subcategory");
@@ -158,22 +161,22 @@ export function Breadcrumbs() {
 
       setIsDropdownOpen(false);
       const query = params.toString();
-      router.replace(query ? `${basePath}?${query}` : basePath, { scroll: false });
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     },
-    [basePath, router, searchParams],
+    [pathname, router, searchParams],
   );
 
   // Build breadcrumb items dynamically
   const breadcrumbItems: BreadcrumbItemCustomProps[] = [];
 
-  // Home (always present)
-  breadcrumbItems.push({ href: "/home", svgIcon: <MainLogoAnimated className="w-8" /> });
+  // Absolute route without query params
+  breadcrumbItems.push({ href: pathname, svgIcon: <MainLogoAnimated className="w-8" /> });
 
   // Category level
   if (category) {
     const categoryParams = buildSearchParams({ category });
     breadcrumbItems.push({
-      href: `${basePath}?${categoryParams.toString()}`,
+      href: `${pathname}?${categoryParams.toString()}`,
       label: category,
     });
   }
@@ -182,13 +185,15 @@ export function Breadcrumbs() {
   if (subcategory && category) {
     const subcategoryParams = buildSearchParams({ category, subcategory });
     breadcrumbItems.push({
-      href: `${basePath}?${subcategoryParams.toString()}`,
+      href: `${pathname}?${subcategoryParams.toString()}`,
       label: subcategory,
     });
   }
 
   return (
-    <Breadcrumb className="absolute top-14 left-16 z-20">
+    <Breadcrumb
+    id={id}
+    className="absolute top-14 left-16 z-20">
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={item.href}>

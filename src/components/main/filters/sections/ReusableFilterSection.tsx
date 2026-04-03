@@ -1,7 +1,7 @@
 import React from 'react'
 
 interface ReusableFilterSectionProps {
- title: string;
+ title?: string;
  children: React.ReactNode;
  className?: string;
  classNameForWrapper?: string;
@@ -10,7 +10,7 @@ interface ReusableFilterSectionProps {
 export const ReusableFilterSection = ({ title, children, className, classNameForWrapper }: ReusableFilterSectionProps) => {
   return (
      <section className={`flex flex-col w-full items-start justify-center gap-4 px-2 pt-2 ${classNameForWrapper || ""}`}>
-        <h3 className="font-prata pl-2 text-4xl w-full">{title}</h3>
+        {title && <h3 className="font-prata pl-2 text-4xl w-full">{title}</h3>}
         <div className={`${className || ""} w-full`}>
             {children}
         </div>

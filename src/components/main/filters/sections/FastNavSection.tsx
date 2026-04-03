@@ -14,7 +14,6 @@ interface FastSubcategoriesSectionProps {
 }
 
 export const FastNavSection = ({ 
-  title = "SUBCATEGORIES",
   items,
   selectedSlugs,
   onSelectItem,
@@ -23,7 +22,6 @@ export const FastNavSection = ({
 }: FastSubcategoriesSectionProps) => {
   return (
     <ReusableFilterSection
-    title={title}
     className={`flex flex-wrap gap-x-4 gap-y-8 ${className || ""}`}
     classNameForWrapper={classNameForWrapper}
     >
