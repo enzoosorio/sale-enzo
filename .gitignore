@@ -16,6 +16,7 @@
 # testing
 /coverage
 
+/ai/*
 # next.js
 /.next/
 /out/
