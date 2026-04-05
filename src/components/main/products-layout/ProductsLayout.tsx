@@ -318,7 +318,6 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
         pinSpacing: false,
         invalidateOnRefresh: true,
         scrub: true,
-        markers: true,
         onUpdate: (self) => {
           const progress = self.progress;
           if (progress > 0.03 && !animatingFastBar && tlFastBar.current) {

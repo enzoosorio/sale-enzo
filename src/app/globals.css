@@ -86,6 +86,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-white: #ffffff;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -512,4 +513,24 @@ box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 1
 .main-products{
   min-height: 100vh;
   position: relative;
+}
+
+/* ============================
+   SLIDER DARK MODE
+   ============================ */
+.slider-dark [data-slot="slider-track"] {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.slider-dark [data-slot="slider-range"] {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.slider-dark [data-slot="slider-thumb"] {
+  background-color: #FAF9F6;
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.slider-dark [data-slot="slider-thumb"]:hover {
+  ring-color: rgba(255, 255, 255, 0.3);
 }

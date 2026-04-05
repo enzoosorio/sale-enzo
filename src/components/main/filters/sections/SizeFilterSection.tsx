@@ -7,6 +7,7 @@ interface SizeFilterSectionProps {
   onToggleSize?: (size: string) => void;
   className?: string;
   classNameForWrapper?: string;
+  darkMode?: boolean;
 }
 
 export const SizeFilterSection = ({ 
@@ -15,6 +16,7 @@ export const SizeFilterSection = ({
   onToggleSize,
   className,
   classNameForWrapper,
+  darkMode = false,
 }: SizeFilterSectionProps) => {
 
   return (
@@ -22,18 +24,25 @@ export const SizeFilterSection = ({
     title="TALLA"
     className={`min-max ${className || ""}`}
     classNameForWrapper={classNameForWrapper}
+    darkMode={darkMode}
     >
       <>
         {sizes.map((size) => {
-          const isSelected = selectedSizes.includes(size);
+          const isSelected = selectedSizes.some(
+            (selectedSize) => selectedSize.toLowerCase() === size.toLowerCase()
+          );
           return (
             <button
               key={size}
               onClick={() => onToggleSize?.(size)}
-              className={`relative px-4 overflow-hidden max-h-24 flex-1 py-2.5 min-w-1/2 text-base border border-current text-current transition-colors
-                ${isSelected 
-                  ? 'bg-off-black text-off-white' 
-                  : 'opacity-90 hover:opacity-100'
+              className={`relative px-4 overflow-hidden max-h-24 flex-1 py-2.5 min-w-1/2 text-base border transition-colors cursor-pointer
+                ${darkMode 
+                  ? isSelected 
+                    ? 'bg-[#FAF9F6] text-[#221C1C] border-[#FAF9F6]' 
+                    : 'border-white text-white hover:bg-white/10'
+                  : isSelected 
+                    ? 'bg-[#221C1C] text-[#FAF9F6] border-[#221C1C]' 
+                    : 'border-current text-current opacity-90 hover:opacity-100'
                 }`}
             >
               {size} 

@@ -41,7 +41,7 @@ export const ColorFilterSection = ({
               onClick={() => onToggleColor?.(color.name)}
               className={`
                 relative w-full flex items-center justify-between px-4 py-3
-                border border-current transition-colors overflow-hidden
+                border border-current transition-colors overflow-hidden cursor-pointer
                 ${!isSelected ? "opacity-90 hover:opacity-100" : ""}
               `}
               style={{

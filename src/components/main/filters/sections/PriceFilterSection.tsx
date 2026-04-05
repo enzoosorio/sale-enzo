@@ -7,13 +7,15 @@ interface PriceFilterSectionProps {
   max: number;
   value: [number, number];
   onChange?: (value: [number, number]) => void;
+  darkMode?: boolean;
 }
 
 export const PriceFilterSection = ({ 
   min, 
   max, 
   value, 
-  onChange 
+  onChange,
+  darkMode = false,
 }: PriceFilterSectionProps) => {
   const [localValue, setLocalValue] = useState<[number, number]>(value);
   const isUserInteractingRef = useRef(false);
@@ -46,10 +48,10 @@ export const PriceFilterSection = ({
   return (
     <ReusableFilterSection
     title="PRECIO"
-    // className="px-2"
     classNameForWrapper="pb-8"
+    darkMode={darkMode}
     >
-        <div className="flex justify-between text-sm text-black/60 mb-4 px-4">
+        <div className={`flex justify-between text-sm mb-4 px-4 ${darkMode ? 'text-white/60' : 'text-black/60'}`}>
           <span>S/{value[0]}</span>
           <span>S/{value[1]}</span>
         </div>
@@ -64,6 +66,7 @@ export const PriceFilterSection = ({
         min={min}
         max={max}
         step={1}
+        className={darkMode ? 'slider-dark' : ''}
       />
     </ReusableFilterSection>
   );

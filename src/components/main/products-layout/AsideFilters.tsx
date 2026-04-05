@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, SetStateAction, use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { SizeFilterSection } from "@/components/main/filters/sections/SizeFilterSection";
 import { ColorFilterSection } from "@/components/main/filters/sections/ColorFilterSection";
 import { BrandFilterSection } from "@/components/main/filters/sections/BrandFilterSection";
@@ -10,24 +10,6 @@ import { FastNavSection } from "../filters/sections/FastNavSection";
 import { RpcAvailableFilters } from "@/utils/filters";
 import { RpcNavigation } from "@/utils/filters/rpcCategoryFilters";
 import { PriceFilterSection } from "../filters/sections/PriceFilterSection";
-
-const mockSizes = ["S", "M", "L", "XL"];
-const mockColors = [
-  { name: "Smooch Rouge", hex: "#249458" },
-  { name: "Rosado Salmon", hex: "#D63B57" },
-  { name: "Negro Profundo", hex: "#1F1F1A" },
-  { name: "Azul Light", hex: "#E2E4F7" },
-];
-const mockBrands = ["Nike", "Adidas", "Under Armour", "Reebok", "New Balance"];
-const mockGenders = ["Masculino", "Femenino", "Unisex"];
-const mockTags = [
-  "Deportivo",
-  "Soporte tradicional",
-  "Casual",
-  "Vintage",
-  "Oversize",
-  "Streetwear",
-];
 
 interface AsideFilterProps {
   isLoading?: boolean;
@@ -50,8 +32,6 @@ interface AsideFilterProps {
   onSelectGender?: (gender: string) => void;
   onChangePrice?: (value: [number, number]) => void;
 }
-
-const sectionWrapperClassName = "text-white";
 
 export const AsideFilters = ({
   isLoading = false,
@@ -143,12 +123,14 @@ export const AsideFilters = ({
           }
           onSelectCategory?.(slug);
         }}
+        darkMode
       />
 
       <SizeFilterSection 
               sizes={sizeOptions}
               selectedSizes={selectedSizes}
               onToggleSize={onToggleSize}
+              darkMode
             />
             
             <ColorFilterSection 
@@ -161,18 +143,21 @@ export const AsideFilters = ({
               brands={brandOptions}
               selectedBrands={selectedBrands}
               onToggleBrand={onToggleBrand}
+              darkMode
             />
             
             <GenderFilterSection 
               genders={genderOptions}
               selectedGender={selectedGender}
               onSelectGender={onSelectGender}
+              darkMode
             />
             
             <TagsFilterSection 
               tags={tagOptions}
               selectedTags={selectedTags}
               onToggleTag={onToggleTag}
+              darkMode
             />
             
             <PriceFilterSection 
@@ -180,7 +165,9 @@ export const AsideFilters = ({
               max={normalizedMax}
               value={normalizedPriceValue}
               onChange={onChangePrice}
+              darkMode
             />
+            {/* <div className="w-1 h-8 bg-amber-300"/> */}
     </div>
   );
 };
