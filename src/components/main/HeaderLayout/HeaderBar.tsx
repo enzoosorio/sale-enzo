@@ -8,7 +8,7 @@ import { LogoutButton } from "./LogoutButton";
 import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
-import { SyllieChat } from "./SyllieChat";
+import { SyllieChatLoader } from "./SyllieChatLoader";
 
 interface HeaderBarProps {
   userId?: string | null;
@@ -76,7 +76,7 @@ export const HeaderBar = async ({
             )}
             {/* parte del face - bot */}
             {userId && (
-             <SyllieChat/>
+              <SyllieChatLoader />
             )}
           </ul>
 
