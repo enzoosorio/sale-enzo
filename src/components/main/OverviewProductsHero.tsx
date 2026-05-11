@@ -21,6 +21,7 @@ export const OverviewProductsHero = ({ products }: OverviewProductsHeroProps) =>
                   alt={product.name}
                   width={160}
                   height={200}
+                  sizes="(max-width: 1280px) 144px, 160px"
                   className="object-cover w-full h-auto"
                   priority={index === 0}
                 />

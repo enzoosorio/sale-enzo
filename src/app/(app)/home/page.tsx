@@ -1,4 +1,4 @@
-import { HomeClient } from '@/components/main/home/HomeClient';
+import { HomeClientLoader } from '@/components/main/home/HomeClientLoader';
 import { OverviewProductsHero } from '@/components/main/OverviewProductsHero';
 import { SuperBarraBusqueda } from '@/components/reusable/CTA/SuperBarraBusqueda';
 import { products } from '@/lib/products';
@@ -7,8 +7,8 @@ import Image from 'next/image';
 export default function Home() {
   return (
     <>
-      {/* Lenis smooth scroll + GSAP scroll animations — client-only, renders nothing visible */}
-      <HomeClient />
+      {/* Lenis + GSAP — loaded after first paint to not block LCP */}
+      <HomeClientLoader />
       <main className="main-home relative z-0">
         <div className="relative mini-navbar-container bg-off-white z-20 w-full flex pt-20 pb-6 items-center justify-center">
           <div className="addons-wrapper absolute -top-12 right-20 z-30 flex items-center justify-center gap-20">
