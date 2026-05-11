@@ -9,7 +9,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { WholeProductStructure } from "@/types/products/products";
 import { ProductGrid } from "./ProductGrid";
 import { ProductsFastNav, type ProductsFastNavItem } from "./ProductsFastNav";
-import { finalBackground, initialBackground } from "@/app/(app)/home/page";
+import { finalBackground, initialBackground } from "@/components/main/home/homeAnimations.constants";
 import { AllFiltersPanel } from "@/components/main/filters/AllFiltersPanel";
 import {
   type CategoryFiltersRpcPayload,

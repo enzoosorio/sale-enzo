@@ -49,6 +49,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.6",
     "@tailwindcss/postcss": "^4",
     "@types/google-one-tap": "^1.2.7",
     "@types/next": "^8.0.7",

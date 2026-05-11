@@ -1,53 +1,35 @@
-'use client';
-import { WholeProductStructure } from "@/types/products/products";
-import { createClient } from "@/utils/supabase/client";
-import Link from "next/link";
-import { useEffect } from "react";
-
+import { WholeProductStructure } from '@/types/products/products';
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface OverviewProductsHeroProps {
   products: WholeProductStructure[];
 }
 
-export const OverviewProductsHero = ({
-  products,
-}: OverviewProductsHeroProps) => {  
-
-  useEffect(() => {
-    const fetchUserMetadata = async () => {
-      const supabase = createClient()
-      const user = await supabase.auth.getUser()
-      const metadata = user.data.user?.user_metadata
-      console.log({metadata})
-    };
-
-    fetchUserMetadata();
-  }, [])
-
-
+export const OverviewProductsHero = ({ products }: OverviewProductsHeroProps) => {
   return (
     <section className="section-overview w-full flex flex-col items-center justify-center py-8 gap-6">
-      <div className="products-wrapper w-full max-w-5xl  overflow-hidden xl:max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-8 flex flex-wrap gap-6 items-center justify-center">
-        {products &&
-          products.map((product, index) => {
-            const paddedId = product.id.toString().padStart(2, "0");
-            return (
-              <div
-                key={index}
-                className="w-36 xl:w-40 aspect-auto bg-white"
-              >
-                <Link href={`/products/${product.id}`} className="flex flex-col items-center justify-center gap-2">
-                <img
-                  src={product.variant.main_img_url || '/images/products/polo-1.png'}
+      <div className="products-wrapper w-full max-w-5xl overflow-hidden xl:max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-8 flex flex-wrap gap-6 items-center justify-center">
+        {products?.map((product, index) => {
+          const paddedId = product.id.toString().padStart(2, '0');
+          const imgSrc = product.variant.main_img_url || '/images/products/polo-1.png';
+          return (
+            <div key={product.id} className="w-36 xl:w-40 aspect-auto bg-white">
+              <Link href={`/products/${product.id}`} className="flex flex-col items-center justify-center gap-2">
+                <Image
+                  src={imgSrc}
                   alt={product.name}
-                  className="object-cover w-full h-full"
+                  width={160}
+                  height={200}
+                  className="object-cover w-full h-auto"
+                  priority={index === 0}
                 />
-                <span className="text-sm font-semibold">{paddedId}</span></Link>
-              </div>
-            );
-          })}
+                <span className="text-sm font-semibold">{paddedId}</span>
+              </Link>
+            </div>
+          );
+        })}
       </div>
-      {/* <Link href="/products" className="linkk font-prata">Ver más productos</Link> */}
     </section>
   );
 };
