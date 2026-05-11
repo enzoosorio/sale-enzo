@@ -30,6 +30,9 @@ export async function isAdmin(): Promise<boolean> {
 
     return data === true;
   } catch (error) {
+    // Re-throw Next.js internal signals (e.g. DYNAMIC_SERVER_USAGE from cookies())
+    // so the framework can handle them — swallowing them causes noisy build logs.
+    if (error instanceof Error && 'digest' in error) throw error;
     console.error('Unexpected error in isAdmin:', error);
     return false;
   }
@@ -38,27 +41,28 @@ export async function isAdmin(): Promise<boolean> {
 /**
  * Server-side function to get the current user's ID if they are an admin.
  * Returns null if user is not authenticated or not an admin.
- * 
+ *
  * @returns Promise<string | null> - User ID if admin, null otherwise
  */
 export async function getAdminUserId(): Promise<string | null> {
   try {
     const supabase = await createClient();
-    
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return null;
     }
 
     const { data, error } = await supabase.rpc('is_admin');
-    
+
     if (error || data !== true) {
       return null;
     }
 
     return user.id;
   } catch (error) {
+    if (error instanceof Error && 'digest' in error) throw error;
     console.error('Unexpected error in getAdminUserId:', error);
     return null;
   }
