@@ -32,8 +32,6 @@ function HomeScrollAnimations() {
         start: 'top top',
         end: `+=${distanceToMove + viewportHeight * 1.5}`,
         scrub: true,
-        pin: '.mini-navbar-container',
-        pinSpacing: false,
       },
     });
 
