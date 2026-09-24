@@ -17,7 +17,9 @@
     "migrate:r2": "tsx scripts/migrate-storage-to-r2.ts",
     "build:worker": "node scripts/build-worker.mjs",
     "predev": "node scripts/build-worker.mjs",
-    "prebuild": "node scripts/build-worker.mjs"
+    "prebuild": "node scripts/build-worker.mjs",
+    "search:reindex": "tsx scripts/reindex-search.ts",
+    "search:eval": "tsx scripts/eval-search.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1139.0",

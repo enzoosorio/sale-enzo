@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react";
 import { useRef, useState } from "react";
 
 interface MicProps {
-  barraBusquedaRef: React.RefObject<HTMLFormElement>;
+  barraBusquedaRef: React.RefObject<HTMLFormElement | null>;
 }
 
 gsap.registerPlugin(MorphSVGPlugin, useGSAP);

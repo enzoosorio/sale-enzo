@@ -10,18 +10,18 @@ Before any implementation, review these files:
 
 | File | Purpose |
 |------|---------|
-| **RULES.md** | Non-negotiable development rules and architecture boundaries |
-| **ARCHITECTURE.md** | System architecture, data model, and deployment |
-| **PRODUCT.md** | Product vision, UX philosophy, and feature priorities |
+| **ai/RULES.md** | Non-negotiable development rules and architecture boundaries |
+| **ai/ARCHITECTURE.md** | System architecture, data model, and deployment |
+| **ai/PRODUCT.md** | Product vision, UX philosophy, and feature priorities |
 
 ---
 
 ## Quick Context
 
-- **Stack**: Next.js (App Router) + Supabase + Python microservice (FastAPI + Qdrant)
-- **Data flow**: Products in Supabase, embeddings in Qdrant
-- **AI Search**: POST to Python API → Qdrant vector search → return IDs → fetch from Supabase
-- **Embeddings**: Fastembed (local, free, ~384 dims)
+- **Stack**: Next.js (App Router) + Supabase PostgreSQL/pgvector
+- **Data flow**: Products and product-item embeddings in Supabase
+- **AI Search**: POST /api/search → OpenAI query embedding → Supabase hybrid RPC → product cards
+- **Embeddings**: OpenAI text-embedding-3-small (1536 dimensions)
 - **State**: URL params for filters, Zustand for UI, Server Components by default
 - **Animations**: GSAP only, 60fps minimum
 
@@ -31,12 +31,10 @@ Before any implementation, review these files:
 
 ```
 Next.js ←→ Supabase: Direct SDK calls (products, users, orders)
-Next.js ←→ Qdrant: HTTP POST to FastAPI ONLY (semantic search)
+Next.js ←→ Supabase: search_products_hybrid RPC for hybrid search
 ```
 
 **Never**:
-- Call Qdrant directly from Next.js
-- Store embeddings in Supabase
 - Modify URL params from AI search results
 - Block animations on data fetching
 
@@ -57,7 +55,7 @@ One embedding per `product_item`, built from aggregated product/variant/item + m
 1. **Portfolio quality** — Clean, readable code that showcases skills
 2. **Performance first** — Server Components, lazy loading, memoization
 3. **Animations matter** — GSAP, GPU-accelerated transforms, no jank
-4. **Cost aware** — Fastembed is free, minimize API calls, cache aggressively
+4. **Cost aware** — Batch product embeddings and cache query embeddings
 5. **Incremental** — Small, tested changes over big rewrites
 
 ---
@@ -66,7 +64,7 @@ One embedding per `product_item`, built from aggregated product/variant/item + m
 
 The project has external skills installed (GSAP, Next.js, Supabase, Tailwind, TypeScript...).
 
-Custom skills are documented in RULES.md:
+Custom patterns are documented in ai/RULES.md:
 - Supabase Query Patterns
 - Product Embedding Content Builder
 - URL Filter State Machine
@@ -76,9 +74,20 @@ Custom skills are documented in RULES.md:
 
 ## When Implementing Features
 
-1. Check RULES.md for architecture constraints
-2. Check ARCHITECTURE.md for system design
-3. Check PRODUCT.md for UX requirements
+1. Check ai/RULES.md for architecture constraints
+2. Check ai/ARCHITECTURE.md for system design
+3. Check ai/PRODUCT.md for UX requirements
 4. Use existing skills for common patterns
 5. Test at 60fps for animations
 6. Validate with TypeScript strict mode
+
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
