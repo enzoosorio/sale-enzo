@@ -12,13 +12,11 @@
  * No LangChain, no agents, no over-abstraction.
  */
 
-import OpenAI from 'openai';
+import { openai } from "@/lib/openai";
 import { supabaseAdmin } from '@/utils/supabase/supabase-admin';
 
 // Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+
 
 /**
  * Interface for product item data needed for RAG generation
@@ -250,7 +248,7 @@ export async function enhanceDescriptionWithLLM(
   }
   
   try {
-    const response = await openai.chat.completions.create({
+    const response = await openai().chat.completions.create({
       model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
       temperature: 0.3, 
       max_tokens: 300,
@@ -302,7 +300,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
   
   try {
-    const response = await openai.embeddings.create({
+    const response = await openai().embeddings.create({
       model: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
       input: text,
       encoding_format: 'float'

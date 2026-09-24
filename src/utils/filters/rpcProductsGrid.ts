@@ -92,7 +92,7 @@ export async function getProductsForGrid(
   };
 
   const payload = (data ?? fallback) as RawProductsGridPayload;
-  console.log("RAW RPC PAYLOAD", payload);
+
   const products = (payload.products || []).map((row) => ({
     ...row.product,
     variant: row.variant,

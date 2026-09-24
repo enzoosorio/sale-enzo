@@ -1,10 +1,10 @@
 @import "tailwindcss";
-@import '@fontsource/prata';
-@import '@fontsource/nanum-myeongjo';
-@import '@fontsource/inria-serif';
+@import '@fontsource/prata/latin-400.css';
+@import '@fontsource/nanum-myeongjo/latin-400.css';
+@import '@fontsource/inria-serif/latin-400.css';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import '@fontsource/vidaloka';
+@import '@fontsource/vidaloka/latin-400.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -157,17 +157,17 @@
 
 .bottom-part{
   will-change: backdrop-filter;
-  clipPath: polygon(50% 58%, 0% 100%, 100% 100%);
+  clip-path: polygon(50% 58%, 0% 100%, 100% 100%);
 }
 
 .right-part{
   will-change: backdrop-filter;
-  clipPath: polygon(50% 0, 100% 0%, 100% 100%, 51% 55%);
+  clip-path: polygon(50% 0, 100% 0%, 100% 100%, 51% 55%);
 }
 
 .left-part{
   will-change: backdrop-filter;
-  clipPath: polygon(50% 0, 0 0, 0 100%, 49% 55%);
+  clip-path: polygon(50% 0, 0 0, 0 100%, 49% 55%);
 }
 
 .overlay-active{
@@ -236,7 +236,7 @@
 /* ===== DEFAULT STATE ===== */
 .wrapper-pf {
   display: flex;
-  width: 100vw;
+  width: 100%;
 }
 
 /* SIDEBAR */
@@ -340,10 +340,10 @@
 
 @keyframes pulse-strokeWidth {
   0% {
-    strokeWidth: 2;
+    stroke-width: 2;
   }
   100% {
-    strokeWidth: 5;
+    stroke-width: 5;
   }
 }
 /* ============================
@@ -352,8 +352,8 @@
 
 /* Firefox */
 * {
-  scrollbar-width: 1rem;
-  scrollbar-color: rgba(0, 0, 0, 0.3);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
 }
 
 /* WebKit browsers (Chrome, Edge, Safari) */
@@ -538,4 +538,13 @@ box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 1
 
 .slider-dark [data-slot="slider-thumb"]:hover {
   ring-color: rgba(255, 255, 255, 0.3);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 767px) {
+ .wrapper-pf.layout-active { flex-direction: column; }
+ .wrapper-pf.layout-active .filters-wrapper { position: relative; width: 100%; flex-basis: auto; height: auto; max-height: 60vh; }
+ .products-grid { min-width: 0; width: 100%; padding-inline: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); transform: translateY(12rem); }
+ .wrapper-pf.layout-active .products-grid { width: 100%; flex-basis: auto; }
 }

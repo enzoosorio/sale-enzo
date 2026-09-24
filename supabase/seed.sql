@@ -1,0 +1,2 @@
+-- Intentionally minimal: use the private remote snapshot to test historical data.
+-- Fresh local projects start with schema only; no production users or products are committed.

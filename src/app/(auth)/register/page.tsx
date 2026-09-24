@@ -119,7 +119,7 @@ export default function RegisterPage() {
 
           {/* Subtitle */}
           <p className="font-inria text-left text-foreground/70 text-sm w-10/12">
-            Regístrate para poder comprar y aprovechar las funcionalidades IA de la página web.
+            Regístrate para guardar tus favoritos y comprar.
           </p>
         </div>
         

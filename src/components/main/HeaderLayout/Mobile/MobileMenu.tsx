@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useRef } from "react";
+
 import { Bag } from "@/components/reusable/svgs/Bag";
 import { Favoritos } from "@/components/reusable/svgs/Favoritos";
 import { useGSAP } from "@gsap/react";
@@ -17,9 +17,9 @@ interface MobileMenuProps {
 gsap.registerPlugin(useGSAP, SplitText);
 
 export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
-  
+  const menuRef = useRef<HTMLElement>(null);
   useGSAP(() => {
-    let tl = gsap.timeline();
+    const tl = gsap.timeline();
 
     const splittedText = SplitText.create(".mobile-menu-link", {
       type: "lines",
@@ -27,8 +27,8 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
 
     if (isOpened) {
       tl.to(
-        ".navbar-mobile",
-        { height: "100vh", duration: 0.5, ease: "power2.out" },
+        menuRef.current,
+        { height: "100vh", duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.5, ease: "power2.out" },
         0
       );
 
@@ -38,26 +38,30 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
           opacity: 0,
           y: 100,
           stagger: 0.05,
-          duration: 0.5,
+          duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.5,
           ease: "power2.out",
         },
         0.3
       );
     } else {
       tl.to(
-        ".navbar-mobile",
+        menuRef.current,
         {
           height: "0vh",
-          duration: 0.5,
+          duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.5,
           ease: "power2.in",
         },
         0
       );
     }
-  }, [isOpened]);
+    return () => splittedText.revert();
+  }, { scope: menuRef, dependencies: [isOpened], revertOnUpdate: true });
 
   return (
     <section
+      ref={menuRef}
+      inert={!isOpened}
+      aria-hidden={!isOpened}
       className="navbar-mobile cursor-auto fixed inset-0 w-full bg-off-white z-30 flex flex-col items-center justify-center overflow-hidden"
       style={{ height: "0vh" }}
     >
@@ -82,7 +86,7 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
         </CustomLinkMobile>
         
         <CustomLinkMobile
-          href="#"
+          href="/products"
           onClose={onClose}
         >
           <p className="w-max mx-auto">

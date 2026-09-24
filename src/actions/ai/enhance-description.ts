@@ -1,10 +1,8 @@
 "use server";
 
-import OpenAI from "openai";
+import { openai } from "@/lib/openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+
 
 export interface EnhanceDescriptionInput {
   description: string;
@@ -50,7 +48,7 @@ export async function enhanceDescription(
   try {
     // Step 1: Enhance description in original language
     console.log("🚀 Enhancing description...");
-    const enhancedResponse = await openai.chat.completions.create({
+    const enhancedResponse = await openai().chat.completions.create({
       model: process.env.OPENAI_CHAT_MODEL || "gpt-4o-mini",
       temperature: 0.3,
       max_tokens: 300,
@@ -90,7 +88,7 @@ Your goal is to make the description MORE searchable for RAG architecture implem
 
     // Step 2: Generate SHORT English semantic version for multilingual retrieval
     console.log("🌐 Generating English semantic version...");
-    const translationResponse = await openai.chat.completions.create({
+    const translationResponse = await openai().chat.completions.create({
       model: process.env.OPENAI_CHAT_MODEL || "gpt-4o-mini",
       temperature: 0.2,
       max_tokens: 100,

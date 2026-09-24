@@ -50,6 +50,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
   const tlFastBar = useRef<gsap.core.Timeline | null>(null);
   const fastNavTriggerRef = useRef<ScrollTrigger | null>(null);
   const isFirstMount = useRef(true);
+  const { contextSafe } = useGSAP({ scope: containerRef });
 
   const parsedFilters = useMemo(
     () => parseSearchParams(new URLSearchParams(searchParams.toString())),
@@ -100,7 +101,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     const rangeMax = Math.ceil(Math.max(safeMin, safeMax));
     const normalizedMax = rangeMin === rangeMax ? rangeMax + 1 : rangeMax;
     return [rangeMin, normalizedMax];
-  }, [payload?.available_filters.price_range.max, payload?.available_filters.price_range.min]);
+  }, [payload]);
 
   const toggleMultiParam = useCallback(
     (key: string, value: string) => {
@@ -258,15 +259,12 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     };
   }, [clearHierarchyHref, headerNavigationItems, mainSlug]);
 
-  useEffect(() => {
-    console.log("Payload de filtros actualizado:", payload);
-    console.log("Productos totales recibidos del catalogo:", products.length);
-  }, [products, payload]);
+
 
   const createFastNavScrollTrigger = useCallback(() => {
     // Verificar que los elementos existan en el DOM
-    const fastNavWrapper = document.querySelector('.fast-nav-wrapper');
-    const otherSubcategories = document.querySelectorAll('.other-subcategories-fast-nav');
+    const fastNavWrapper = containerRef.current?.querySelector('.fast-nav-wrapper');
+
     
     if (!fastNavWrapper) {
       console.warn('ProductsFastNav: fast-nav-wrapper no encontrado');
@@ -274,8 +272,11 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     }
 
     // Guardar el scroll actual
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      gsap.set('.other-subcategories-fast-nav', { opacity: 1, pointerEvents: 'auto' });
+      return;
+    }
     const currentScroll = window.scrollY;
-    
     // Matar cualquier trigger anterior COMPLETAMENTE
     if (fastNavTriggerRef.current) {
       fastNavTriggerRef.current.kill();
@@ -376,29 +377,15 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     return tl;
   }, []);
 
-  // useEffect para crear el ScrollTrigger al montar el componente Y cuando cambian los items
-  useEffect(() => {
-    // Delay para asegurar que React termine de actualizar el DOM
-    const timer = setTimeout(() => {
-      ScrollTrigger.getAll().forEach(trigger => {
-        if (trigger.vars.id === "fastNavTrigger") {
-          trigger.kill();
-        }
-      });
-      createFastNavScrollTrigger();
-    }, 100);
-    
+  useGSAP(() => {
+    createFastNavScrollTrigger();
     return () => {
-      clearTimeout(timer);
+      fastNavTriggerRef.current?.kill();
+      tlFastBar.current?.kill();
+      fastNavTriggerRef.current = null;
+      tlFastBar.current = null;
     };
-  }, [headerNavigationItems, mainFastNavItem, createFastNavScrollTrigger]);
-  
-  // Cleanup en unmount
-  // useEffect(() => {
-  //   return () => {
-  //     killFastNavTrigger();
-  //   };
-  // }, [killFastNavTrigger]);
+  }, { scope: containerRef, dependencies: [headerNavigationItems, mainFastNavItem, createFastNavScrollTrigger], revertOnUpdate: true });
 
   const killFastNavTrigger = useCallback(() => {
     if (fastNavTriggerRef.current) {
@@ -417,7 +404,8 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     gsap.killTweensOf(".title-main");
   }, []);
 
-  const activateLayout = () => {
+  useGSAP(() => {
+  const activateLayout = contextSafe(() => {
     if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
 
     const container = containerRef.current;
@@ -436,12 +424,12 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     container.classList.add("layout-active");
 
     Flip.from(state, {
-      duration: 1,
+      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.45,
       ease: "power3.inOut",
       absolute: true,
       nested: true,
       stagger: 0.01,
-      onComplete: () => {
+      onComplete: contextSafe(() => {
         ScrollTrigger.refresh();
         window.scrollTo(0, currentScroll);
         const tl = gsap.timeline();
@@ -451,10 +439,10 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
         tl.to(".overlay-filters", { x: "-100%", duration: 0.5 }, 0.05);
 
         setIsAnimating(false);
-      },
+      }),
     });
-  };
-  const deactivateLayout = () => {
+  });
+  const deactivateLayout = contextSafe(() => {
     if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
 
     const container = containerRef.current;
@@ -473,12 +461,12 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     container.classList.remove("layout-active");
 
     Flip.from(state, {
-      duration: 1,
+      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.45,
       ease: "power3.inOut",
       absolute: true,
       nested: true,
       stagger: 0.01,
-      onComplete: () => {
+      onComplete: contextSafe(() => {
         gsap.set(".fast-nav-wrapper", { visibility: "visible", opacity: 1 });
         createFastNavScrollTrigger();
 
@@ -496,10 +484,10 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           duration: 0.1,
         });
         setIsAnimating(false);
-      },
+      }),
     });
-  };
-  useGSAP(() => {
+  });
+
     if (isFirstMount.current) {
       isFirstMount.current = false;
       return; // No ejecutar animaciones al montar
@@ -525,9 +513,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           duration: 0.25,
         },
         0,
-      ).then(() => {
-        activateLayout();
-      });
+      ).call(activateLayout);
     } else {
       setIsAnimating(true);
       const tl = gsap.timeline();
@@ -549,12 +535,9 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
         sidebarRef.current,
         { opacity: 0, duration: 0.1 },
         ">0.05",
-      ).then(() => {
-        deactivateLayout();
-
-      });
+      ).call(deactivateLayout);
     }
-  }, [layoutActive]);
+  }, { scope: containerRef, dependencies: [layoutActive], revertOnUpdate: true });
 
   return (
     <main className="main-products">
@@ -607,6 +590,8 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
         </div>
       </section>
       <button
+        aria-label={layoutActive ? "Cerrar filtros" : "Abrir filtros"}
+        aria-expanded={layoutActive}
         onClick={() => {
           if (isAnimating) return;
           setLayoutActive(!layoutActive);

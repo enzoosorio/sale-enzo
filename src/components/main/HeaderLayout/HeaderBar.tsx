@@ -1,4 +1,4 @@
-import Image from "next/image";
+
 import { PrimaryButton } from "../../reusable/CTA/buttons/Button";
 import { Bag } from "@/components/reusable/svgs/Bag";
 import { Favoritos } from "@/components/reusable/svgs/Favoritos";
@@ -8,7 +8,7 @@ import { LogoutButton } from "./LogoutButton";
 import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
-import { SyllieChatLoader } from "./SyllieChatLoader";
+
 
 interface HeaderBarProps {
   userId?: string | null;
@@ -74,24 +74,12 @@ export const HeaderBar = async ({
                 <PrimaryButton>Iniciar sesión</PrimaryButton>
               </Link>
             )}
-            {/* parte del face - bot */}
-            {userId && (
-              <SyllieChatLoader />
-            )}
-          </ul>
+            </ul>
 
           {/* Mobile Actions - Shown only on mobile */}
           <div className="flex md:hidden items-center justify-center gap-4">
             {userId ? (
-              <div className="h-8 flex items-center justify-center">
-                <Image
-                  src="/images/sillye-head.png"
-                  alt="Bot Icon"
-                  width={72}
-                  height={48}
-                  className="w-full h-full"
-                />
-              </div>
+              <LogoutButton />
             ) : (
               <Link className="w-max h-max" href={"/login"}>
                 <PrimaryButton className="text-sm px-4 py-2">

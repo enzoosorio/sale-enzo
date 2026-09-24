@@ -1,47 +1,23 @@
 "use client";
-import { useRef } from "react";
-import { Microphone } from "../svgs/Mic";
-import { Overlay } from "../Overlay";
+
+import { useState } from "react";
 
 export const SuperBarraBusqueda = () => {
-  const barraBusquedaRef = useRef<HTMLFormElement>(null!);
-
-  const toggleBackgroundOverlay = (action : string) => {
-    const overlayElement = document.querySelector('.overlay-element') as HTMLElement;
-    if (overlayElement) {
-        if (action === 'show') {   
-            overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-            overlayElement.style.backdropFilter = 'blur(1.8px)';
-            overlayElement.style.zIndex = '0';
-        } else if (action === 'hide') {
-            overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0)';
-            overlayElement.style.zIndex = '-10';
-            overlayElement.style.backdropFilter = 'blur(0px)';
-        }
-    }
-  }
-
-
+  const [message, setMessage] = useState("");
   return (
-    <>
     <form
-      ref={barraBusquedaRef}
-      className="super-barra-busqueda bg-white w-[600px] mx-auto focus:shadow-2xl focus-within:shadow-xl transition-shadow h-10 shadow-lg flex items-center justify-between"
-      style={{ zIndex: 10 }}
+      role="search"
+      aria-label="Buscar productos"
+      className="super-barra-busqueda relative bg-white w-full max-w-[600px] mx-auto focus-within:shadow-xl min-h-10 shadow-lg flex items-center border border-black/30"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setMessage("La búsqueda semántica estará disponible próximamente. Puedes explorar el catálogo por categorías.");
+      }}
     >
-      <input 
-      onFocus={() => {
-        toggleBackgroundOverlay('show')
-        document.body.style.overflow = 'hidden';
-      }}
-      onBlur={() => {
-        toggleBackgroundOverlay('hide')
-        document.body.style.overflow = 'auto';
-      }}
-      type="text" className="flex-1 h-full px-4  border font-nanum  outline-black/50 " />
-      <Microphone barraBusquedaRef={barraBusquedaRef } />
+      <label htmlFor="catalog-search" className="sr-only">Buscar productos</label>
+      <input id="catalog-search" type="search" className="min-w-0 flex-1 h-10 px-4 font-nanum outline-offset-2" placeholder="¿Qué estás buscando?" aria-describedby={message ? "search-status" : undefined} />
+      <button type="submit" className="shrink-0 px-3 py-2 text-sm">Buscar</button>
+      <p id="search-status" role="status" className={message ? "absolute top-full mt-2 bg-white p-3 shadow-lg text-sm z-30" : "sr-only"}>{message}</p>
     </form>
-    <Overlay/>
-    </>
   );
 };
