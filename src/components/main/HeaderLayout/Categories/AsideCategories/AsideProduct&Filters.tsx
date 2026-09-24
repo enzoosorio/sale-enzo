@@ -1,27 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import gsap from "gsap";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { OverviewProduct } from "@/components/main/filters/OverviewProduct";
 import { AllFiltersPanel } from "@/components/main/filters/AllFiltersPanel";
 import {
   getCategoryFiltersPayload,
   type CategoryFiltersRpcPayload,
 } from "@/utils/filters/rpcCategoryFilters";
-import { buildSearchParams, parseSearchParams } from "@/utils/filters/urlFilters";
+import { parseSearchParams } from "@/utils/filters/urlFilters";
 
-  interface AsideCategoriesFilterProps {
-    categorySelected: string | null;
-  }
+interface AsideCategoriesFilterProps {
+  categorySelected: string | null;
+  /** Writes the filters to the URL without a server round-trip (panel history). */
+  onReplaceParams: (params: URLSearchParams) => void;
+}
 
 
 export const AsideCategoriesFilter = ({
   categorySelected,
+  onReplaceParams,
 }: AsideCategoriesFilterProps) => {
-  const asideRef = useRef<HTMLElement>(null);
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [payload, setPayload] = useState<CategoryFiltersRpcPayload | null>(null);
@@ -32,52 +31,7 @@ export const AsideCategoriesFilter = ({
     [searchParams],
   );
 
-  const replaceWithParams = useCallback(
-    (params: URLSearchParams) => {
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    },
-    [pathname, router],
-  );
-
-  useEffect(() => {
-    const sanitizedFilters = parseSearchParams(new URLSearchParams(searchParams.toString()));
-    const sanitizedKnownParams = buildSearchParams(sanitizedFilters);
-    const mergedParams = new URLSearchParams(searchParams.toString());
-
-    [
-      "category",
-      "subcategory",
-      "color",
-      "size",
-      "brand",
-      "tag",
-      "gender",
-      "fit",
-      "minPrice",
-      "maxPrice",
-    ].forEach((key) => mergedParams.delete(key));
-
-    sanitizedKnownParams.forEach((value, key) => {
-      mergedParams.append(key, value);
-    });
-
-    if (mergedParams.toString() !== searchParams.toString()) {
-      replaceWithParams(mergedParams);
-    }
-  }, [replaceWithParams, searchParams]);
-
-  // Initialize aside state on mount
-  useEffect(() => {
-    if (asideRef.current) {
-      gsap.set(asideRef.current, {
-        opacity: 0,
-        x: 50,
-        zIndex: -10,
-        pointerEvents: "none",
-      });
-    }
-  }, []);
+  const replaceWithParams = onReplaceParams;
 
   useEffect(() => {
     let isMounted = true;
@@ -120,11 +74,6 @@ export const AsideCategoriesFilter = ({
       isMounted = false;
     };
   }, [parsedFilters]);
-
-  //TODO: BORRAR ESTE USEEFFECT, SOLO PARA DEBUGGING
-  useEffect(() => {
-    // console.log("SELECTED TAGS:", parsedFilters.tags || []);
-  }, [parsedFilters.tags]);
 
 
   const normalizedRange = useMemo<[number, number]>(() => {
@@ -229,8 +178,7 @@ export const AsideCategoriesFilter = ({
 
   return (
     <aside
-      ref={asideRef}
-      className="aside-filters fixed h-[80%] w-screen max-w-screen bottom-0 flex items-start justify-evenly"
+      className="aside-filters fixed inset-x-0 bottom-0 h-[80%] flex items-end md:items-start justify-evenly"
       data-category-selected={categorySelected || ""}
     >
       <AllFiltersPanel
@@ -252,12 +200,14 @@ export const AsideCategoriesFilter = ({
         onSelectGender={(gender) => toggleSingleParam("gender", gender)}
         onChangePrice={handlePriceChange}
       />
-      <OverviewProduct
-        isLoading={isLoadingFilters}
-        variant={payload?.most_related_variant || undefined}
-        isEmpty={isInvalidCombination}
-        onReset={resetInvalidFilters}
-      />
+      <div className="hidden md:contents">
+        <OverviewProduct
+          isLoading={isLoadingFilters}
+          variant={payload?.most_related_variant || undefined}
+          isEmpty={isInvalidCombination}
+          onReset={resetInvalidFilters}
+        />
+      </div>
     </aside>
   );
 };

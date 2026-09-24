@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { Bag } from "@/components/reusable/svgs/Bag";
 import { Favoritos } from "@/components/reusable/svgs/Favoritos";
@@ -8,6 +8,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { SplitText } from "gsap/all";
 import { CustomLinkMobile } from "./CustomLinkMobile";
+import { useCategoriesStore } from "@/store/categorySection";
+import { preloadCategoriesPanel } from "../Categories/preloadCategories";
 
 interface MobileMenuProps {
   isOpened: boolean;
@@ -18,6 +20,12 @@ gsap.registerPlugin(useGSAP, SplitText);
 
 export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
   const menuRef = useRef<HTMLElement>(null);
+  const openPanel = useCategoriesStore((s) => s.openPanel);
+
+  // Warm up the categories panel while the menu is open, so the tap feels instant.
+  useEffect(() => {
+    if (isOpened) preloadCategoriesPanel();
+  }, [isOpened]);
   useGSAP(() => {
     const tl = gsap.timeline();
 
@@ -85,14 +93,18 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
           </p>
         </CustomLinkMobile>
         
-        <CustomLinkMobile
-          href="/products"
-          onClose={onClose}
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            openPanel();
+          }}
+          className="mobile-menu-link overflow-hidden font-prata w-full hover:bg-black hover:text-white backdrop-brightness-150 transition-all py-2 text-2xl text-foreground text-center cursor-pointer"
         >
           <p className="w-max mx-auto">
             Categorías
           </p>
-        </CustomLinkMobile>
+        </button>
 
         <CustomLinkMobile
           href="#"

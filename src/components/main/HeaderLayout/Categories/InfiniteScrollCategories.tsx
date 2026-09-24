@@ -1,1231 +1,353 @@
+"use client";
+
 import gsap from "gsap";
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
-import { MorphSVGPlugin, SplitText } from "gsap/all";
+import { useGSAP } from "@gsap/react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Categories } from "@/types/products/old_category/categories";
+import { ProductCategory } from "@/schema/categorySchema";
 import { IndividualCategory } from "./IndividualCategory";
 import { BackButton } from "@/components/reusable/svgs/BackButton";
 import { AsideCategoriesFilter } from "./AsideCategories/AsideProduct&Filters";
 import { useCategoriesStore } from "@/store/categorySection";
-import { ProductCategory } from "@/schema/categorySchema";
-import { getSubcategoriesByParentId } from "@/utils/filters";
+import { getSubcategoriesByParentId } from "@/utils/filters/categories";
 import { useInfiniteVerticalScroll } from "@/hooks/useInfiniteVerticalScroll";
-import { CategoryPhase } from "./CategoriesPanel";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createBlurAnimation } from "@/utils/gsap/blur";
-import { useSplitText } from "@/hooks/useSplitText";
-import { useGSAP } from "@gsap/react";
+import { CategoryLevel, useCategoryLevel } from "./useCategoryLevel";
 
-gsap.registerPlugin(MorphSVGPlugin, SplitText);
+gsap.registerPlugin(useGSAP);
 
-interface InfiniteScrollCategoriesProps {
-  isAnimating: boolean;
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
-  showCategories?: boolean;
-  phase: CategoryPhase;
-  setPhase: React.Dispatch<React.SetStateAction<CategoryPhase>>;
-  openSVGPathOffset: number;
-}
+const LEVELS: CategoryLevel[] = ["PARENTS", "SUBCATEGORIES", "FILTERS"];
+const EASE_OUT = "power3.out";
+const EASE_IN = "power2.in";
 
-export const InfiniteScrollCategories = ({
-  isAnimating,
-  setIsAnimating,
-  showCategories,
-  phase,
-  setPhase,
-  openSVGPathOffset,
-}: InfiniteScrollCategoriesProps) => {
-  // Dual refs for two separate lists (both always mounted)
+const toCategories = (list: ProductCategory[]): Categories[] =>
+  list.map((cat) => ({ id: cat.id, name: cat.name.toUpperCase(), slug: cat.slug }));
+
+export const InfiniteScrollCategories = () => {
+  const rootRef = useRef<HTMLDivElement>(null);
   const parentsMenuRef = useRef<HTMLUListElement>(null);
   const subMenuRef = useRef<HTMLUListElement>(null);
+  const asideWrapRef = useRef<HTMLDivElement>(null);
   const parentsItemsRef = useRef<(HTMLLIElement | null)[]>([]);
   const subItemsRef = useRef<(HTMLLIElement | null)[]>([]);
-  // SplitText refs for proper cleanup
-  const parentsSplitRef = useSplitText(parentsMenuRef, ".individual-category", {
-    type: "lines",
-  });
-  const subSplitRef = useSplitText(subMenuRef, ".individual-category", {
-    type: "lines",
-  });
-  // const subSplitRef = useRef<SplitText | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [categorySelected, setCategorySelected] = useState<Categories | null>(
-    null,
+  const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const enterAtRef = useRef(0);
+  const previousRef = useRef<{ level: CategoryLevel; key: string } | null>(null);
+
+  const { level, category, searchParams, selectCategory, selectSubcategory, goBack, navigate } =
+    useCategoryLevel();
+
+  const parentCategories = useCategoriesStore((s) => s.parentCategories);
+  const isLoadingCategories = useCategoriesStore((s) => s.isLoadingCategories);
+  const subcategoriesByParent = useCategoriesStore((s) => s.subcategoriesByParent);
+  const setSubcategories = useCategoriesStore((s) => s.setSubcategories);
+
+  const categories = useMemo(() => toCategories(parentCategories), [parentCategories]);
+  const categorySelected = useMemo(
+    () => categories.find((cat) => cat.slug === category) ?? null,
+    [categories, category],
   );
-  const [subcategories, setSubcategories] = useState<Categories[]>([]);
-  const [isLoadingSubcategories, setIsLoadingSubcategories] = useState(false);
-  const timelineDashArrayRef = useRef<gsap.core.Timeline | null>(null);
-  const subcategoriesCacheRef = useRef<Map<string, Categories[]>>(new Map());
-  const { parentCategories } = useCategoriesStore();
-  const speedDrag = isMobile ? 1.5 : 1.2;
 
-  // URL navigation
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const rawSubcategories = categorySelected ? subcategoriesByParent[categorySelected.id] : undefined;
+  const subcategories = useMemo(
+    () => (rawSubcategories ? toCategories(rawSubcategories) : []),
+    [rawSubcategories],
+  );
+  const isLoadingSubcategories = !!categorySelected && rawSubcategories === undefined;
 
-  // Adapt ProductCategory[] from DB to Categories[] format expected by UI
-  const categories: Categories[] = useMemo(() => {
-    if (parentCategories.length === 0) {
-      return [];
-    }
-    return parentCategories.map((cat: ProductCategory) => ({
-      id: cat.id,
-      name: cat.name.toUpperCase(),
-      slug: cat.slug,
-      // referenceImages is optional, so we don't include it if not available
-    }));
-  }, [parentCategories]);
+  // The aside is only mounted around the FILTERS level, so its data isn't fetched elsewhere.
+  const [isAsideMounted, setIsAsideMounted] = useState(level === "FILTERS");
+  if (level === "FILTERS" && !isAsideMounted) setIsAsideMounted(true);
 
-  // Reset subcategory refs when subcategories change to avoid stale refs
+  // Fetch (and cache in the store) the subcategories of the selected category.
+  const selectedId = categorySelected?.id;
+  const needsSubcategories = rawSubcategories === undefined;
   useEffect(() => {
-    subItemsRef.current = [];
-  }, [subcategories]);
+    if (!selectedId || !needsSubcategories) return;
+    let cancelled = false;
 
-  useGSAP(() => {
-    // Initializing the dash array animation timeline for the open/close button
-    timelineDashArrayRef.current = gsap.timeline({ paused: true });
+    getSubcategoriesByParentId(selectedId)
+      .then((list) => {
+        if (!cancelled) setSubcategories(selectedId, list);
+      })
+      .catch((error) => {
+        console.error("Error fetching subcategories:", error);
+        if (!cancelled) setSubcategories(selectedId, []);
+      });
 
-      //  timelineDashArrayRef.current.to(
-      //   "#close-svg-open",
-      //   {
-      //     strokeDashoffset: openSVGPathOffset,
-      //     duration: 0.6,
-      //     ease: "power2.in",
-      //   },
-      //   0,
-      // );
-      // timelineDashArrayRef.current.to(
-      //   ".bolita-efecto-click",
-      //   {
-      //     opacity: 0,
-      //     ease: "power2.in",
-      //   },
-      //   0,
-      // );
-      // timelineDashArrayRef.current.to(
-      //   ".wrapper-dasharray",
-      //   {
-      //     x: "0rem",
-      //     pointerEvents: "none",
-      //   },
-      //   0.45,
-      // );
-      // timelineDashArrayRef.current.to(
-      //   ".container-both-actions",
-      //   {
-      //     width: "4rem",
-      //     x: "0rem",
-      //     ease: "power2.out",
-      //   },
-      //   0.5,
-      // );
-      // timelineDashArrayRef.current.to(
-      //   ".close-categories-button",
-      //   {
-      //     x: "0rem",
-      //     ease: "power2.out",
-      //   },
-      //   0.55,
-      // );
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, needsSubcategories, setSubcategories]);
 
-      timelineDashArrayRef.current.to(
-        ".container-both-actions",
-        {
-          width: "10rem",
-          x: "4rem",
-          ease: "power2.out",
-        },
-        0,
-      );
-      timelineDashArrayRef.current.to(
-        ".close-categories-button",
-        {
-          x: "-2rem",
-          ease: "power2.out",
-        },
-        0,
-      );
-      timelineDashArrayRef.current.to(
-        ".bolita-efecto-click",
-        {
-          opacity: 1,
-          ease: "power2.in",
-        },
-        0.3,
-      );
-      timelineDashArrayRef.current.to(
-        "#close-svg-open",
-        {
-          strokeDashoffset: 0,
-          duration: 0.8,
-          ease: "power2.out",
-        },
-        0.3,
-      );
-      timelineDashArrayRef.current.to(
-        ".wrapper-dasharray",
-        {
-          x: "1.5rem",
-          pointerEvents: "auto",
-        },
-        0.3,
-      );
+  // Unknown category slug in the URL: fall back to the parents list.
+  useEffect(() => {
+    if (!category || categories.length === 0 || categorySelected) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("category");
+    params.delete("subcategory");
+    navigate(params, "replace");
+  }, [category, categories.length, categorySelected, navigate, searchParams]);
 
-
-  }, { scope : ".categories-section"})
-
-  // Use infinite scroll hook for parents list
-  useInfiniteVerticalScroll({
+  const parentsScroll = useInfiniteVerticalScroll({
     menuRef: parentsMenuRef,
     itemsRef: parentsItemsRef,
     itemCount: categories.length,
-    speedDrag,
-    isActive: showCategories && phase === "PARENTS" && categories.length > 0,
-    showCategories: showCategories || false,
+    isActive: level === "PARENTS",
   });
 
-  // Use infinite scroll hook for subcategories list
-  useInfiniteVerticalScroll({
+  const subScroll = useInfiniteVerticalScroll({
     menuRef: subMenuRef,
     itemsRef: subItemsRef,
     itemCount: subcategories.length,
-    speedDrag,
-    isActive:
-      !!showCategories &&
-      phase === "SUBCATEGORIES" &&
-      subcategories.length > 0,
-    showCategories: showCategories || false,
+    isActive: level === "SUBCATEGORIES",
+    resetKey: selectedId ?? null,
   });
 
-  // Deterministic visual baseline for stable phases.
-  useEffect(() => {
-    if (!showCategories || !parentsMenuRef.current || !subMenuRef.current) return;
+  const activeScroll = level === "SUBCATEGORIES" ? subScroll : parentsScroll;
 
-    if (phase === "PARENTS") {
-      gsap.set(parentsMenuRef.current, {
-        opacity: 1,
-        zIndex: 10,
-        pointerEvents: "auto",
-      });
-      gsap.set(subMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
-      gsap.set(".back-button", {
-        left: "25%",
-        opacity: 0,
-        zIndex: -10,
-        pointerEvents: "none",
-      });
-      timelineDashArrayRef.current?.reverse();
-    }
-    // quiza esta aproximacion sea buena, pero debo fijarme en los casos en los que se reciben directamente en el URL los params para entrar a las subcategorias o a los filtros, porque ahi se saltarian las animaciones de salida de los padres o de las subcategorias respectivamente, por lo que habria que asegurarse de setear los estilos correctamente para evitar que se muestren los padres o subcategorias debajo de las subcategorias o filtros respectivamente.
-    if (phase === "SUBCATEGORIES") {
-      const hasCategoryParam = !!searchParams.get("category");
-      const shouldShowSubMenu =
-        subcategories.length > 0 || isLoadingSubcategories || hasCategoryParam;
+  // One timeline per level change. Views are swapped with autoAlpha; items reveal
+  // inside their `li` (overflow-hidden acts as the mask). A new change kills the
+  // running timeline and starts from whatever state is on screen.
+  const transitionKey =
+    level === "PARENTS"
+      ? `PARENTS:${categories.length}`
+      : level === "SUBCATEGORIES"
+        ? `SUBCATEGORIES:${selectedId ?? ""}:${subcategories.length}`
+        : "FILTERS";
 
-      gsap.set(parentsMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
-      gsap.set(subMenuRef.current, {
-        opacity: shouldShowSubMenu ? 1 : 0,
-        zIndex: 10,
-        pointerEvents: subcategories.length > 0 ? "auto" : "none",
-      });
-      gsap.set(".back-button", {
-        left: "25%",
-        opacity: 1,
-        zIndex: 10,
-        pointerEvents: "auto",
-      });
-      timelineDashArrayRef.current?.play(0);
-    }
+  useGSAP(
+    () => {
+      const previous = previousRef.current;
+      previousRef.current = { level, key: transitionKey };
+      if (previous?.key === transitionKey) return;
 
-    if (phase === "ALL_FILTERS") {
-      gsap.set(parentsMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
-      gsap.set(subMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
-      gsap.set(".back-button", {
-        left: "5%",
-        opacity: 1,
-        zIndex: 70,
-        pointerEvents: "auto",
-      });
-        timelineDashArrayRef.current?.play(0);
-    }
-  }, [
-    phase,
-    showCategories,
-    subcategories.length,
-    isLoadingSubcategories,
-    searchParams,
-  ]);
+      const viewFor = (lvl: CategoryLevel) =>
+        lvl === "PARENTS"
+          ? parentsMenuRef.current
+          : lvl === "SUBCATEGORIES"
+            ? subMenuRef.current
+            : asideWrapRef.current;
+      const itemsFor = (lvl: CategoryLevel) =>
+        Array.from(
+          viewFor(lvl)?.querySelectorAll(
+            lvl === "FILTERS" ? ".card-filters-panel" : ".individual-category",
+          ) ?? [],
+        );
 
-  // Handle parent category click
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const leavingLevel = previous && previous.level !== level ? previous.level : null;
+      const next = viewFor(level);
+      const itemsFrom = level === "FILTERS" ? { y: "100%" } : { yPercent: 100, autoAlpha: 0 };
+      const itemsTo =
+        level === "FILTERS"
+          ? { y: 0, duration: 0.5, ease: EASE_OUT, stagger: 0.12 }
+          : { yPercent: 0, autoAlpha: 1, duration: 0.45, ease: EASE_OUT, stagger: { amount: 0.15 } };
+
+      // Same level, items arrived while the transition is still running (e.g. the
+      // subcategories fetch resolved): reveal them inside the running timeline.
+      const running = timelineRef.current;
+      if (!leavingLevel && previous && running?.isActive()) {
+        const items = itemsFor(level);
+        if (items.length && !reduceMotion) {
+          running.fromTo(items, itemsFrom, itemsTo, Math.max(enterAtRef.current, running.time()));
+        }
+        return;
+      }
+
+      running?.kill();
+
+      LEVELS.forEach((lvl) => {
+        const view = viewFor(lvl);
+        if (!view || lvl === level || lvl === leavingLevel) return;
+        gsap.set(view, { autoAlpha: 0, pointerEvents: "none" });
+      });
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          timelineRef.current = null;
+          if (level !== "FILTERS") setIsAsideMounted(false);
+        },
+      });
+      timelineRef.current = tl;
+
+      // Entering on open (or directly from the URL) waits for the panel reveal.
+      let enterAt = previous ? 0 : 0.2;
+
+      if (leavingLevel) {
+        const leaving = viewFor(leavingLevel);
+        if (leaving) {
+          gsap.set(leaving, { pointerEvents: "none" });
+
+          const leavingItems = itemsFor(leavingLevel);
+          if (!reduceMotion && leavingItems.length) {
+            tl.to(
+              leavingItems,
+              leavingLevel === "FILTERS"
+                ? { y: "100%", duration: 0.3, ease: EASE_IN, stagger: 0.06 }
+                : { yPercent: -100, autoAlpha: 0, duration: 0.3, ease: EASE_IN, stagger: { amount: 0.1 } },
+              0,
+            );
+          }
+          tl.to(leaving, { autoAlpha: 0, duration: 0.15 }, reduceMotion ? 0 : 0.25);
+          enterAt = reduceMotion ? 0.15 : 0.3;
+
+          const blobs = rootRef.current
+            ?.closest(".categories-section")
+            ?.querySelectorAll(".blurred, .blurred-2");
+          if (blobs?.length && !reduceMotion) {
+            tl.to(
+              blobs,
+              { x: (i) => (i === 0 ? 160 : -160), duration: 0.35, ease: "sine.inOut", yoyo: true, repeat: 1 },
+              0,
+            );
+          }
+        }
+      }
+
+      enterAtRef.current = enterAt;
+      if (!next) return;
+
+      if (reduceMotion) {
+        tl.fromTo(next, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.15 }, enterAt);
+      } else {
+        tl.set(next, { autoAlpha: 1 }, enterAt);
+        const items = itemsFor(level);
+        if (items.length) tl.fromTo(items, itemsFrom, itemsTo, enterAt);
+      }
+      tl.set(next, { pointerEvents: "auto" }, enterAt);
+
+      // Runs only when the context is reverted (unmount / StrictMode remount):
+      // the next run must be treated as a fresh entrance.
+      return () => {
+        previousRef.current = null;
+        timelineRef.current = null;
+      };
+    },
+    { dependencies: [transitionKey], scope: rootRef },
+  );
+
   const handleParentClick = useCallback(
-    (category: Categories) => {
-      if (phase !== "PARENTS") return;
-
-      // Ensure slug exists before proceeding
-      if (!category.slug) {
-        console.error("Category missing slug:", category);
-        return;
-      }
-
-      setPhase("TO_SUBCATEGORIES");
-      setIsAnimating(true);
-      setCategorySelected(category);
-
-      // Write to URL instead of Zustand
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("category", category.slug);
-      params.delete("subcategory"); // Remove subcategory when selecting new category
-
-      router.replace(`?${params.toString()}`, { scroll: false });
+    (cat: Categories) => {
+      if (cat.slug) selectCategory(cat.slug);
     },
-    [phase, setIsAnimating, setPhase, router, searchParams],
+    [selectCategory],
   );
 
-  // Handle subcategory click - triggers transition to ALL_FILTERS
   const handleSubcategoryClick = useCallback(
-    (subcat: Categories) => {
-      if (phase !== "SUBCATEGORIES") return;
-
-      // Ensure slug exists before proceeding
-      if (!subcat.slug) {
-        console.error("Subcategory missing slug:", subcat);
-        return;
-      }
-
-      // Write to URL instead of Zustand
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("subcategory", subcat.slug);
-
-      router.replace(`?${params.toString()}`, { scroll: false });
-
-      // Trigger transition to filters
-      setPhase("TO_ALL_FILTERS");
-      setIsAnimating(true);
+    (sub: Categories) => {
+      if (sub.slug) selectSubcategory(sub.slug);
     },
-    [phase, setPhase, setIsAnimating, router, searchParams],
+    [selectSubcategory],
   );
 
-  // Fetch subcategories whenever a category is selected and panel is open.
-  // This also covers direct URL entry to SUBCATEGORIES/ALL_FILTERS without
-  // passing through TO_SUBCATEGORIES.
-  useEffect(() => {
-    let isCancelled = false;
-    const categorySlug = searchParams.get("category");
-
-    const fetchSubcategories = async () => {
-      if (!showCategories || !categorySelected || !categorySlug) {
-        return;
-      }
-
-      const cachedSubcategories = subcategoriesCacheRef.current.get(
-        categorySelected.id,
-      );
-      if (cachedSubcategories) {
-        setSubcategories(cachedSubcategories);
-        setIsLoadingSubcategories(false);
-        return;
-      }
-
-      try {
-        setIsLoadingSubcategories(true);
-        const fetchedSubcategories = await getSubcategoriesByParentId(
-          categorySelected.id,
-        );
-        if (isCancelled) return;
-        const formattedSubcategories: Categories[] = fetchedSubcategories.map(
-          (sub: ProductCategory) => ({
-            id: sub.id,
-            name: sub.name.toUpperCase(),
-            slug: sub.slug,
-          }),
-        );
-
-        subcategoriesCacheRef.current.set(categorySelected.id, formattedSubcategories);
-        setSubcategories(formattedSubcategories);
-      } catch (error) {
-        if (isCancelled) return;
-        console.error("Error fetching subcategories:", error);
-        setSubcategories([]);
-        // Reset on error
-        setPhase("PARENTS");
-        setIsAnimating(false);
-        setCategorySelected(null);
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingSubcategories(false);
-        }
-      }
-    };
-
-    fetchSubcategories();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [
-    categorySelected,
-    searchParams,
-    showCategories,
-    setIsAnimating,
-    setPhase,
-  ]);
-
-
-  // Parent exit animation (TO_SUB phase)
-  useEffect(() => {
-    // if (phase === "TO_SUB" && subcategories.length > 0 && parentsMenuRef.current) {
-    if (phase === "TO_SUBCATEGORIES" && subcategories.length > 0 && parentsMenuRef.current) {
-      // Revert previous SplitText if exists
-      if (parentsSplitRef) {
-        parentsSplitRef.cleanup();
-      }
-
-      gsap.to(".back-button", {
-        pointerEvents: "none",
-      });
-
-      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
-
-      const tl = gsap.timeline({
-        onComplete: () => {
-          setPhase("SUBCATEGORIES");
-          gsap.to(".back-button", {
-            pointerEvents: "auto",
-          });
-        },
-        onUpdate: () => {
-          animateBlurred(tl.progress());
-        },
-      });
-
-      // SplitText exit animation for parents
-      const parentItems = parentsMenuRef.current.querySelectorAll(
-        ".individual-category",
-      );
-      if (parentItems.length > 0) {
-        parentsSplitRef.animateOut();
-      }
-
-      // Hide parents container after text animates out
-      tl.to(
-        parentsMenuRef.current,
-        {
-          zIndex: 0,
-          opacity: 0,
-          pointerEvents: "none",
-          duration: 0.1,
-        },
-        0.4,
-      );
-
-      // Show back button
-      tl.to(
-        ".back-button",
-        {
-          opacity: 1,
-          zIndex: 10,
-          pointerEvents: "auto",
-          duration: 0.3,
-          ease: "power2.out",
-        },
-        0.4,
-      );
-    }
-    // }, [phase, subcategories]);
-  }, [phase, subcategories]);
-
-  // Subcategory entry animation (SUBCATEGORIES phase)
-  useEffect(() => {
-    if (
-      phase === "SUBCATEGORIES" &&
-      subcategories.length > 0 &&
-      subMenuRef.current &&
-      parentsMenuRef.current &&
-      showCategories
-    ) {
-      // Force layout calculation
-      subMenuRef.current.getBoundingClientRect();
-      subItemsRef.current.forEach((item) => item?.getBoundingClientRect());
-
-      //forcing parents to be hidden because if we receive searchParams directly in the URL, we skip the parent exit animation, so we need to make sure they are hidden before animating the subcategories in.
-      gsap.set(parentsMenuRef.current, {
-        opacity: 0,
-        pointerEvents: "none",
-        zIndex: 0,
-      });
-
-      //forcing back button to be visible in case we come directly with URL params to the subcategories phase, so we skip the parent exit animation where the back button appears.
-      gsap.set(".back-button", {
-        opacity: 1,
-        zIndex: 10,
-        pointerEvents: "auto",
-      });
-
-      // Set container visible
-      gsap.set(subMenuRef.current, {
-        zIndex: 10,
-        opacity: 1,
-        pointerEvents: "auto",
-      });
-
-      // Revert previous SplitText if exists
-      if (subSplitRef) {
-        subSplitRef.cleanup();
-      }
-
-      // Wait one frame for layout
-      requestAnimationFrame(() => {
-        const subcatItems = subMenuRef.current?.querySelectorAll(
-          ".individual-category",
-        );
-        if (subcatItems && subcatItems.length > 0) {
-          gsap.set(subcatItems, { y: 0, opacity: 1 });
-
-          subSplitRef.animateIn();
-        }
-      });
-      // subcategories are fetched but parent exit animation hasn't completed yet, so we wait for the layout to stabilize before initializing the scroll.
-      // I'd hide the subcategories container until the layout is ready to avoid any flickering or mispositioning during the transition.
-    }
-    // TODO AYUDA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    else if (
-      phase !== "SUBCATEGORIES" &&
-      subcategories.length > 0 &&
-      subMenuRef.current &&
-      showCategories
-    ) {
-      // Hide subcategories container until next time we enter this phase
-      gsap.set(subMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
-    }
-  }, [phase, subcategories, showCategories]);
-
-
-  // Handle back button click - URL-driven navigation with transition animations
-  const handleBackClick = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    const hasSubcategory = params.has("subcategory");
-    const hasCategory = params.has("category");
-
-    if (hasSubcategory) {
-      // Back from ALL_FILTERS to SUBCATEGORIES
-      setPhase("TO_SUBCATEGORIES");
-      setIsAnimating(true);
-      params.delete("subcategory");
-      params.delete("tag");
-      params.delete("color");
-      params.delete("size");
-      params.delete("brand");
-      params.delete("gender");
-      params.delete("fit");
-      params.delete("minPrice");
-      params.delete("maxPrice");
-      router.replace(`?${params.toString()}`, { scroll: false });
-    } else if (hasCategory) {
-      // Back from SUBCATEGORIES to PARENTS
-      setPhase("TO_PARENTS");
-      params.delete("category");
-      router.replace(`?${params.toString()}`, { scroll: false });
-    }
-  }, [router, searchParams, setPhase, setIsAnimating]);
-
-  // Subcategory exit animation to ALL_FILTERS (TO_ALL_FILTERS phase)
-  useEffect(() => {
-
-    if (phase === "TO_ALL_FILTERS" && subMenuRef.current) {
-      // Revert previous SplitText if exists
-      if (subSplitRef) {
-        subSplitRef.cleanup();
-      }
-
-      gsap.to(".back-button", {
-        pointerEvents: "none",
-        opacity: 0.3,
-      });
-
-      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
-
-      const tl = gsap.timeline({
-        onComplete: () => {
-          setPhase("ALL_FILTERS");
-          gsap.to(".back-button", {
-            pointerEvents: "auto",
-            opacity: 1,
-            left: "5%",
-          });
-        },
-        onUpdate: () => {
-          animateBlurred(tl.progress());
-        },
-      });
-
-      // SplitText exit animation for subcategories
-      const subItems = subMenuRef.current.querySelectorAll(
-        ".individual-category",
-      );
-      if (subItems.length > 0) {
-        subSplitRef.animateOut();
-      }
-
-      // Hide subcategories container
-      tl.to(
-        subMenuRef.current,
-        {
-          zIndex: 0,
-          pointerEvents: "none",
-          duration: 0.1,
-        },
-        0.4,
-      );
-
-      // making sure this styles
-    }
-  }, [phase, setPhase]);
-
-  useEffect(() => {
-    console.log({ phase });
-  }, [phase]);
-
-  // Aside filters entry animation (ALL_FILTERS phase)
-  useEffect(() => {
-    const asideElement = document.querySelector(".aside-filters");
-    if (!asideElement) return;
-
-    if (phase === "ALL_FILTERS") {
-      //forcing parents elements to be hidden in case we come directly with URL params to the ALL_FILTERS phase, so we skip the parent and subcategory exit animations, which are the ones that hide the parents and subcategories containers.
-      gsap.set(parentsMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      });
-      console.log('aca? x2')
-      // forcing also the subcategories to be hidden for the same reason
-      gsap.set(subMenuRef.current, {
-        opacity: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-      })
-
-      const tl = gsap.timeline().to(
-        asideElement,
-        {
-          opacity: 1,
-          x: 0,
-          zIndex: 10,
-          pointerEvents: "auto",
-          duration: 0.25,
-          ease: "power2.out",
-          onComplete: () => {
-            setIsAnimating(false);
-          },
-        },
-        0,
-      );
-      tl.to(
-        ".card-filters-panel",
-        {
-          y: 0,
-          duration: 0.5,
-          ease: "power2.out",
-          stagger: 0.35,
-        },
-        ">",
-      );
-
-      // Keep back button visible for returning to subcategories
-      gsap.to(".back-button", {
-        opacity: 1,
-        zIndex: 70,
-        pointerEvents: "auto",
-        duration: 0.3,
-        ease: "power2.out",
-      });
-    }
-  }, [phase, setIsAnimating]);
-
-  // Aside exit + subcategories re-entry (TO_SUBCATEGORIES phase)
-  useEffect(() => {
-    const asideElement = document.querySelector(".aside-filters");
-    if (phase === "TO_SUBCATEGORIES" && asideElement && subMenuRef.current) {
-      gsap.to(".back-button", {
-        pointerEvents: "none",
-        opacity: 0.3,
-      });
-
-      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
-
-      const tl = gsap.timeline({
-        onComplete: () => {
-          setPhase("SUBCATEGORIES");
-          setIsAnimating(false);
-          gsap.to(".back-button", {
-            pointerEvents: "auto",
-            opacity: 1,
-            left: "25%",
-          });
-        },
-        onUpdate: () => {
-          animateBlurred(tl.progress());
-        },
-      });
-
-      // Animate aside out
-      tl.to(
-        ".card-filters-panel",
-        {
-          y: "100%",
-          duration: 0.25,
-          ease: "power2.in",
-          stagger: 0.25,
-        },
-        0,
-      );
-      tl.to(
-        asideElement,
-        {
-          opacity: 0,
-          x: 50,
-          zIndex: -10,
-          pointerEvents: "none",
-          duration: 0.4,
-          ease: "power2.in",
-        },
-        "<0.2",
-      );
-
-      // Show subcategories container
-      tl.set(
-        subMenuRef.current,
-        {
-          zIndex: 10,
-          pointerEvents: "auto",
-        },
-        0.5,
-      );
-
-      // Re-animate subcategories in
-      const subcatItems = subMenuRef.current.querySelectorAll(
-        ".individual-category",
-      );
-      if (subcatItems && subcatItems.length > 0) {
-        if (subSplitRef) {
-          subSplitRef.cleanup();
-        }
-
-        gsap.set(subcatItems, { y: 0, opacity: 1 });
-        subSplitRef.animateIn();
-      }
-    }
-  }, [phase, setIsAnimating, setPhase]);
-
-  // Subcategory exit animation to PARENTS (TO_PARENTS phase)
-  useEffect(() => {
-    if (phase === "TO_PARENTS" && subMenuRef.current) {
-      console.log('acaaaaaa')
-      // Revert previous SplitText if exists
-      if (subSplitRef) {
-        subSplitRef.cleanup();
-      }
-
-      gsap.to(".back-button", {
-        pointerEvents: "none",
-        opacity: 0.3,
-      });
-
-      const animateBlurred = createBlurAnimation(".blurred", ".blurred-2");
-      const tl = gsap.timeline({
-        onComplete: () => {
-          setSubcategories([]);
-          setIsLoadingSubcategories(false);
-          setCategorySelected(null);
-          setPhase("PARENTS");
-          setIsAnimating(false);
-          gsap.to(".back-button", {
-            pointerEvents: "none",
-            opacity: 0,
-          });
-        },
-        onUpdate: () => {
-          animateBlurred(tl.progress());
-        },
-      });
-
-      // SplitText exit animation for subcategories
-      const subItems = subMenuRef.current.querySelectorAll(
-        ".individual-category",
-      );
-      if (subItems.length > 0) {
-        subSplitRef.animateOut();
-      }
-
-      // Hide subcategories container
-      tl.to(
-        subMenuRef.current,
-        {
-          zIndex: 0,
-          pointerEvents: "none",
-          duration: 0.1,
-        },
-        0.4,
-      );
-
-      // Hide back button
-      tl.to(
-        ".back-button",
-        {
-          opacity: 0,
-          zIndex: -10,
-          pointerEvents: "none",
-          duration: 0.3,
-          ease: "power2.in",
-        },
-        0.2,
-      );
-
-      // Show parents container
-      if (parentsMenuRef.current) {
-        tl.set(
-          parentsMenuRef.current,
-          {
-            zIndex: 10,
-            // opacity: 1,
-            pointerEvents: "auto",
-          },
-          0.5,
-        );
-      }
-    }
-    //changing parents opacity because we are hiding it
-    if (phase === "PARENTS") {
-      if (parentsMenuRef.current) {
-        parentsSplitRef.cleanup();
-        // resetParentsSplit();
-        gsap.set(parentsMenuRef.current, {
-          opacity: 1,
-          pointerEvents: "auto",
-          zIndex: 10,
-        });
-      }
-    }
-  }, [phase, setIsAnimating, setPhase]);
-
-  // Parent entry animation after back (PARENTS phase after TO_PARENTS)
-  useEffect(() => {
-    if (phase === "PARENTS" && parentsMenuRef.current && showCategories) {
-    
-      if (parentsSplitRef) {
-        parentsSplitRef.cleanup();
-      }
-
-      // Wait one frame for layout
-      requestAnimationFrame(() => {
-        const parentItems = parentsMenuRef.current?.querySelectorAll(
-          ".individual-category",
-        );
-        if (parentItems && parentItems.length > 0) {
-          // Reset baseline transforms
-          gsap.set(parentItems, { y: 0, opacity: 1 });
-          parentsSplitRef.animateIn();
-        }
-      });
-    }
-  }, [phase, categorySelected?.slug, showCategories]);
-
-  // Sync URL params with state on mount and when URL changes (handles direct navigation with params)
-  useEffect(() => {
-    if (!showCategories) return;
-    const category = searchParams.get("category");
-    const subcategory = searchParams.get("subcategory");
-
-    let targetPhase: CategoryPhase;
-
-    if (!category) {
-      targetPhase = "PARENTS";
-      const tl = gsap.timeline();
-
-      gsap.set(".back-button", {
-        left: "25%",
-      });
-
-      tl.to(
-        ".card-filters-panel",
-        {
-          y: "100%",
-          opacity: 1,
-          visibility: "visible",
-          duration: 0.5,
-          ease: "power2.out",
-          stagger: 0.25,
-        },
-        0,
-      );
-      tl.to(
-        ".aside-filters",
-        {
-          opacity: 0,
-          x: 50,
-          zIndex: -10,
-          pointerEvents: "none",
-          duration: 0.4,
-          ease: "power2.in",
-        },
-        0.1,
-      );
-
-      // using the timeline reference to reverse the dash array animation in case we come back to the parents phase directly from the ALL_FILTERS phase, so we skip the subcategory exit animation where the dash array animation is reversed.
-      // timelineDashArrayRef.current?.reverse();
-
-      // tl.to(
-      //   "#close-svg-open",
-      //   {
-      //     strokeDashoffset: openSVGPathOffset,
-      //     duration: 0.6,
-      //     ease: "power2.in",
-      //   },
-      //   0,
-      // );
-      // tl.to(
-      //   ".bolita-efecto-click",
-      //   {
-      //     opacity: 0,
-      //     ease: "power2.in",
-      //   },
-      //   0,
-      // );
-      // tl.to(
-      //   ".wrapper-dasharray",
-      //   {
-      //     x: "0rem",
-      //     pointerEvents: "none",
-      //   },
-      //   0.45,
-      // );
-      // tl.to(
-      //   ".container-both-actions",
-      //   {
-      //     width: "4rem",
-      //     x: "0rem",
-      //     ease: "power2.out",
-      //   },
-      //   0.5,
-      // );
-      // tl.to(
-      //   ".close-categories-button",
-      //   {
-      //     x: "0rem",
-      //     ease: "power2.out",
-      //   },
-      //   0.55,
-      // );
-    } else if (category && !subcategory) {
-      targetPhase = "SUBCATEGORIES";
-      const tl = gsap.timeline();
-
-      gsap.set(".back-button", {
-        left: "25%",
-      });
-
-      tl.to(
-        ".card-filters-panel",
-        {
-          y: "100%",
-          duration: 0.5,
-          ease: "power2.out",
-          stagger: 0.25,
-        },
-        0,
-      );
-      tl.to(
-        ".aside-filters",
-        {
-          opacity: 0,
-          x: 50,
-          zIndex: -10,
-          pointerEvents: "none",
-          duration: 0.4,
-          ease: "power2.in",
-        },
-        0,
-      );
-      // tl.to(
-      //   ".container-both-actions",
-      //   {
-      //     width: "10rem",
-      //     x: "4rem",
-      //     ease: "power2.out",
-      //   },
-      //   0,
-      // );
-      // tl.to(
-      //   ".close-categories-button",
-      //   {
-      //     x: "-2rem",
-      //     ease: "power2.out",
-      //   },
-      //   0,
-      // );
-      // tl.to(
-      //   ".bolita-efecto-click",
-      //   {
-      //     opacity: 1,
-      //     ease: "power2.in",
-      //   },
-      //   0.3,
-      // );
-      // tl.to(
-      //   "#close-svg-open",
-      //   {
-      //     strokeDashoffset: 0,
-      //     duration: 0.8,
-      //     ease: "power2.out",
-      //   },
-      //   0.3,
-      // );
-      // tl.to(
-      //   ".wrapper-dasharray",
-      //   {
-      //     x: "1.5rem",
-      //     pointerEvents: "auto",
-      //   },
-      //   0.3,
-      // );
-      // timelineDashArrayRef.current?.play(0);
-    } else {
-      targetPhase = "ALL_FILTERS";
-      const tl = gsap.timeline();
-
-      gsap.set(".back-button", {
-        left: "5%",
-        zIndex: 70,
-        opacity: 1,
-        pointerEvents: "auto",
-      });
-      // tl.to(
-      //   ".container-both-actions",
-      //   {
-      //     width: "10rem",
-      //     x: "4rem",
-      //     ease: "power2.out",
-      //   },
-      //   0,
-      // );
-      // tl.to(
-      //   ".close-categories-button",
-      //   {
-      //     x: "-2rem",
-      //     ease: "power2.out",
-      //   },
-      //   0,
-      // );
-      // tl.to(
-      //   ".bolita-efecto-click",
-      //   {
-      //     opacity: 1,
-      //     ease: "power2.in",
-      //   },
-      //   0.3,
-      // );
-      // tl.to(
-      //   "#close-svg-open",
-      //   {
-      //     strokeDashoffset: 0,
-      //     duration: 0.8,
-      //     ease: "power2.out",
-      //   },
-      //   0.3,
-      // );
-      // tl.to(
-      //   ".wrapper-dasharray",
-      //   {
-      //     x: "1.5rem",
-      //     pointerEvents: "auto",
-      //   },
-      //   0.4,
-      // );
-      // timelineDashArrayRef.current?.play(0);
-    }
-
-    if (phase === targetPhase) return;
-    // No interferir con transiciones activas
-    if (phase.startsWith("TO_")) return;
-
-     // IMPORTANT: Clean up any ongoing splits before changing phase
-  parentsSplitRef.cleanup();
-  subSplitRef.cleanup();
-
-  // Also kill any tweens on the containers to prevent interference
-  if (parentsMenuRef.current) gsap.killTweensOf(parentsMenuRef.current);
-  if (subMenuRef.current) gsap.killTweensOf(subMenuRef.current);
-  console.log('acadawoindaodwn')
-    setPhase(targetPhase);
-  }, [searchParams, showCategories, phase, openSVGPathOffset, setPhase]);
-
-  useEffect(() => {
-    const categorySlug = searchParams.get("category");
-
-    if (!categorySlug || categories.length === 0) return;
-
-    const matchedCategory = categories.find((cat) => cat.slug === categorySlug);
-
-    if (!matchedCategory) return;
-
-    // Si ya está seleccionado, no hacer nada
-    if (categorySelected?.slug === matchedCategory.slug) return;
-
-    const frameId = requestAnimationFrame(() => {
-      setCategorySelected(matchedCategory);
-    });
-
-    return () => {
-      cancelAnimationFrame(frameId);
-    };
-  }, [searchParams, categories, categorySelected?.slug]);
-
-  // Cleanup animations when panel closes
-useEffect(() => {
-  if (!showCategories) {
-    // Clean up SplitText instances
-    parentsSplitRef.cleanup();
-    subSplitRef.cleanup();
-
-    // Kill all remaining GSAP tweens on the containers
-    if (parentsMenuRef.current) {
-      gsap.killTweensOf(parentsMenuRef.current);
-      parentsMenuRef.current.querySelectorAll('.individual-category')
-        .forEach(el => gsap.killTweensOf(el));
-    }
-    if (subMenuRef.current) {
-      gsap.killTweensOf(subMenuRef.current);
-      subMenuRef.current.querySelectorAll('.individual-category')
-        .forEach(el => gsap.killTweensOf(el));
-    }
-
-    const aside = document.querySelector(".aside-filters");
-    if (aside) gsap.killTweensOf(aside);
-  }
-}, [showCategories, parentsSplitRef, subSplitRef]);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    window.addEventListener("resize", checkIsMobile);
-    checkIsMobile();
-
-    return () => {
-      window.removeEventListener("resize", checkIsMobile);
-    };
-  }, []);
+  const replaceFilters = useCallback(
+    (params: URLSearchParams) => navigate(params, "replace"),
+    [navigate],
+  );
+
+  const statusMessage =
+    level === "PARENTS" && categories.length === 0 && isLoadingCategories
+      ? "Cargando categorías…"
+      : level === "SUBCATEGORIES" && isLoadingSubcategories
+        ? "Cargando subcategorías…"
+        : level === "SUBCATEGORIES" && categorySelected && subcategories.length === 0
+          ? "Esta categoría aún no tiene subcategorías."
+          : null;
 
   return (
     <>
-      {/* boton para mostrar todas las categorias de nuevo */}
       <button
-        onClick={handleBackClick}
-        className="opacity-0 -z-10 back-button absolute left-1/5 -translate-x-1/2 top-1/2 -translate-y-1/2 cursor-pointer"
-        style={{ pointerEvents: "none" }}
+        type="button"
+        onClick={goBack}
+        aria-label="Volver al nivel anterior"
+        className="categories-back fixed z-70 top-[4.5rem] left-3 md:top-1/2 md:-translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full cursor-pointer focus-visible:outline-2 focus-visible:outline-black"
       >
-        <BackButton className="w-10 rotate-180" />
+        <BackButton className="w-10" />
       </button>
 
-      <div className="card-infinite-scroll relative flex flex-col h-full items-center justify-center gap-12  px-4 lg:px-8 w-[95%] sm:w-6/12">
-        <div className="relative w-full pt-20 h-dvh rounded-2xl ">
-          <div className="flechitas-container absolute right-[10%] top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-10">
-            {/* flechita arriba */}
-            <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
-              <path d="M1 9L11 1L21 9" stroke="black" />
-            </svg>
-            {/* flechita abajo */}
-            <svg
-              width="22"
-              height="10"
-              viewBox="0 0 22 10"
-              fill="none"
-              className="rotate-180"
+      <div
+        ref={rootRef}
+        className="card-infinite-scroll relative flex flex-col h-full items-center justify-center px-4 lg:px-8 w-full sm:w-6/12"
+      >
+        <div className="relative w-full pt-20 h-dvh">
+          <div className="categories-nudge absolute right-2 md:right-[10%] top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-1 z-20">
+            <button
+              type="button"
+              onClick={() => activeScroll.nudge(-1)}
+              aria-label="Categoría anterior"
+              className="w-11 h-11 flex items-center justify-center cursor-pointer"
             >
-              <path d="M1 9L11 1L21 9" stroke="black" />
-            </svg>
+              <svg width="22" height="10" viewBox="0 0 22 10" fill="none" aria-hidden>
+                <path d="M1 9L11 1L21 9" stroke="black" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => activeScroll.nudge(1)}
+              aria-label="Categoría siguiente"
+              className="w-11 h-11 flex items-center justify-center cursor-pointer"
+            >
+              <svg width="22" height="10" viewBox="0 0 22 10" fill="none" className="rotate-180" aria-hidden>
+                <path d="M1 9L11 1L21 9" stroke="black" />
+              </svg>
+            </button>
           </div>
 
-          {/* Parents List - Always Mounted */}
+          {statusMessage && (
+            <p
+              role="status"
+              className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center font-prata text-lg text-black/60 z-10"
+            >
+              {statusMessage}
+            </p>
+          )}
+
           <ul
             ref={parentsMenuRef}
-            className="parents-menu cursor-grab absolute top-0 left-0  w-full h-full select-none"
-            style={{
-              zIndex: 10,
-              pointerEvents: "auto",
-            }}
+            aria-label="Categorías"
+            className="categories-list invisible opacity-0 absolute inset-0 select-none"
           >
-            {categories.map((category, index) => (
+            {categories.map((cat, index) => (
               <li
                 ref={(el) => {
-                  if (el) {
-                    parentsItemsRef.current[index] = el;
-                  }
+                  parentsItemsRef.current[index] = el;
                 }}
-                key={category.id}
-                className="absolute overflow-hidden h-36 w-full flex items-center justify-center"
+                key={cat.id}
+                className="absolute top-0 left-0 overflow-hidden h-36 w-full flex items-center justify-center"
               >
-                <IndividualCategory
-                  category={category}
-                  onCategoryClick={handleParentClick}
-                  isDisabled={isAnimating}
-                />
+                <IndividualCategory category={cat} onCategoryClick={handleParentClick} />
               </li>
             ))}
           </ul>
 
-          {/* Subcategories List - Always Mounted */}
           <ul
             ref={subMenuRef}
-            className="subcategories-menu cursor-grab absolute top-0 left-0  w-full h-full select-none"   
+            aria-label={categorySelected ? `Subcategorías de ${categorySelected.name}` : "Subcategorías"}
+            aria-busy={isLoadingSubcategories}
+            className="categories-list invisible opacity-0 absolute inset-0 select-none"
           >
-            {subcategories.map((category, index) => (
+            {subcategories.map((sub, index) => (
               <li
                 ref={(el) => {
-                  if (el) {
-                    subItemsRef.current[index] = el;
-                  }
+                  subItemsRef.current[index] = el;
                 }}
-                key={category.id}
-                className="absolute overflow-hidden h-36 w-full flex items-center justify-center"
+                key={sub.id}
+                className="absolute top-0 left-0 overflow-hidden h-36 w-full flex items-center justify-center"
               >
-                <IndividualCategory
-                  category={category}
-                  onCategoryClick={handleSubcategoryClick}
-                  isDisabled={phase !== "SUBCATEGORIES"}
-                />
+                <IndividualCategory category={sub} onCategoryClick={handleSubcategoryClick} />
               </li>
             ))}
           </ul>
         </div>
-        <AsideCategoriesFilter
-          categorySelected={categorySelected?.slug ?? null}
-        />
+
+        <div ref={asideWrapRef} className="invisible opacity-0">
+          {isAsideMounted && (
+            <AsideCategoriesFilter
+              categorySelected={categorySelected?.slug ?? null}
+              onReplaceParams={replaceFilters}
+            />
+          )}
+        </div>
       </div>
     </>
   );
