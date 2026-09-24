@@ -111,8 +111,8 @@ export default function LoginPage() {
 
           {/* Subtitle */}
           <p className="font-inria text-left text-foreground/70 text-xs md:text-sm w-full md:w-[55ch]">
-            Inicia sesión para poder comprar, además de aprovechar las
-            funcionalidades IA de la página web.
+            Inicia sesión para guardar tus favoritos y comprar.
+
           </p>
         </div>
 

@@ -3,7 +3,6 @@ import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Product Detail Layout",
   description: "Layout for the product detail page with header ",
 };
 

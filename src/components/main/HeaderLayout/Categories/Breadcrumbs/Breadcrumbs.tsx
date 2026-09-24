@@ -11,12 +11,14 @@ import { BreadcrumbItemCustom } from "./BreadcrumbItem";
 import { buildSearchParams } from "@/utils/filters/urlFilters";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export interface BreadcrumbItemCustomProps {
   href: string;
   label?: string;
   svgIcon?: React.ReactNode;
+  /** When set, the crumb is a button that navigates in place instead of a Link. */
+  onSelect?: () => void;
 }
 
 type FilterKind = "multi" | "single" | "price";
@@ -36,15 +38,18 @@ interface ActiveFilterEntry {
 
 interface BreadcrumbsProps {
   id: string;
+  className?: string;
+  /** Panel mode: navigate with shallow history instead of Next navigations. */
+  onNavigate?: (params: URLSearchParams, mode: "push" | "replace") => void;
 }
 
-export function Breadcrumbs({ id }: BreadcrumbsProps) {
+export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", onNavigate }: BreadcrumbsProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const pathname = usePathname();
+
   const dropdownRef = useRef<HTMLLIElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const basePath = pathname.startsWith("/products") ? pathname : "/products";
+  const basePath = "/products";
   // Read filter values from URL
   const category = searchParams.get("category");
   const subcategory = searchParams.get("subcategory");
@@ -160,40 +165,41 @@ export function Breadcrumbs({ id }: BreadcrumbsProps) {
       }
 
       setIsDropdownOpen(false);
+      if (onNavigate) {
+        onNavigate(params, "replace");
+        return;
+      }
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      router.replace(query ? `${basePath}?${query}` : basePath, { scroll: false });
     },
-    [pathname, router, searchParams],
+    [basePath, onNavigate, router, searchParams],
   );
 
-  // Build breadcrumb items dynamically
-  const breadcrumbItems: BreadcrumbItemCustomProps[] = [];
+  // Build breadcrumb items dynamically. Every level lives under /products.
+  const crumb = (params: URLSearchParams, label?: string, svgIcon?: React.ReactNode): BreadcrumbItemCustomProps => {
+    const query = params.toString();
+    return {
+      href: query ? `${basePath}?${query}` : basePath,
+      label,
+      svgIcon,
+      onSelect: onNavigate ? () => onNavigate(params, "push") : undefined,
+    };
+  };
 
-  // Absolute route without query params
-  breadcrumbItems.push({ href: pathname, svgIcon: <MainLogoAnimated className="w-8" /> });
+  const breadcrumbItems: BreadcrumbItemCustomProps[] = [
+    crumb(new URLSearchParams(), undefined, <MainLogoAnimated className="w-8" />),
+  ];
 
-  // Category level
   if (category) {
-    const categoryParams = buildSearchParams({ category });
-    breadcrumbItems.push({
-      href: `${pathname}?${categoryParams.toString()}`,
-      label: category,
-    });
+    breadcrumbItems.push(crumb(buildSearchParams({ category }), category));
   }
 
-  // Subcategory level (preserves category)
   if (subcategory && category) {
-    const subcategoryParams = buildSearchParams({ category, subcategory });
-    breadcrumbItems.push({
-      href: `${pathname}?${subcategoryParams.toString()}`,
-      label: subcategory,
-    });
+    breadcrumbItems.push(crumb(buildSearchParams({ category, subcategory }), subcategory));
   }
 
   return (
-    <Breadcrumb
-    id={id}
-    className="absolute top-14 left-16 z-20">
+    <Breadcrumb id={id} className={className}>
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={item.href}>
@@ -202,6 +208,7 @@ export function Breadcrumbs({ id }: BreadcrumbsProps) {
               href={item.href}
               label={item.label!}
               svgIcon={item.svgIcon}
+              onSelect={item.onSelect}
             />
             {index < breadcrumbItems.length - 1 && <BreadcrumbSeparator key={`sep-${index}`} />}
           </React.Fragment>

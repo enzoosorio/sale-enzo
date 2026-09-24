@@ -30,16 +30,16 @@ const navigationItems = [
     exact: true 
   },
   { 
-    name: "Capturar", 
-    href: "/admin/capture", 
-    icon: Camera 
+    name: "Capturar",
+    href: "/admin/capture",
+    icon: Camera
   },
-  { 
-    name: "Staging", 
-    href: "/admin/staging", 
-    icon: Inbox 
+  {
+    name: "Staging",
+    href: "/admin/staging",
+    icon: Inbox
   },
-  { 
+  {
     name: "Productos", 
     href: "/admin/products", 
     icon: Package 

@@ -1,31 +1,38 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useCategoriesStore } from '@/store/categorySection';
 import { createPortal } from 'react-dom';
+import { useCategoriesStore } from '@/store/categorySection';
+import { loadCategoriesPanel, preloadCategoriesPanel } from './preloadCategories';
 
-// CategoriesPanel contains GSAP + Flip + heavy SVG animations.
-// It only mounts when the user opens the menu, so we load its JS lazily.
+// CategoriesPanel carries GSAP and the category data layer. It is loaded lazily
+// and warmed up as soon as the user points at (or touches) a trigger.
 const CategoriesPanel = dynamic(
-  () => import('./CategoriesPanel').then((m) => m.CategoriesPanel),
+  () => loadCategoriesPanel().then((m) => m.CategoriesPanel),
   { ssr: false, loading: () => null },
 );
 
 export const CategoriesButton = () => {
-  const { showCategories, setShowCategories } = useCategoriesStore();
+  const showCategories = useCategoriesStore((s) => s.showCategories);
+  const openPanel = useCategoriesStore((s) => s.openPanel);
+  const closePanel = useCategoriesStore((s) => s.closePanel);
 
   return (
-    <>
-      <button
-        className="cursor-pointer"
-        onClick={() => setShowCategories(!showCategories)}
-        onMouseEnter={() => {
-          // TODO: pre-loader de categorías padre
-        }}
-      >
-        Categorías
-      </button>
-      {showCategories &&
-        createPortal(<CategoriesPanel />, document.body)}
-    </>
+    <button
+      type="button"
+      className="cursor-pointer"
+      aria-expanded={showCategories}
+      onClick={() => (showCategories ? closePanel() : openPanel())}
+      onPointerEnter={preloadCategoriesPanel}
+      onFocus={preloadCategoriesPanel}
+    >
+      Categorías
+    </button>
   );
+};
+
+/** Renders the panel for every breakpoint; the triggers live in the desktop nav and the mobile menu. */
+export const CategoriesPanelHost = () => {
+  const isPanelMounted = useCategoriesStore((s) => s.isPanelMounted);
+  if (!isPanelMounted) return null;
+  return createPortal(<CategoriesPanel />, document.body);
 };

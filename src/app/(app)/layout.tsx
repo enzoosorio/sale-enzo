@@ -4,7 +4,6 @@ import { createClient } from "@/utils/supabase/server";
 import { FooterLoader } from "@/components/main/Footer/FooterLoader";
 
 export const metadata: Metadata = {
-  title: "App Layout",
   description: "Layout for the application with header and music player",
 };
 

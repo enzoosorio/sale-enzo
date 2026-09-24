@@ -1,309 +1,196 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CloseButtonSVG, OpenButtonSVG } from "@/components/reusable/svgs/CloseOpenSVG";
-import { InfiniteScrollCategories } from "./InfiniteScrollCategories";
-import { SplitText } from "gsap/all";
-import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
-import { useCategoriesStore } from "@/store/categorySection";
-import { getParentCategories } from "@/utils/filters";
-import { Breadcrumbs } from "./Breadcrumbs/Breadcrumbs";
 import { BlurEffect } from "@/components/reusable/svgs/BlurEffect";
 import { BlurEffect2 } from "@/components/reusable/svgs/BlurEffect2";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { BolitaEfectoClick } from "@/components/reusable/BolitaEfectoClick";
+import { useImagesCategoriesStore } from "@/store/imagesCategoriesStore";
+import { useCategoriesStore } from "@/store/categorySection";
+import { InfiniteScrollCategories } from "./InfiniteScrollCategories";
+import { Breadcrumbs } from "./Breadcrumbs/Breadcrumbs";
+import { useCategoryLevel } from "./useCategoryLevel";
+import { preloadParentCategories } from "./preloadCategories";
 
+gsap.registerPlugin(useGSAP);
 
-gsap.registerPlugin(useGSAP, SplitText);
-
-const initImagesPositions = [
-  { id: "image1", top: "10%", left: "17%" },
-  { id: "image2", top: "25%", left: "8%" },
-  { id: "image3", top: "45%", left: "16%" },
-  { id: "image4", top: "10%", left: "72%" },
-  { id: "image5", top: "29%", left: "80%" },
-  { id: "image6", top: "55%", left: "74%" },
+const IMAGE_POSITIONS = [
+  { top: "10%", left: "17%", zIndex: 20 },
+  { top: "25%", left: "8%", zIndex: 15 },
+  { top: "45%", left: "16%", zIndex: 10 },
+  { top: "10%", left: "72%", zIndex: 10 },
+  { top: "29%", left: "80%", zIndex: 15 },
+  { top: "55%", left: "74%", zIndex: 0 },
 ];
 
-const OPEN_SVG_PATH_OFFSET = 47.94404602050781;
+const CLIP_HIDDEN = "inset(100% 0% 0% 0%)";
+const CLIP_SHOWN = "inset(0% 0% 0% 0%)";
 
-
-// Strict state machine for animation flow
-export type CategoryPhase =
-  "PARENTS" |
-  "SUBCATEGORIES" |
-  "TO_ALL_FILTERS" |
-  "ALL_FILTERS" |
-  "TO_SUBCATEGORIES" |
-  "TO_PARENTS";
-
-
-  
 export const CategoriesPanel = () => {
-  const { imagesByCategory, exitImagesByCategory, setImagesByCategory, setExitImagesByCategory } = useImagesCategoriesStore();
-  const [phase, setPhase] = useState<CategoryPhase>("PARENTS");
-  const { parentCategories, setParentCategories, setIsLoadingCategories, showCategories, setShowCategories } = useCategoriesStore();
-  const [isAnimating, setIsAnimating] = useState<boolean>(false);
-  const [linkToShopWSearch, setLinkToShopWSearch] = useState<string>("");
-  const lockedScrollYRef = useRef<number | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const imagesRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  const searchParams = useSearchParams();
+  const showCategories = useCategoriesStore((s) => s.showCategories);
+  const closePanel = useCategoriesStore((s) => s.closePanel);
+  const unmountPanel = useCategoriesStore((s) => s.unmountPanel);
+  const { level, productsHref, navigate } = useCategoryLevel();
 
-  const lockBodyScroll = () => {
-    if (lockedScrollYRef.current !== null) return;
-
-    const scrollY = window.scrollY;
-    lockedScrollYRef.current = scrollY;
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-  };
-
-  const unlockBodyScroll = () => {
-    const lockedScrollY = lockedScrollYRef.current ?? 0;
-
-    document.body.style.overflow = "";
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.width = "";
-
-    window.scrollTo(0, lockedScrollY);
-    lockedScrollYRef.current = null;
-  };
-
-  const closePanel = () => {
-    setShowCategories && setShowCategories(false);
-    setExitImagesByCategory(true);
-    setIsAnimating(false);
-    unlockBodyScroll();
-  };
-
-  
-
-  useGSAP(() => {
-    const section = document.querySelector(".categories-section");
-    if (!section) return;
-
-    if (showCategories) {
-      gsap.timeline()
-        .set(section, {
-          display: "flex",
-        })
-        .to(
-          section,
-          {
-            clipPath: "inset(0% 0% 0% 0%)",
-            zIndex: 70,
-            duration: 0.5,
-            ease: "power2.out",
-          },
-          0
-        )
-    } else {
-      gsap.timeline()
-        .to(
-          section,
-          {
-            clipPath: "inset(100% 0% 0% 0%)",
-            duration: 0.5,
-            ease: "power2.in",
-          },
-          0
-        )
-        .set(section, {
-          display: "none",
-        });
-    }
-  }, [showCategories]);
+  const imagesByCategory = useImagesCategoriesStore((s) => s.imagesByCategory);
+  const exitImagesByCategory = useImagesCategoriesStore((s) => s.exitImagesByCategory);
+  const setImagesByCategory = useImagesCategoriesStore((s) => s.setImagesByCategory);
+  const setExitImagesByCategory = useImagesCategoriesStore((s) => s.setExitImagesByCategory);
 
   useEffect(() => {
-    // initial fetch of categories to show in the section
-    const fetchCategories = async () => {
-      // Solo cargar si no hay categorías ya cargadas
-      if (parentCategories.length > 0) return;
+    void preloadParentCategories();
+    return () => setImagesByCategory([]);
+  }, [setImagesByCategory]);
 
-      try {
-        setIsLoadingCategories(true);
-        const categories = await getParentCategories();
-        setParentCategories(categories);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-
-    const setDashArray = () => {
-      gsap.set("#close-svg-open", {
-        strokeDasharray: OPEN_SVG_PATH_OFFSET,
-        strokeDashoffset: OPEN_SVG_PATH_OFFSET,
-      });
-      gsap.set(".wrapper-dasharray", {
-        right: `9.8rem`,
-        pointerEvents: 'none',
-        // opacity: 0,
-      });
-    }
-
-    fetchCategories();
-    setDashArray();
-  }, [])
-
-  // Bloquear scroll del body cuando las categorías están abiertas
+  // Lock page scroll for as long as the panel is mounted (including its exit).
   useEffect(() => {
-    if (showCategories) {
-      lockBodyScroll();
-    } else {
-      unlockBodyScroll();
-    }
-
+    const html = document.documentElement;
+    const previous = html.style.overflow;
+    html.style.overflow = "hidden";
     return () => {
-      unlockBodyScroll();
+      html.style.overflow = previous;
     };
-  }, [showCategories])
+  }, []);
 
-  const positions = ["20", "15", "10", "10", "15", "0"];
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePanel();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [closePanel]);
 
-  useGSAP(() => {
-    imagesByCategory.forEach((_, index) => {
-      gsap.set(`.images-wrapper div:nth-child(${index + 1})`, {
-        position: "absolute",
-        top: initImagesPositions[index].top,
-        left: initImagesPositions[index].left,
-      });
+  // Enter/exit reveal. The panel only unmounts once the exit has finished.
+  useGSAP(
+    () => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      gsap.killTweensOf(section);
 
-      gsap.set(`.overlay-image-effect`, {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: "100%",
-        height: "100%",
-      });
-    });
-
-    if (imagesByCategory.length !== 0 && !exitImagesByCategory) {
-      gsap.to(".overlay-image-effect", {
-        y: "100%",
-        duration: 1,
-        ease: "power3.out",
-      });
-    } else if (exitImagesByCategory) {
-      gsap.to(".overlay-image-effect", {
-        y: "0%",
-        duration: 0.15,
-        ease: "power3.in",
-        onComplete: () => {
-          setImagesByCategory([]);
-          setExitImagesByCategory(false);
+      if (showCategories) {
+        if (reduceMotion) {
+          gsap.fromTo(section, { autoAlpha: 0, clipPath: CLIP_SHOWN }, { autoAlpha: 1, duration: 0.15 });
+        } else {
+          gsap.fromTo(
+            section,
+            { clipPath: CLIP_HIDDEN },
+            { clipPath: CLIP_SHOWN, duration: 0.45, ease: "power3.out" },
+          );
         }
-      });
-    }
-  }, [imagesByCategory, exitImagesByCategory]);
-
-
-  // NOW we are going to listen the escape key to close the categories section, this is a common UX pattern that users expect, and it will enhance the user experience by allowing them to quickly exit the categories view without having to click the close button. We will add an event listener for the 'keydown' event and check if the pressed key is 'Escape'. If it is, we will trigger the same function that is called when the close button is clicked.
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!showCategories) return;
-      if (e.key === "Escape") {
-        console.log('escape')
-        closePanel();
+        return;
       }
-    };
 
-    window.addEventListener("keydown", handleKeyDown);
+      gsap.to(
+        section,
+        reduceMotion
+          ? { autoAlpha: 0, duration: 0.15, onComplete: unmountPanel }
+          : { clipPath: CLIP_HIDDEN, duration: 0.35, ease: "power2.in", onComplete: unmountPanel },
+      );
+    },
+    { dependencies: [showCategories], scope: sectionRef },
+  );
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showCategories, setShowCategories, setExitImagesByCategory, setIsAnimating]);
+  // Hover images (pointer devices only, see IndividualCategory).
+  useGSAP(
+    () => {
+      const overlays = imagesRef.current?.querySelectorAll(".overlay-image-effect");
+      if (!overlays?.length) return;
 
-  useEffect(() => {
-    const wholeSearch = searchParams.toString();
-    const link = wholeSearch ? `/products?${wholeSearch}` : "/products";
-    setLinkToShopWSearch(link);
+      if (!exitImagesByCategory) {
+        gsap.to(overlays, { yPercent: 100, duration: 0.8, ease: "power3.out" });
+      } else {
+        gsap.to(overlays, {
+          yPercent: 0,
+          duration: 0.15,
+          ease: "power3.in",
+          onComplete: () => {
+            setImagesByCategory([]);
+            setExitImagesByCategory(false);
+          },
+        });
+      }
+    },
+    { dependencies: [imagesByCategory, exitImagesByCategory], scope: imagesRef },
+  );
 
-  }, [searchParams])
+  const handleConfirm = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const target = productsHref;
+    closePanel(() => router.push(target));
+  };
 
   return (
     <section
-      className="categories-section cursor-auto fixed inset-0 z-60 w-full h-screen bg-off-white flex flex-col items-center justify-center overflow-hidden"
-      style={{
-        display: "none",
-        clipPath: "inset(100% 0% 0% 0%)",
-        zIndex: 80,
-      }}
+      ref={sectionRef}
+      data-level={level}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Categorías"
+      className="categories-section cursor-auto fixed inset-0 z-80 w-full h-dvh bg-off-white flex flex-col items-center justify-center overflow-hidden overscroll-none"
+      style={{ clipPath: CLIP_HIDDEN }}
     >
-      <InfiniteScrollCategories
-        isAnimating={isAnimating}
-        setIsAnimating={setIsAnimating}
-        showCategories={showCategories}
-        phase={phase}
-        setPhase={setPhase}
-        openSVGPathOffset={OPEN_SVG_PATH_OFFSET}
-      />
+      <InfiniteScrollCategories />
 
-      {/* wrapper acciones estilo open - close */}
-      {/* RIGHT DE ACA MANDA LA POSICION DEL CONTAINER */}
-      <div className={`container-both-actions border
-        w-16 h-16 border-black rounded-full 
-        z-50 absolute right-44 top-12 flex 
-        items-center justify-center`}>
-        {/* boton de cerrar el section */}
-        {/* TODO: AL MOMENTO DE CERRAR, RESETEAR LAS URLSEARCHPARAMS. vamos a ver que tan bien es esto*/}
+      {/* Close + "see products": the pill grows to reveal the arrow below the first level. */}
+      <div className="categories-actions absolute z-50 top-4 right-4 md:top-12 md:right-20 flex items-center">
+        <span aria-hidden className="categories-actions-pill absolute inset-y-0 left-0 rounded-full border border-black" />
         <button
-          className={` relative w-12 h-12 close-categories-button group p-2 flex items-center justify-center rounded-full cursor-pointer `}
-          onClick={() => {
-            closePanel();
-          }}
+          type="button"
+          onClick={() => closePanel()}
+          aria-label="Cerrar categorías"
+          className="relative w-14 h-14 md:w-16 md:h-16 group flex items-center justify-center rounded-full cursor-pointer focus-visible:outline-2 focus-visible:outline-black"
         >
           <BolitaEfectoClick />
-          <CloseButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
+          <CloseButtonSVG className="w-6 h-6 md:w-7 md:h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
         </button>
-      </div>
-      {/* RIGHT DE ACA MANDA LA POSICION DE LA FLECHA INICIAL (EL MOVIMIENTO ANIMADO ES UN "IDA Y VUELTA") */}
-      <div className={`wrapper-dasharray z-50 absolute 
-          top-12 right-20 w-max h-16 
-          flex items-center justify-center`}>
         <Link
-          href={linkToShopWSearch}
-          onClick={() => {
-            closePanel();
-          }}
-          className="relative group w-12 h-12 p-2 flex items-center justify-center rounded-full"
+          href={productsHref}
+          onClick={handleConfirm}
+          aria-label="Ver productos"
+          className="categories-open relative w-12 h-12 group flex items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-black"
         >
           <BolitaEfectoClick />
-          <OpenButtonSVG className="w-7 h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
+          <OpenButtonSVG className="w-6 h-6 md:w-7 md:h-7 stroke group-hover:stroke-2 transition-transform group-hover:scale-105" />
         </Link>
       </div>
-      {/* div para mostrar las imagenes pertenecientes al actual individual category que se encuentra en hover. */}
-      <div className="images-wrapper fixed inset-0 z-10 select-none pointer-events-none bg-amber-0 w-full h-screen">
+
+      <div
+        ref={imagesRef}
+        aria-hidden
+        className="fixed inset-0 z-10 select-none pointer-events-none w-full h-dvh"
+      >
         {imagesByCategory.map((image, index) => (
           <div
-            className="image-container h-max w-max overflow-hidden bg-amber-400"
-            key={index}
+            key={image.src}
+            className="absolute h-max w-max overflow-hidden"
+            style={IMAGE_POSITIONS[index % IMAGE_POSITIONS.length]}
           >
-            <img
-              src={image.src}
-              alt={image.alt}
-              className="image-hover h-full w-full object-cover transition-all"
-              style={{ zIndex: positions[index] }}
-            />
-            <div className="overlay-image-effect bg-off-white" />
+            <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+            <div className="overlay-image-effect absolute inset-0 bg-off-white" />
           </div>
         ))}
       </div>
-      {/* Breadcrumbs */}
-      <Breadcrumbs id="bread-in-panel" />
-      {/* blur effect when loading */}
-      <BlurEffect />
-      <BlurEffect2 />
+
+      <Breadcrumbs
+        id="bread-in-panel"
+        className="absolute top-5 left-4 md:top-14 md:left-16 z-20"
+        onNavigate={navigate}
+      />
+
+      {/* Decorative blobs: static blur, only translated during transitions. Skipped on phones. */}
+      <div aria-hidden className="hidden md:block">
+        <BlurEffect />
+        <BlurEffect2 />
+      </div>
     </section>
   );
 };

@@ -9,24 +9,27 @@ const withBundleAnalyzer = bundleAnalyzer({
 const r2PublicHost = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL).hostname
   : null;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL)
+  : null;
+const localSupabase = supabaseUrl?.hostname === '127.0.0.1' || supabaseUrl?.hostname === 'localhost';
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Manual admin form still sends image Files (≤5MB) through server actions
     serverActions: { bodySizeLimit: "6mb" },
   },
   images: {
+    dangerouslyAllowLocalIP: localSupabase,
     remotePatterns: [
       ...(r2PublicHost
         ? [{ protocol: 'https' as const, hostname: r2PublicHost, port: '', pathname: '/**' }]
         : []),
-      {
-        protocol: 'https',
-        hostname: 'hdbhvgxogazmawphpcnj.supabase.co',
-        port: '',
+      ...(supabaseUrl ? [{
+        protocol: supabaseUrl.protocol.slice(0, -1) as 'http' | 'https',
+        hostname: supabaseUrl.hostname,
+        port: supabaseUrl.port,
         pathname: '/storage/v1/object/public/**',
-        
-      },
+      }] : []),
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',

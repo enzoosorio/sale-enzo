@@ -5,7 +5,6 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "App Layout",
   description: "Layout for the application with header and music player",
 };
 

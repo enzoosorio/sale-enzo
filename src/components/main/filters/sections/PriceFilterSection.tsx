@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { ReusableFilterSection } from "./ReusableFilterSection";
 
@@ -10,63 +10,23 @@ interface PriceFilterSectionProps {
   darkMode?: boolean;
 }
 
-export const PriceFilterSection = ({ 
-  min, 
-  max, 
-  value, 
-  onChange,
-  darkMode = false,
-}: PriceFilterSectionProps) => {
-  const [localValue, setLocalValue] = useState<[number, number]>(value);
-  const isUserInteractingRef = useRef(false);
-
-  useEffect(() => {
-    const sameValue = localValue[0] === value[0] && localValue[1] === value[1];
-
-    if (sameValue) {
-      isUserInteractingRef.current = false;
-      return;
-    }
-
-    if (!isUserInteractingRef.current) {
-      setLocalValue(value);
-    }
-  }, [localValue, value]);
-
-  useEffect(() => {
-    if (!onChange) return;
-    if (localValue[0] === value[0] && localValue[1] === value[1]) return;
-
-    const timeout = window.setTimeout(() => {
-      onChange(localValue);
-      isUserInteractingRef.current = false;
-    }, 500);
-
-    return () => window.clearTimeout(timeout);
-  }, [localValue, onChange, value]);
-
+export const PriceFilterSection = ({ min, max, value, onChange, darkMode = false }: PriceFilterSectionProps) => {
+  const [draft, setDraft] = useState<[number, number] | null>(null);
+  const displayed = draft ?? value;
   return (
-    <ReusableFilterSection
-    title="PRECIO"
-    classNameForWrapper="pb-8"
-    darkMode={darkMode}
-    >
-        <div className={`flex justify-between text-sm mb-4 px-4 ${darkMode ? 'text-white/60' : 'text-black/60'}`}>
-          <span>S/{value[0]}</span>
-          <span>S/{value[1]}</span>
-        </div>
-        <Slider
-        id="price-range-slider"
-        value={localValue}
-        onValueChange={(nextValue) => {
-          if (nextValue.length !== 2) return;
-          isUserInteractingRef.current = true;
-          setLocalValue([nextValue[0], nextValue[1]]);
+    <ReusableFilterSection title="PRECIO" classNameForWrapper="pb-8" darkMode={darkMode}>
+      <div className={`flex justify-between text-sm mb-4 px-4 ${darkMode ? 'text-white/60' : 'text-black/60'}`}>
+        <span>S/{displayed[0]}</span><span>S/{displayed[1]}</span>
+      </div>
+      <Slider
+        aria-label="Rango de precios"
+        value={displayed}
+        onValueChange={next => { if (next.length === 2) setDraft([next[0], next[1]]); }}
+        onValueCommit={next => {
+          if (next.length === 2) onChange?.([next[0], next[1]]);
+          setDraft(null);
         }}
-        min={min}
-        max={max}
-        step={1}
-        className={darkMode ? 'slider-dark' : ''}
+        min={min} max={max} step={1} className={darkMode ? 'slider-dark' : ''}
       />
     </ReusableFilterSection>
   );
