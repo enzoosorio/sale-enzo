@@ -6,8 +6,8 @@ const withBundleAnalyzer = bundleAnalyzer({
 });
 
 // Public R2 media bucket (custom domain or r2.dev), e.g. https://media.saleenzo.com
-const r2PublicHost = process.env.R2_PUBLIC_BASE_URL
-  ? new URL(process.env.R2_PUBLIC_BASE_URL).hostname
+const r2PublicHost = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL).hostname
   : null;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL)
@@ -15,6 +15,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const localSupabase = supabaseUrl?.hostname === '127.0.0.1' || supabaseUrl?.hostname === 'localhost';
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: { bodySizeLimit: "6mb" },
+  },
   images: {
     dangerouslyAllowLocalIP: localSupabase,
     remotePatterns: [

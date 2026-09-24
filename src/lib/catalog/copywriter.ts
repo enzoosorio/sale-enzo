@@ -21,6 +21,16 @@ export interface PublicCopy {
   condition_note: string;
 }
 
+const TYPE_ES: Record<Defect["type"], string> = {
+  hole: "agujero",
+  stain: "mancha",
+  pilling: "motas",
+  fading: "decoloración",
+  wear: "desgaste",
+  pull: "jalón de tela",
+  other: "detalle",
+};
+
 const SEVERITY_ES: Record<Defect["severity"], string> = {
   minimal: "mínimo",
   mild: "leve",
@@ -41,7 +51,10 @@ Reglas para defectos (obligatorias):
 - Prohibido también exagerar hacia arriba: nada de "perfecto", "impecable", "como nuevo" si condition_score < 10 o hay defectos.
 - Puedes mencionar el precio justo como consecuencia del detalle ("por eso su precio especial"), sin cifras.
 - Sin defectos y condition_score ≥ 9.5 → condition_note destaca el excelente estado. Con 10 → "en estado de nuevo".
-- description NO repite los defectos; esos van solo en condition_note.`;
+- description NO repite los defectos; esos van solo en condition_note.
+- No inventes material, tecnología, fit ni cualidades ("materiales de calidad", "transpirable", "fit moderno") si no están en los datos. Si fit es null, no hables del corte.
+- Una comparación de tela ("similar a Dri-FIT") se redacta como comparación ("tela deportiva ligera, al estilo Dri-FIT"), nunca como tecnología de la prenda.
+- "precio especial" solo si condition_score < 9, y como mucho una vez.`;
 
 const ResponseSchema = z.object({ description: z.string().min(1), condition_note: z.string().min(1) });
 
@@ -62,7 +75,7 @@ const RESPONSE_FORMAT = {
 export function buildCopyPrompt(input: CopyInput): string {
   const defects = input.defects.length
     ? input.defects
-        .map((d) => `- ${d.type} en ${d.zone} (${SEVERITY_ES[d.severity]})${d.note ? `: ${d.note}` : ""}`)
+        .map((d) => `- ${TYPE_ES[d.type]} en ${d.zone || "zona no indicada"} (${SEVERITY_ES[d.severity]})${d.note ? `: ${d.note}` : ""}`)
         .join("\n")
     : "ninguno";
   const fitsLike =
@@ -113,7 +126,10 @@ export const BANNED_CONDITION_WORDS = /\b(hueco|roto|rota|manchad[oa]|dañad[oa]
 export const OVERCLAIM_WORDS = /\b(perfect[oa]|impecable|como nuev[oa])\b/i;
 
 /** Post-check used by tests and before saving: flags copy that breaks the rules. */
-export function auditCopy(copy: PublicCopy, input: Pick<CopyInput, "defects" | "condition_score">): string[] {
+export function auditCopy(
+  copy: PublicCopy,
+  input: Pick<CopyInput, "defects" | "condition_score"> & { fit?: CopyInput["fit"] },
+): string[] {
   const issues: string[] = [];
   if (BANNED_CONDITION_WORDS.test(copy.condition_note) || BANNED_CONDITION_WORDS.test(copy.description)) {
     issues.push("Usa palabras alarmistas");
@@ -123,6 +139,12 @@ export function auditCopy(copy: PublicCopy, input: Pick<CopyInput, "defects" | "
   }
   if (input.defects.length > 0 && copy.condition_note.length < 25) {
     issues.push("La nota de estado parece no mencionar los defectos");
+  }
+  if (!input.fit && /\b(corte|fit) (slim|regular|oversize|boxy)\b/i.test(copy.description)) {
+    issues.push("Menciona un corte que no está en los datos");
+  }
+  if ((input.condition_score ?? 0) >= 9 && /precio especial/i.test(`${copy.description} ${copy.condition_note}`)) {
+    issues.push("Dice 'precio especial' con buen estado");
   }
   return issues;
 }

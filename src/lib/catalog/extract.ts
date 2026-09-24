@@ -12,6 +12,7 @@ import {
   type DraftFields,
   type MetadataKey,
 } from "./schema";
+import { ATTACH_MIN_SIMILARITY, designSimilarity, PROMOTE_MIN_SIMILARITY } from "./similarity";
 
 /**
  * Turns a free-form utterance (voice transcript or spreadsheet row) into draft
@@ -87,6 +88,16 @@ const str = { type: "string" };
 const enumOf = (values: readonly string[]) => ({ type: "string", enum: [...values] });
 
 const MAX_ENUM_REFS = 400;
+
+/** Proprietary fabric technologies and the brand that owns each one. */
+const TECH_OWNERS: Record<string, string> = {
+  drifit: "Nike",
+  heatgear: "Under Armour",
+  coldgear: "Under Armour",
+  climalite: "Adidas",
+  aeroready: "Adidas",
+  drycell: "Puma",
+};
 
 export function buildResponseSchema(ctx: ExtractionContext) {
   const subcategoryIds = ctx.taxonomy.flatMap((c) => c.children.map((s) => s.id));
@@ -206,6 +217,9 @@ team, university, league, player, number, technology, edition, collection, sport
 Ej: "chicago bulls DURANT 35" → team "Chicago Bulls", player "Kevin Durant", number "35", league "NBA", sport "basketball".
 "Tecnologia DRI FIT" → technology "Dri-FIT". "HEATGEAR" → technology "HeatGear". "Oregon ducks" → university "University of Oregon", team "Oregon Ducks", league "NCAA".
 Solo metadata que la entrada respalde; lo demás null.
+technology es SOLO la tecnología propia de la marca (Dri-FIT = Nike, HeatGear/ColdGear = Under Armour).
+Comparaciones como "como dri fit", "tipo dri fit" en otra marca describen la tela, no la tecnología:
+technology = null y material = "tela deportiva (similar a Dri-FIT)".
 
 # Especificaciones → defectos (privados) vs specs neutrales (públicas)
 - defects: todo daño o imperfección (huecos, manchas, jalones, desgaste, decoloración). type, zone (en español: "manga", "cuello", "espalda", "logo del pecho"…), severity (minimal/mild/noticeable), note breve.
@@ -336,6 +350,45 @@ export function parseExtraction(json: unknown, ctx: ExtractionContext): Extracti
   if (match_kind === "new_variant") variantRef = null;
   if (match_kind !== raw.match_kind) confidence.match = Math.min(confidence.match ?? 1, 0.4);
 
+  // Deterministic check: attachments must share the design (name minus colors) and brand
+  let match_reason = raw.match_reason;
+  const candidateName = raw.name ?? "";
+  const target = productRef ? ctx.catalog.find((p) => p.ref === productRef) : undefined;
+  if (match_kind !== "new_product" && target) {
+    const sameBrand = !target.brand || !brand || target.brand === brand;
+    if (!sameBrand || designSimilarity(candidateName, target.name, brand) < ATTACH_MIN_SIMILARITY) {
+      warnings.push(`La IA lo agrupó con "${target.name}", pero el diseño no coincide: queda como producto nuevo.`);
+      match_kind = "new_product";
+      productRef = variantRef = null;
+      match_reason = "Producto nuevo: el diseño no coincide con ningún producto del catálogo.";
+      confidence.match = Math.min(confidence.match ?? 1, 0.5);
+    } else if (match_kind === "new_item") {
+      const variant = target.variants.find((v) => v.ref === variantRef);
+      const differs = !variant || variant.size !== raw.size || (!!variant.gender && !!raw.gender && variant.gender !== raw.gender);
+      if (differs) {
+        match_kind = "new_variant";
+        variantRef = null;
+        match_reason = `Variante nueva de "${target.name}": cambia talla o género.`;
+      }
+    }
+  }
+
+  // Same design, same brand and subcategory, only the color changes → suggest a variant
+  if (match_kind === "new_product" && candidateName && brand) {
+    const best = ctx.catalog
+      .filter((p) => p.brand === brand && (!p.subcategory_id || !subcategory_id || p.subcategory_id === subcategory_id))
+      .map((p) => ({ p, sim: designSimilarity(candidateName, p.name, brand) }))
+      .sort((a, b) => b.sim - a.sim)[0];
+    if (best && best.sim >= PROMOTE_MIN_SIMILARITY) {
+      match_kind = "new_variant";
+      productRef = best.p.ref;
+      variantRef = null;
+      match_reason = `Variante de "${best.p.name}": mismo diseño, cambia el color o la talla.`;
+      confidence.match = 0.5;
+      warnings.push(`Agrupado como variante de "${best.p.name}" por nombre. Confírmalo o cámbialo a producto nuevo.`);
+    }
+  }
+
   const p = parseRef(productRef);
   const v = parseRef(variantRef);
   const draftTarget = v?.kind === "dv" ? v.id : p?.kind === "dp" ? p.id : null;
@@ -345,6 +398,14 @@ export function parseExtraction(json: unknown, ctx: ExtractionContext): Extracti
   for (const key of METADATA_KEYS) {
     const value = raw.metadata[key]?.trim();
     if (value) metadata[key] = value;
+  }
+
+  // Brand-owned technologies can't be claimed by other brands ("como dri fit" = fabric comparison)
+  const owner = metadata.technology ? TECH_OWNERS[metadata.technology.toLowerCase().replace(/[^a-z]/g, "")] : undefined;
+  if (owner && brand && owner !== brand) {
+    metadata.material ??= `tela deportiva (similar a ${metadata.technology})`;
+    warnings.push(`"${metadata.technology}" es de ${owner}; se guardó como comparación de tela, no como tecnología.`);
+    delete metadata.technology;
   }
 
   // --- Numbers
@@ -363,7 +424,7 @@ export function parseExtraction(json: unknown, ctx: ExtractionContext): Extracti
     target_product_id: p?.kind === "p" ? p.id : null,
     target_variant_id: v?.kind === "v" ? v.id : null,
     target_draft_id: draftTarget,
-    match_reason: raw.match_reason,
+    match_reason,
     name: raw.name?.trim() || null,
     brand,
     subcategory_id,

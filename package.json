@@ -13,7 +13,11 @@
     "typecheck": "next typegen && tsc --noEmit",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
-    "db:status": "supabase status"
+    "db:status": "supabase status",
+    "migrate:r2": "tsx scripts/migrate-storage-to-r2.ts",
+    "build:worker": "node scripts/build-worker.mjs",
+    "predev": "node scripts/build-worker.mjs",
+    "prebuild": "node scripts/build-worker.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1139.0",

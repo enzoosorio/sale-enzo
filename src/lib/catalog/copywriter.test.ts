@@ -18,7 +18,7 @@ const input: CopyInput = {
 
 describe("copywriter", () => {
   it("prompt carries every defect to the model", () => {
-    expect(buildCopyPrompt(input)).toContain("hole en manga (mínimo): huequito");
+    expect(buildCopyPrompt(input)).toContain("agujero en manga (mínimo): huequito");
   });
 
   it("flags alarmist words", () => {
@@ -37,5 +37,13 @@ describe("copywriter", () => {
       input,
     );
     expect(issues).toEqual([]);
+  });
+
+  it("flags invented fit and misplaced 'precio especial'", () => {
+    const issues = auditCopy(
+      { description: "Polo Nike con corte regular.", condition_note: "Un detalle mínimo en la manga, por eso su precio especial." },
+      { ...input, fit: null },
+    );
+    expect(issues).toEqual(["Menciona un corte que no está en los datos", "Dice 'precio especial' con buen estado"]);
   });
 });

@@ -3,10 +3,10 @@ import { ActionResult } from "@/types/action/action-result";
 import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { ImagePosition, variantImageInsertSchema } from "@/schema";
 import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
-import { 
-    deleteVariantImageFromStorage,
-  uploadVariantImage as uploadToStorage, 
-} from "@/utils/supabase/storage";
+import {
+  deleteVariantImageByUrl as deleteVariantImageFromStorage,
+  uploadVariantFile as uploadToStorage,
+} from "@/lib/storage/variantImages";
 import { revalidatePath } from "next/cache";
 
 /**

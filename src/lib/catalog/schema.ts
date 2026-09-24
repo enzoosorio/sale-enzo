@@ -71,7 +71,7 @@ export const ConditionScoreSchema = z
 
 export const DefectSchema = z.object({
   type: z.enum(DEFECT_TYPES),
-  zone: z.string().min(1),
+  zone: z.string(),
   severity: z.enum(DEFECT_SEVERITIES),
   note: z.string().nullable(),
 });

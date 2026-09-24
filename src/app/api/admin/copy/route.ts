@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       condition_score: draft.condition_score === null ? null : Number(draft.condition_score),
       subcategory_name: sub?.name ?? null,
     });
-    const issues = auditCopy(copy, { defects: draft.defects, condition_score: Number(draft.condition_score) });
+    const issues = auditCopy(copy, { defects: draft.defects, condition_score: Number(draft.condition_score), fit: draft.fit });
 
     await staging()
       .from("product_drafts")

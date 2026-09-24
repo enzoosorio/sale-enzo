@@ -2,6 +2,7 @@
  * Imports the legacy SALE ENZO.xlsx into staging.product_drafts.
  *
  *   npx tsx scripts/import-xlsx.ts --dry-run [--out report.json] [--limit 5]
+ *   npx tsx scripts/import-xlsx.ts --offline --out report.json   (no DB: seed taxonomy, implies --dry-run)
  *   npx tsx scripts/import-xlsx.ts [--file "C:/path/SALE ENZO.xlsx"]
  *
  * Each row goes through: deterministic normalizers → the same AI extraction as
@@ -32,7 +33,8 @@ const option = (name: string) => {
 };
 
 const FILE = option("file") ?? path.join(os.homedir(), "Downloads", "SALE ENZO.xlsx");
-const DRY_RUN = flag("dry-run");
+const OFFLINE = flag("offline");
+const DRY_RUN = flag("dry-run") || OFFLINE;
 const LIMIT = Number(option("limit") ?? Infinity);
 const OUT = option("out");
 
@@ -81,22 +83,37 @@ function addToCatalog(ctx: ExtractionContext, id: string, f: Partial<DraftFields
   }
 }
 
-async function main() {
-  const db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
-    auth: { persistSession: false },
-  });
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+/** Mirrors the seed in 20260924000002_public_additions.sql, with placeholder ids. */
+const OFFLINE_CONTEXT: ExtractionContext = {
+  taxonomy: [
+    {
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "Polos",
+      slug: "polos",
+      children: [
+        { id: "00000000-0000-4000-8000-000000000002", name: "Polos manga corta", slug: "polos-manga-corta" },
+        { id: "00000000-0000-4000-8000-000000000003", name: "Polos manga larga", slug: "polos-manga-larga" },
+      ],
+    },
+  ],
+  brands: ["Nike", "Under Armour", "The North Face", "Gymshark", "Puma", "Adidas", "Reebok", "New Balance", "Columbia", "Patagonia"],
+  catalog: [],
+};
 
-  const ctx = await loadExtractionContext(db);
+async function main() {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const db = OFFLINE
+    ? null
+    : createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, { auth: { persistSession: false } });
+
+  const ctx = db ? await loadExtractionContext(db) : structuredClone(OFFLINE_CONTEXT);
   if (ctx.taxonomy.length === 0) {
     throw new Error("No categories with subcategories found. Run supabase/migrations first.");
   }
 
-  const { data: existing } = await db
-    .schema("staging")
-    .from("product_drafts")
-    .select("source_row")
-    .eq("source", "xlsx");
+  const { data: existing } = db
+    ? await db.schema("staging").from("product_drafts").select("source_row").eq("source", "xlsx")
+    : { data: [] };
   const imported = new Set((existing ?? []).map((d) => (d.source_row as LegacyRow | null)?.name).filter(Boolean));
 
   const rows = (await readRows(FILE)).filter(({ row }) => !isJunkRow(row));
@@ -136,7 +153,7 @@ async function main() {
     let id: string = randomUUID();
     let sku = "(dry-run)";
 
-    if (!DRY_RUN) {
+    if (!DRY_RUN && db) {
       const { data, error } = await db
         .schema("staging")
         .from("product_drafts")

@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Blend,
+  Camera,
+  Inbox,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -28,6 +30,16 @@ const navigationItems = [
     exact: true 
   },
   { 
+    name: "Capturar",
+    href: "/admin/capture",
+    icon: Camera
+  },
+  {
+    name: "Staging",
+    href: "/admin/staging",
+    icon: Inbox
+  },
+  {
     name: "Productos", 
     href: "/admin/products", 
     icon: Package 
@@ -68,7 +80,7 @@ export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
       className={`
         ${collapsed ? 'w-16' : 'w-64'} 
         bg-white border-r border-gray-200 
-        flex flex-col transition-all duration-300 ease-in-out
+        hidden md:flex flex-col transition-all duration-300 ease-in-out
         relative
       `}
     >

@@ -8,7 +8,7 @@ Cloudflare Dashboard → R2 → Create bucket:
 | `sale-enzo-originals` | **Private** | `originals/{category}/{sku}/{n}.jpg`: untouched camera files for Marketplace |
 | `sale-enzo-media` | **Public** (custom domain or r2.dev) | `cutout/…/{n}.webp` (full-res, no background) and `web/…/{n}.webp` (1600px, no background) |
 
-Put the public domain in `R2_PUBLIC_BASE_URL`. `next.config.ts` reads it for `images.remotePatterns`.
+Put the public domain in `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`. `next.config.ts` reads it for `images.remotePatterns`.
 
 ## 2. API token
 R2 → Manage API tokens → **Object Read & Write**, scoped to both buckets. Fill in `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` in `.env` and in Vercel.

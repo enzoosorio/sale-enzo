@@ -13,7 +13,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
  *
  * Buckets:
  * - originals (private): untouched camera files, signed download only
- * - media (public):      cutout full-res + cutout web, served from R2_PUBLIC_BASE_URL
+ * - media (public):      cutout full-res + cutout web, served from NEXT_PUBLIC_R2_PUBLIC_BASE_URL
  */
 
 export type R2Bucket = "originals" | "media";
@@ -62,7 +62,7 @@ export async function presignGet(key: string, downloadName?: string, expiresIn =
 }
 
 export function publicUrl(key: string): string {
-  return `${env("R2_PUBLIC_BASE_URL").replace(/\/$/, "")}/${key}`;
+  return `${env("NEXT_PUBLIC_R2_PUBLIC_BASE_URL").replace(/\/$/, "")}/${key}`;
 }
 
 export async function putObject(bucket: R2Bucket, key: string, body: Uint8Array, contentType: string) {

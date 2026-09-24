@@ -110,12 +110,18 @@ describe("parseExtraction", () => {
   });
 
   it("new_item resolves both variant and owning product", () => {
-    const { fields } = parseExtraction({ ...base, match_kind: "new_item", target_variant_ref: `v:${VARIANT}` }, ctx);
+    const { fields } = parseExtraction(
+      { ...base, name: "Polo Nike Dri-FIT Academy negro", match_kind: "new_item", target_variant_ref: `v:${VARIANT}` },
+      ctx,
+    );
     expect(fields).toMatchObject({ match_kind: "new_item", target_variant_id: VARIANT, target_product_id: PRODUCT });
   });
 
   it("sibling draft becomes target_draft_id", () => {
-    const { fields } = parseExtraction({ ...base, match_kind: "new_variant", target_product_ref: `dp:${DRAFT}` }, ctx);
+    const { fields } = parseExtraction(
+      { ...base, name: "Polo Nike Dri-FIT manga larga blanco", match_kind: "new_variant", target_product_ref: `dp:${DRAFT}` },
+      ctx,
+    );
     expect(fields).toMatchObject({ match_kind: "new_variant", target_product_id: null, target_draft_id: DRAFT });
   });
 
@@ -162,5 +168,54 @@ describe("prompt + catalog narrowing", () => {
     const many = Array.from({ length: 10 }, (_, i) => ({ ...ctx.catalog[0], ref: `p:${i}`, name: `Polo ${i}`, brand: "Puma" }));
     const result = narrowCatalog([...many, ctx.catalog[0]], "polo nike academy", 3);
     expect(result[0].ref).toBe(`p:${PRODUCT}`);
+  });
+});
+
+describe("segmentation guard", () => {
+  const siblings: ExtractionContext = {
+    ...ctx,
+    catalog: [
+      { ref: `dp:${DRAFT}`, name: "Polo Nike Dri-FIT manga larga negro humo", brand: "Nike", subcategory_id: SHORT, variants: [{ ref: `dv:${DRAFT}`, size: "L", gender: "unisex", fit: null, color: null, metadata: {} }] },
+      { ref: `p:${PRODUCT}`, name: "Polo Nike Boston University verde camo", brand: "Nike", subcategory_id: SHORT, variants: [{ ref: `v:${VARIANT}`, size: "M", gender: "male", fit: "slim", color: null, metadata: {} }] },
+    ],
+  };
+
+  it("rejects an attachment whose design doesn't match", () => {
+    const { fields, warnings } = parseExtraction(
+      { ...base, name: "Polo Nike Team USA azul marino", match_kind: "new_item", target_variant_ref: `v:${VARIANT}` },
+      siblings,
+    );
+    expect(fields.match_kind).toBe("new_product");
+    expect(warnings[0]).toContain("no coincide");
+  });
+
+  it("promotes a color sibling to a variant, with low confidence", () => {
+    const { fields, confidence } = parseExtraction({ ...base, name: "Polo Nike Dri-FIT manga larga blanco humo" }, siblings);
+    expect(fields).toMatchObject({ match_kind: "new_variant", target_draft_id: DRAFT });
+    expect(confidence.match).toBe(0.5);
+  });
+
+  it("new_item with a different size becomes a variant", () => {
+    const { fields } = parseExtraction(
+      { ...base, name: "Polo Nike Boston University verde camo", size: "L", match_kind: "new_item", target_variant_ref: `v:${VARIANT}` },
+      siblings,
+    );
+    expect(fields.match_kind).toBe("new_variant");
+  });
+});
+
+describe("brand-owned technology", () => {
+  it("'como dri fit' on Under Armour becomes a fabric comparison", () => {
+    const { fields, warnings } = parseExtraction(
+      { ...base, brand: "Under Armour", name: "Polo Under Armour deportivo zebra", metadata: { ...base.metadata, technology: "Dri-FIT" } },
+      ctx,
+    );
+    expect(fields.metadata).toEqual({ material: "tela deportiva (similar a Dri-FIT)" });
+    expect(warnings.join(" ")).toContain("Nike");
+  });
+
+  it("keeps Dri-FIT on Nike", () => {
+    const { fields } = parseExtraction({ ...base, metadata: { ...base.metadata, technology: "Dri-FIT" } }, ctx);
+    expect(fields.metadata).toEqual({ technology: "Dri-FIT" });
   });
 });
