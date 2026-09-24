@@ -6,6 +6,10 @@ import { DashboardSidebar } from '@/components/admin/DashboardSidebar';
 export const metadata: Metadata = {
   title: 'Admin Dashboard',
   description: 'Panel de administración seguro para gestionar productos, categorías y más',
+  // Installable capture app (iPhone: Share → Add to Home Screen)
+  manifest: '/admin.webmanifest',
+  appleWebApp: { capable: true, title: 'Sale Enzo', statusBarStyle: 'default' },
+  icons: { apple: '/pwa/icon-180.png' },
 };
 
 export default async function AdminLayout({

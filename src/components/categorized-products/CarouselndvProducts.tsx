@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from "react"
+import Image from "next/image"
 import {
   Carousel,
   CarouselApi,
@@ -8,7 +9,20 @@ import {
   CarouselItem
 } from "@/components/ui/carousel"
 import Autoplay from "embla-carousel-autoplay"
-export function CarouselIndividualProducts() {
+import { canOptimize, isCutoutUrl } from "@/lib/images/media"
+
+export interface CarouselImage {
+  src: string
+  alt: string
+}
+
+interface CarouselIndividualProductsProps {
+  images: CarouselImage[]
+  /** Admin preview renders inside a panel, not the full viewport. */
+  heightClass?: string
+}
+
+export function CarouselIndividualProducts({ images, heightClass = "h-screen" }: CarouselIndividualProductsProps) {
 
   const [api, setApi] = React.useState<CarouselApi>();
   const carouselRef = React.useRef<HTMLDivElement>(null);
@@ -34,9 +48,9 @@ export function CarouselIndividualProducts() {
         api.scrollPrev();
       }
     };
-    
-    const throttledWheelHandler = throttle(handleWheel, 500); 
- 
+
+    const throttledWheelHandler = throttle(handleWheel, 500);
+
     const carouselElement = carouselRef.current;
     carouselElement.addEventListener("wheel", throttledWheelHandler);
 
@@ -45,10 +59,12 @@ export function CarouselIndividualProducts() {
     };
   }, [api]);
 
+  const slides = images.length ? images : [{ src: "/images/products/polo-1.png", alt: "Producto" }];
+
   return (
-    <Carousel 
+    <Carousel
     opts={{
-    loop: true,
+    loop: slides.length > 1,
     align: "start",
   }}
   setApi={setApi}
@@ -59,12 +75,20 @@ export function CarouselIndividualProducts() {
       ]}
     orientation="vertical"
       ref={carouselRef}
-    className="w-full h-screen ">
-      <CarouselContent className=" w-full h-screen mt-0  ">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <CarouselItem key={index} className="w-full h-screen rounded-sm">
-            <div className="p-1 rounded-lg w-full h-full flex items-center justify-center">
-              <p>{index + 1}</p>
+    className={`w-full ${heightClass}`}>
+      <CarouselContent className={`w-full ${heightClass} mt-0`}>
+        {slides.map((image, index) => (
+          <CarouselItem key={image.src} className={`w-full ${heightClass} rounded-sm`}>
+            <div className="relative p-1 rounded-lg w-full h-full">
+              <Image
+                src={image.src}
+                alt={image.alt}
+                fill
+                priority={index === 0}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                unoptimized={!canOptimize(image.src)}
+                className={isCutoutUrl(image.src) ? "object-contain p-8" : "object-cover"}
+              />
             </div>
           </CarouselItem>
         ))}

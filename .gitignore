@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pre-bundled capture worker (scripts/build-worker.mjs)
+/public/workers

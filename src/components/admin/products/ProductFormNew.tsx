@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { createProduct } from "@/actions/admin/product";
-import { uploadMainVariantImage } from "@/utils/supabase/uploadMainImage";
-import { uploadSecondaryVariantImage } from "@/utils/supabase/uploadSecondaryImage";
+import { uploadMainVariantImage, uploadSecondaryVariantImage } from "@/actions/images/variantUploads";
 import { assignVariantImages } from "@/actions/images/assignVariantImages";
 import { useRouter } from "next/navigation";
 import { ProductFormData } from "@/types/products/product_form_data";

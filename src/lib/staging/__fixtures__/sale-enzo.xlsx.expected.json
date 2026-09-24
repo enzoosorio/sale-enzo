@@ -1,0 +1,880 @@
+{
+  "_doc": "Expected segmentation of SALE ENZO.xlsx. 'group' = same product; two rows sharing a group are variants of one product. group_alternatives = acceptable ambiguous merges (flag for manual review). REVIEW THIS FILE before the real import.",
+  "skip_rows": [
+    37
+  ],
+  "rows": [
+    {
+      "excel_row": 8,
+      "raw": {
+        "name": "Nike Boston University BU verde camo oscuro",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga corta",
+        "size": "M",
+        "fit": "Slim (S)",
+        "gender": "Male unisex",
+        "metadata": "University of boston",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": "algodon",
+        "posible precio": 59.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": "slim",
+        "fits_like_min": "S",
+        "fits_like_max": "S",
+        "condition_score": 10,
+        "price": 59,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "university",
+          "material"
+        ],
+        "group": "g01",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 9,
+      "raw": {
+        "name": "Nike Ney York Voit 69 azul neon oscuro",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga corta",
+        "size": "S",
+        "fit": "regular",
+        "gender": "Male",
+        "metadata": "Team of new york - VOIT player",
+        "condition": "9/10",
+        "especificaciones": "en una manga tiene un huequito",
+        "tela": null,
+        "posible precio": "69 pero dcto a 59"
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "S",
+        "gender": "male",
+        "also_unisex": false,
+        "fit": "regular",
+        "fits_like_min": null,
+        "fits_like_max": null,
+        "condition_score": 9,
+        "price": 59,
+        "compare_at_price": 69,
+        "price_ambiguous": false,
+        "defects_min": 1,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "team",
+          "player"
+        ],
+        "group": "g02",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 10,
+      "raw": {
+        "name": "Nike team USA - USA Badge azul marino",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga corta",
+        "size": "M",
+        "fit": "regular",
+        "gender": "unisex",
+        "metadata": "Team of USA - 3 starts badge shield of usa",
+        "condition": "10/10",
+        "especificaciones": "simplemente polo nike con el escudo de EEUU",
+        "tela": null,
+        "posible precio": 59.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "unisex",
+        "also_unisex": false,
+        "fit": "regular",
+        "fits_like_min": null,
+        "fits_like_max": null,
+        "condition_score": 10,
+        "price": 59,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": true,
+        "metadata_keys_min": [
+          "team"
+        ],
+        "group": "g03",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 11,
+      "raw": {
+        "name": "Nike chicago bulls orange DURANT 35 naranja desteñido",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga corta",
+        "size": "M",
+        "fit": "size XS - S",
+        "gender": "male",
+        "metadata": "chicago bulls DURANT 35",
+        "condition": "8/10",
+        "especificaciones": "está manchado prudente",
+        "tela": null,
+        "posible precio": 39.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "male",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "XS",
+        "fits_like_max": "S",
+        "condition_score": 8,
+        "price": 39,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 2,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "team",
+          "player",
+          "number"
+        ],
+        "group": "g04",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 12,
+      "raw": {
+        "name": "Puma mordida sample azul marino claro",
+        "brand": "Puma",
+        "category": "Polos",
+        "subcategory": "Polos manga corta",
+        "size": "M",
+        "fit": "regular",
+        "gender": "Male unisex",
+        "metadata": "Puma con una mordida, en la etiqueta dice SAMPLE",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 59.0
+      },
+      "expect": {
+        "brand": "Puma",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": "regular",
+        "fits_like_min": null,
+        "fits_like_max": null,
+        "condition_score": 10,
+        "price": 59,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": true,
+        "metadata_keys_min": [],
+        "group": "g05",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 13,
+      "raw": {
+        "name": "Nike con un puma en medio morado lila un poco oscuro",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga corta",
+        "size": "S",
+        "fit": "S",
+        "gender": "Male unisex",
+        "metadata": "tiene un puma, probablemente sea de una universidad",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 59.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "S",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "S",
+        "fits_like_max": "S",
+        "condition_score": 10,
+        "price": 59,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [],
+        "group": "g06",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 14,
+      "raw": {
+        "name": "Nike DRI FIT manga larga negro humo",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga larga",
+        "size": "L",
+        "fit": "L",
+        "gender": "unisex",
+        "metadata": "Tecnologia DRI FIT",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": "69 o 79"
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-larga",
+        "size": "L",
+        "gender": "unisex",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": null,
+        "compare_at_price": null,
+        "price_ambiguous": true,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g07",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 15,
+      "raw": {
+        "name": "Nike oregon ducks verde con amarillo",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga corta",
+        "size": "L",
+        "fit": "M - L",
+        "gender": "male - unisex",
+        "metadata": "Oregon ducks university team",
+        "condition": "8/10",
+        "especificaciones": "mancha en el logo de OD en el pecho y huequito en un lado",
+        "tela": null,
+        "posible precio": 39.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "M",
+        "fits_like_max": "L",
+        "condition_score": 8,
+        "price": 39,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 2,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "university"
+        ],
+        "group": "g08",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 16,
+      "raw": {
+        "name": "Nike DRI FIT generico gris plomo",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polo manga corta",
+        "size": "L",
+        "fit": "L",
+        "gender": "male - unisex",
+        "metadata": "Polo convencional",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [],
+        "group": "g09",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 17,
+      "raw": {
+        "name": "Nike DRI FIT manga larga blanco humo",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polos manga larga",
+        "size": "L",
+        "fit": "L",
+        "gender": "unisex",
+        "metadata": "Tecnologia DRI FIT",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": "69 o 79"
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-larga",
+        "size": "L",
+        "gender": "unisex",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": null,
+        "compare_at_price": null,
+        "price_ambiguous": true,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g07",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 18,
+      "raw": {
+        "name": "Nike DRI FIT lila azul",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "Polo manga corta",
+        "size": "L",
+        "fit": "L",
+        "gender": "unisex",
+        "metadata": "Tecnologia DRI FIT",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "unisex",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g10",
+        "group_alternatives": [
+          "g09"
+        ]
+      }
+    },
+    {
+      "excel_row": 19,
+      "raw": {
+        "name": "Under Armour deportivo zebra blanco y lineas lilas y/o plomas",
+        "brand": "Under armour",
+        "category": "Polos",
+        "subcategory": "Polo manga corta",
+        "size": "M",
+        "fit": "M",
+        "gender": "unisex",
+        "metadata": "Polo para hacer ejercicio como dri fit",
+        "condition": "8.5/10",
+        "especificaciones": "tiene 3 jalones de mechon de tela por la espalda (se puede disimular perfectamente)",
+        "tela": null,
+        "posible precio": 39.0
+      },
+      "expect": {
+        "brand": "Under Armour",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "unisex",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "M",
+        "fits_like_max": "M",
+        "condition_score": 8.5,
+        "price": 39,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 1,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "use"
+        ],
+        "group": "g11",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 20,
+      "raw": {
+        "name": "Under Armour deportivo HEATGEAR gris",
+        "brand": "Under armour",
+        "category": "Polos",
+        "subcategory": "Polo manga corta",
+        "size": "M",
+        "fit": "M",
+        "gender": "unisex",
+        "metadata": "Polo para hacer ejercicio como dri fit",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Under Armour",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "unisex",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "M",
+        "fits_like_max": "M",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g12",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 21,
+      "raw": {
+        "name": "The north face sleeve t shirt plomo gris",
+        "brand": "The north face",
+        "category": "Polos",
+        "subcategory": "polo manga larga",
+        "size": "L",
+        "fit": "L",
+        "gender": "male unisex",
+        "metadata": "Polo sleeve para salir TNF",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 79.0
+      },
+      "expect": {
+        "brand": "The North Face",
+        "subcategory_slug": "polos-manga-larga",
+        "size": "L",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": 79,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [],
+        "group": "g13",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 22,
+      "raw": {
+        "name": "The north face rojo anaranjado comun",
+        "brand": "The north face",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "L",
+        "fit": "L",
+        "gender": "male",
+        "metadata": "Polo para salir TNF",
+        "condition": "9.5/10",
+        "especificaciones": "Manchitas en el cuello parte izquierdo",
+        "tela": null,
+        "posible precio": "59 o 65 o 69"
+      },
+      "expect": {
+        "brand": "The North Face",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "male",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 9.5,
+        "price": null,
+        "compare_at_price": null,
+        "price_ambiguous": true,
+        "defects_min": 1,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [],
+        "group": "g14",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 23,
+      "raw": {
+        "name": "Polo GYMSHARK talla L aqua verde",
+        "brand": "Gymshark",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "L",
+        "fit": "L",
+        "gender": "male",
+        "metadata": "Deportivo gymshark",
+        "condition": "9.5/10",
+        "especificaciones": "Manchitas en el cuello parte izquierdo",
+        "tela": null,
+        "posible precio": 69.0
+      },
+      "expect": {
+        "brand": "Gymshark",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "male",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 9.5,
+        "price": 69,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 1,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [],
+        "group": "g15",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 24,
+      "raw": {
+        "name": "Polo UA color sand grisaceo blanco",
+        "brand": "Under armour",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "M",
+        "fit": "M",
+        "gender": "male unisex",
+        "metadata": "Deportivo de UA",
+        "condition": "9/10",
+        "especificaciones": "Tallaje del cuello desgastado",
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Under Armour",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "M",
+        "fits_like_max": "M",
+        "condition_score": 9,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 1,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [],
+        "group": "g16",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 25,
+      "raw": {
+        "name": "Nike deportivo salir color gris muy oscuro casi negro",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "M",
+        "fit": "M",
+        "gender": "male unisex",
+        "metadata": "Polo convencional",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "M",
+        "fits_like_max": "M",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [],
+        "group": "g17",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 26,
+      "raw": {
+        "name": "Nike DRI FIT polo deportivo texturizado gris con rombos oscuros",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "L",
+        "fit": "L",
+        "gender": "male unisex",
+        "metadata": "Polo convencional",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g18",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 27,
+      "raw": {
+        "name": "Nike baseball MUJER ALL STAR NEY YORK",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "L",
+        "fit": "L",
+        "gender": "female",
+        "metadata": "Polo limited edition New York ALL STAR",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 79.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "female",
+        "also_unisex": false,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": 79,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "team",
+          "edition"
+        ],
+        "group": "g19",
+        "group_alternatives": []
+      }
+    },
+    {
+      "excel_row": 28,
+      "raw": {
+        "name": "Nike DRI FIT generico gris textura plomo",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "L",
+        "fit": "L",
+        "gender": "male unisex",
+        "metadata": "Polo convencional",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "L",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "L",
+        "fits_like_max": "L",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g20",
+        "group_alternatives": [
+          "g09",
+          "g18"
+        ]
+      }
+    },
+    {
+      "excel_row": 29,
+      "raw": {
+        "name": "Under Armour deportivo HEATGEAR zebra celestino azul blanco rayitas muy pequeñas",
+        "brand": "Under armour",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "M",
+        "fit": "M",
+        "gender": "male unisex",
+        "metadata": "Polo para hacer ejercicio como dri fit",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Under Armour",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "M",
+        "fits_like_max": "M",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g21",
+        "group_alternatives": [
+          "g12"
+        ]
+      }
+    },
+    {
+      "excel_row": 30,
+      "raw": {
+        "name": "Nike DRI FIT polo deportivo texturizado manchas tono azuladas",
+        "brand": "Nike",
+        "category": "Polos",
+        "subcategory": "polo manga corta",
+        "size": "M",
+        "fit": "M",
+        "gender": "male unisex",
+        "metadata": "Polo convencional",
+        "condition": "10/10",
+        "especificaciones": null,
+        "tela": null,
+        "posible precio": 49.0
+      },
+      "expect": {
+        "brand": "Nike",
+        "subcategory_slug": "polos-manga-corta",
+        "size": "M",
+        "gender": "male",
+        "also_unisex": true,
+        "fit": null,
+        "fits_like_min": "M",
+        "fits_like_max": "M",
+        "condition_score": 10,
+        "price": 49,
+        "compare_at_price": null,
+        "price_ambiguous": false,
+        "defects_min": 0,
+        "has_neutral_specs": false,
+        "metadata_keys_min": [
+          "technology"
+        ],
+        "group": "g22",
+        "group_alternatives": [
+          "g18"
+        ]
+      }
+    }
+  ]
+}

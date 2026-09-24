@@ -22,6 +22,10 @@ export interface ProductItemRow {
   stock: number
   seller_id: UUID | null
   status: ProductItemStatus
+  compare_at_price?: number | null
+  condition_score?: number | null
+  /** Public, tactful one-liner about the garment's condition */
+  condition_note?: string | null
   created_at: Timestamp
 }
 

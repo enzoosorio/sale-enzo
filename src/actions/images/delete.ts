@@ -2,7 +2,7 @@
 import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { ActionResult } from "@/types/action/action-result";
 import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
-import { deleteVariantImageFromStorage } from "@/utils/supabase/storage";
+import { deleteVariantImageByUrl as deleteVariantImageFromStorage } from "@/lib/storage/variantImages";
 import { revalidatePath } from "next/cache";
 
 /**

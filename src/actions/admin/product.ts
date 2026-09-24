@@ -5,7 +5,7 @@ import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { revalidatePath } from "next/cache";
 import { TagInput, CategoryInput, SubcategoryInput } from "@/types/products/product_form_data";
 import { getOrCreateColorCluster, processSecondaryColors } from "@/utils/colors/clustering";
-import { generateProductRAG, type ProductItemData } from "@/lib/rag/productRag";
+import { generateRagForProduct, linkVariantTags, resolveTagIds } from "@/lib/catalog/productWrites";
 
 /**
  * Admin server action to create a complete product with variants, items, and images.
@@ -349,86 +349,18 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
         }
       }
 
-      const tagsIdsToLink: string[] = [];
-
-      // Process tags based on tagId presence
-      if (variantInput.tags && variantInput.tags.length > 0) {
-        for (const tag of variantInput.tags) {
-          if (tag.tagId) {
-            // Tag already exists - use the ID directly (no DB query needed)
-            tagsIdsToLink.push(tag.tagId);
-          } else {
-            // Check if tag already exists by slug
-            const { data: existingTag } = await supabaseAdmin
-              .from("tags")
-              .select("id")
-              .eq("slug", tag.slug)
-              .single();
-
-            if (existingTag) {
-              // Use existing tag
-              tagsIdsToLink.push(existingTag.id);
-            } else {
-              // Tag doesn't exist - create it
-              const { data: newTag, error: createTagError } = await supabaseAdmin
-                .from("tags")
-                .insert({
-                  name: tag.name,
-                  slug: tag.slug
-                })
-                .select()
-                .single();
-
-              if (createTagError) {
-                console.error("Error creating new tag:", createTagError);
-                
-                // Strict mode: Rollback on tag creation errors
-                if (input.strictMode) {
-                  await supabaseAdmin.from("products").delete().eq("id", product.id);
-                  return {
-                    success: false,
-                    error: `Failed to create tag '${tag.name}': ${createTagError.message}`
-                  };
-                }
-                
-                // Non-strict mode: Skip this tag and continue
-                continue;
-              }
-
-              if (newTag) {
-                tagsIdsToLink.push(newTag.id);
-              }
-            }
-          }
+      // Tags: resolve/create ids, then link to the variant
+      try {
+        const tagIds = await resolveTagIds(variantInput.tags ?? [], input.strictMode);
+        await linkVariantTags(variant.id, tagIds);
+      } catch (tagError: any) {
+        console.error("Error processing variant tags:", tagError);
+        // Strict mode (bulk imports): rollback. Manual creation continues without tags.
+        if (input.strictMode) {
+          await supabaseAdmin.from("products").delete().eq("id", product.id);
+          return { success: false, error: tagError.message };
         }
-      }
-
-      // Create variant-tag relationships
-      if (tagsIdsToLink.length > 0) {
-        const tagsToInsert = tagsIdsToLink.map(tagId => ({
-          variant_id: variant.id,
-          tag_id: tagId,
-        }));
-
-        const { error: tagsError } = await supabaseAdmin
-          .from("variant_tags")
-          .insert(tagsToInsert);
-
-        if (tagsError) {
-          console.error("Error creating variant tags:", tagsError);
-          
-          // Strict mode: Rollback on tag errors (for bulk imports)
-          if (input.strictMode) {
-            await supabaseAdmin.from("products").delete().eq("id", product.id);
-            return {
-              success: false,
-              error: `Failed to create tags: ${tagsError.message}`
-            };
-          }
-          
-          // Non-strict mode: Continue anyway - tags are not critical (for manual creation)
-          console.warn("⚠️ Continuing without tags (non-strict mode)");
-        }
+        console.warn("⚠️ Continuing without tags (non-strict mode)");
       }
     }
 
@@ -462,146 +394,11 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
     }
     
     if (!input.skipRAG) {
-    try {
-      // Query all items with their complete related data
-      const { data: itemsWithData, error: queryError } = await supabaseAdmin
-        .from('product_items')
-        .select(`
-          id,
-          condition,
-          price,
-          stock,
-          status,
-          product_variants!inner (
-            id,
-            size,
-            gender,
-            fit,
-            main_color_hex,
-            main_color_category_id,
-            metadata,
-            product_id,
-            products!inner (
-              id,
-              name,
-              description,
-              brand,
-              subcategory_id,
-              product_categories!inner (
-                id,
-                name,
-                slug,
-                parent_id
-              )
-            ),
-            variant_color_categories (
-              label,
-              representative_hex
-            ),
-            variant_tags (
-              tags (
-                name
-              )
-            )
-          )
-        `)
-        .eq('product_variants.product_id', product.id);
-
-      if (queryError) {
-        console.error('Error querying items for RAG generation:', queryError);
-        // Don't block product creation if RAG query fails
-      } else if (itemsWithData && itemsWithData.length > 0) {
-        // Get category and subcategory info
-        const { data: categoryData } = await supabaseAdmin
-          .from('product_categories')
-          .select('id, name')
-          .eq('id', categoryId)
-          .single();
-
-        const { data: subcategoryData } = await supabaseAdmin
-          .from('product_categories')
-          .select('id, name')
-          .eq('id', subcategoryId)
-          .single();
-
-        // Generate RAG for each item
-        const ragPromises = itemsWithData.map(async (item: any) => {
-          try {
-            const variant = item.product_variants;
-            const product = variant.products;
-            
-            // Extract tags from the nested structure
-            const tags = variant.variant_tags?.map((vt: any) => vt.tags?.name).filter(Boolean) || [];
-            
-            // Extract color category info (if available)
-            const colorCategoryLabel = variant.variant_color_categories?.label || undefined;
-            const colorCategoryHex = variant.variant_color_categories?.representative_hex || variant.main_color_hex;
-            
-            // Prepare data for RAG generation
-            const ragData: ProductItemData = {
-              product_item_id: item.id,
-              
-              // Product fields
-              product_name: product.name,
-              product_description: product.description || undefined,
-              enhanced_description: input.enhanced_description, // User-approved enhanced description
-              enhanced_description_en: input.enhanced_description_en, // Short English version
-              product_brand: product.brand || undefined,
-              
-              // Category fields
-              category_name: categoryData?.name || 'Unknown',
-              subcategory_name: subcategoryData?.name || 'Unknown',
-              
-              // Variant fields
-              variant_size: variant.size || undefined,
-              variant_gender: variant.gender || undefined,
-              variant_fit: variant.fit || undefined,
-              variant_main_color_hex: variant.main_color_hex,
-              
-              // Color category (use label if available, otherwise use hex as fallback)
-              color_category_name: colorCategoryLabel || colorCategoryHex,
-              
-              // Item fields
-              item_condition: item.condition || undefined,
-              item_price: item.price,
-              item_stock: item.stock || 0,
-              item_status: item.status || undefined,
-              
-              // Tags
-              tags: tags,
-              
-              // Variant metadata (for semantic search enrichment)
-              variant_metadata: variant.metadata || undefined
-            };
-            
-            // Generate RAG profile
-            const result = await generateProductRAG(ragData);
-            
-            if (!result.success) {
-              console.error(`Failed to generate RAG for item ${item.id}:`, result.error);
-            }
-            
-            return result;
-          } catch (itemError) {
-            console.error(`Error processing RAG for item ${item.id}:`, itemError);
-            return { success: false, error: 'Processing error' };
-          }
-        });
-
-        // Wait for all RAG generations to complete
-        const ragResults = await Promise.allSettled(ragPromises);
-        
-        const successCount = ragResults.filter(r => r.status === 'fulfilled' && r.value.success).length;
-        const failCount = ragResults.length - successCount;
-        
-        console.log(`✅ RAG generation complete: ${successCount} succeeded, ${failCount} failed`);
-      }
-    } catch (ragError) {
-      console.error('RAG generation pipeline error:', ragError);
-      // Don't block product creation if RAG fails
-      // Product is still created successfully, RAG can be regenerated later
+      await generateRagForProduct(product.id, {
+        enhanced_description: input.enhanced_description,
+        enhanced_description_en: input.enhanced_description_en,
+      });
     }
-    } // End of skipRAG check
 
     // Revalidate the products page
     revalidatePath("/admin/products");
