@@ -539,3 +539,101 @@ box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 1
 .slider-dark [data-slot="slider-thumb"]:hover {
   ring-color: rgba(255, 255, 255, 0.3);
 }
+/* ===== CATEGORIES PANEL ===== */
+/* Level-driven states are declarative (data-level on .categories-section);
+   GSAP only runs the level-to-level timeline. */
+
+.categories-list {
+  touch-action: none;
+  cursor: grab;
+  /* Static edge fade: items dissolve under the header instead of colliding with it. */
+  mask-image: linear-gradient(to bottom, transparent 4%, #000 22%, #000 80%, transparent 97%);
+}
+
+.categories-list.is-dragging {
+  cursor: grabbing;
+}
+
+.categories-back {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    visibility 0s linear 0.2s,
+    left 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.categories-section:not([data-level="PARENTS"]) .categories-back {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 0.3s ease 0.25s,
+    visibility 0s linear 0s,
+    left 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 768px) {
+  .categories-back {
+    left: 20%;
+  }
+
+  .categories-section[data-level="FILTERS"] .categories-back {
+    left: 5%;
+  }
+}
+
+.categories-section[data-level="FILTERS"] .categories-nudge {
+  display: none;
+}
+
+.categories-actions-pill {
+  width: 3.5rem;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.categories-open {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.categories-open path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  transition: stroke-dashoffset 0.3s ease-in;
+}
+
+.categories-section:not([data-level="PARENTS"]) .categories-actions-pill {
+  width: 6.75rem;
+}
+
+.categories-section:not([data-level="PARENTS"]) .categories-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.categories-section:not([data-level="PARENTS"]) .categories-open path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+}
+
+@media (min-width: 768px) {
+  .categories-actions-pill {
+    width: 4rem;
+  }
+
+  .categories-section:not([data-level="PARENTS"]) .categories-actions-pill {
+    width: 7.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .categories-back,
+  .categories-actions-pill,
+  .categories-open path {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}

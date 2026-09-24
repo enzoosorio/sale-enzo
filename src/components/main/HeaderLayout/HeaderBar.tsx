@@ -2,7 +2,7 @@ import Image from "next/image";
 import { PrimaryButton } from "../../reusable/CTA/buttons/Button";
 import { Bag } from "@/components/reusable/svgs/Bag";
 import { Favoritos } from "@/components/reusable/svgs/Favoritos";
-import { CategoriesButton } from "./Categories/CategoriesButtonLayout";
+import { CategoriesButton, CategoriesPanelHost } from "./Categories/CategoriesButtonLayout";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 import { MobileMainLogo } from "./Mobile/MobileMainLogo";
@@ -102,6 +102,7 @@ export const HeaderBar = async ({
           </div>
         </nav>
       </header>
+      <CategoriesPanelHost />
     </>
   );
 };
