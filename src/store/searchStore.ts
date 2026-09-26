@@ -2,13 +2,18 @@ import { create } from "zustand";
 import type { SearchProduct } from "@/lib/search/searchProducts";
 
 type SearchStatus = "idle" | "loading" | "done" | "error";
+/** idle: panel hidden · peek: half-raised hint while typing · open: results after submit */
+export type SearchPhase = "idle" | "peek" | "open";
+
 interface SearchState {
   query: string;
+  submittedQuery: string;
   results: SearchProduct[];
   status: SearchStatus;
-  isOpen: boolean;
+  phase: SearchPhase;
   totalCount: number;
   setQuery: (query: string) => void;
+  setPeek: (peek: boolean) => void;
   search: (query: string) => Promise<void>;
   close: () => void;
 }
@@ -16,20 +21,26 @@ interface SearchState {
 let controller: AbortController | null = null;
 let sequence = 0;
 
-export const useAISearchStore = create<SearchState>((set) => ({
+export const useAISearchStore = create<SearchState>((set, get) => ({
   query: "",
+  submittedQuery: "",
   results: [],
   status: "idle",
-  isOpen: false,
+  phase: "idle",
   totalCount: 0,
   setQuery: (query) => set({ query }),
+  setPeek: (peek) => {
+    const { phase } = get();
+    if (phase === "open") return;
+    set({ phase: peek ? "peek" : "idle" });
+  },
   search: async (query) => {
     const normalized = query.trim().replace(/\s+/g, " ");
     if (normalized.length < 2) return;
     controller?.abort();
     controller = new AbortController();
     const request = ++sequence;
-    set({ query, results: [], status: "loading", isOpen: true });
+    set({ submittedQuery: normalized, results: [], status: "loading", phase: "open" });
     try {
       const response = await fetch("/api/search", {
         method: "POST",
@@ -54,6 +65,6 @@ export const useAISearchStore = create<SearchState>((set) => ({
     ++sequence;
     controller?.abort();
     controller = null;
-    set({ query: "", results: [], status: "idle", isOpen: false, totalCount: 0 });
+    set({ submittedQuery: "", results: [], status: "idle", phase: "idle", totalCount: 0 });
   },
 }));
