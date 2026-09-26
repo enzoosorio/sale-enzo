@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     user = signed.data.user;
     const cookie = await signGuestId(user.id);
     if (cookie) (await cookies()).set(GUEST_CART_COOKIE, cookie, guestCookieOptions);
+    else console.warn('CART_MERGE_SECRET is not set: guest carts will not move to the account on sign-in');
   }
   if (!user) return Response.json({ error: 'Sin carrito' }, { status: 401 });
   const { error } = await client.rpc('cart_change', { p_item_id: parsed.data.itemId, p_action: parsed.data.action });

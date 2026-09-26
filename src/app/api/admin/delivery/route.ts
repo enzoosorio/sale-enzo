@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 
 const input = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('create'), kind: z.enum(['pickup','delivery']), label: z.string().trim().min(2).max(120), district: z.string().trim().max(120), fee: z.number().nonnegative().finite(), active: z.boolean() }),
-  z.strictObject({ action: z.literal('set_active'), id: z.uuid(), active: z.boolean() }),
+  z.strictObject({ action: z.literal('set_active'), id: z.guid(), active: z.boolean() }),
 ]);
 
 export async function POST(request: Request) {

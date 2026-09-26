@@ -6,7 +6,7 @@ const noStore = { 'Cache-Control': 'no-store' };
 
 export async function GET(request: Request, context: RouteContext<'/api/orders/[id]'>) {
   const { id } = await context.params;
-  if (!z.uuid().safeParse(id).success) return Response.json({ error: 'Pedido inválido' }, { status: 400 });
+  if (!z.guid().safeParse(id).success) return Response.json({ error: 'Pedido inválido' }, { status: 400 });
   const client = await createClient();
   // Guests can open their order from any device with the unguessable link token.
   const token = new URL(request.url).searchParams.get('t');

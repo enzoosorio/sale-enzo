@@ -17,7 +17,8 @@ export default async function AuthLayout({
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (user) {
+  // A guest's anonymous cart session must still be able to reach login and register.
+  if (user && !user.is_anonymous) {
     redirect("/home");
   }
 

@@ -21,6 +21,8 @@ describe('cart rules', () => {
     expect(cartLineInput.safeParse({ itemId: crypto.randomUUID(), action: 'accept_price' }).success).toBe(true);
     expect(cartLineInput.safeParse({ itemId: crypto.randomUUID(), action: 'set_price' }).success).toBe(false);
     expect(cartLineInput.safeParse({ itemId: 'x', action: 'add' }).success).toBe(false);
+    // Deterministic seed ids are not RFC 4122 but are valid database ids.
+    expect(cartLineInput.safeParse({ itemId: '4c7c5cf1-9686-6c4e-64ea-9f1b5b126087', action: 'add' }).success).toBe(true);
   });
   it('never lets the client choose prices or extra fields at checkout', () => {
     const base = { key: crypto.randomUUID(), contact: { name: 'Ana', email: 'ana@test.pe', phone: '999999999' }, deliveryOptionId: crypto.randomUUID(), expectedTotal: 10 };

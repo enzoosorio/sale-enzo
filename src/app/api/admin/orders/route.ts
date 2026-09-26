@@ -3,8 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { isAdmin } from '@/lib/auth/isAdmin';
 
 const input = z.discriminatedUnion('action', [
-  z.strictObject({ action: z.literal('sale'), itemId: z.uuid(), name: z.string().min(2), email: z.union([z.email(), z.literal('')]), phone: z.string().min(6), verified: z.literal(true) }),
-  z.strictObject({ action: z.enum(['deliver', 'cancel']), orderId: z.uuid() }),
+  z.strictObject({ action: z.literal('sale'), itemId: z.guid(), name: z.string().min(2), email: z.union([z.email(), z.literal('')]), phone: z.string().min(6), verified: z.literal(true) }),
+  z.strictObject({ action: z.enum(['deliver', 'cancel']), orderId: z.guid() }),
 ]);
 
 export async function POST(request: Request) {
