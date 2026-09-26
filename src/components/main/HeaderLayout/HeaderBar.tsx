@@ -8,6 +8,7 @@ import { LogoutButton } from "./LogoutButton";
 import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
+import { HeaderCenter } from "./HeaderCenter";
 
 
 interface HeaderBarProps {
@@ -27,14 +28,14 @@ export const HeaderBar = async ({
       {/* todo: mejorar la apariencia del radial gradient */}
       <header
         className={` text-black
-        min-h-(--navbar-height) z-10 flex items-center justify-center
-        ${variant === "product-detail" ? "absolute top-10 left-1/2 -translate-x-1/2 bg-white/15 shadow-xl backdrop-blur-2xl w-11/12 rounded-sm" : "sticky gradial-radient w-full"}
+        min-h-(--navbar-height) flex items-center justify-center
+        ${variant === "product-detail" ? "absolute z-10 top-10 left-1/2 -translate-x-1/2 bg-white/15 shadow-xl backdrop-blur-2xl w-11/12 rounded-sm" : "sticky top-0 z-30 gradial-radient w-full"}
         
         `}
       >
         <nav className="relative p-2 bg-transparent px-4 md:px-16 xl:px-20 w-full h-full flex items-center justify-between">
           {/* Desktop Navigation - Hidden on mobile */}
-          <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata">
+          <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata" data-dock-bound="start">
             <li className="cursor-pointer">
               {/* todo: agregar el contacto */}
               <Link href="#" className="linkk font-prata">
@@ -52,17 +53,17 @@ export const HeaderBar = async ({
             )}
           </ul>
           {/* customed mobile logo */}
-          <MobileMainLogo />
-          <Link
-            className="w-max h-max hidden md:block rounded-full"
-            href={"/home"}
-          >
-            {/* <MainLogo className="w-12"/> */}
-            <MainLogoAnimated className="w-12" />
-          </Link>
+          <div className="md:hidden" data-dock-bound="start">
+            <MobileMainLogo />
+          </div>
+          <HeaderCenter>
+            <Link className="block w-max h-max rounded-full" href={"/home"}>
+              <MainLogoAnimated className="w-12" />
+            </Link>
+          </HeaderCenter>
 
           {/* Desktop Actions - Hidden on mobile */}
-          <ul className="hidden md:flex items-center justify-center gap-8">
+          <ul className="hidden md:flex items-center justify-center gap-8" data-dock-bound="end">
             <div className="flex items-center justify-center gap-4">
               <Bag />
               <Favoritos id="favoritos0" />
@@ -77,7 +78,7 @@ export const HeaderBar = async ({
             </ul>
 
           {/* Mobile Actions - Shown only on mobile */}
-          <div className="flex md:hidden items-center justify-center gap-4">
+          <div className="flex md:hidden items-center justify-center gap-4" data-dock-bound="end">
             {userId ? (
               <LogoutButton />
             ) : (
