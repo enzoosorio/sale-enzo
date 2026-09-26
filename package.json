@@ -19,7 +19,9 @@
     "predev": "node scripts/build-worker.mjs",
     "prebuild": "node scripts/build-worker.mjs",
     "search:reindex": "tsx scripts/reindex-search.ts",
-    "search:eval": "tsx scripts/eval-search.ts"
+    "search:eval": "tsx scripts/eval-search.ts",
+    "test:db": "supabase test db --local",
+    "test:race": "bash scripts/test-checkout-race.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1139.0",
