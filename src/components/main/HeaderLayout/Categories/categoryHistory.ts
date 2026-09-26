@@ -15,6 +15,8 @@
 export const PRODUCTS_PATH = "/products";
 
 let depth = 0;
+/** A `history.back()` is in flight: further "up" requests wait for its popstate. */
+let backPending = false;
 let onExhausted: (() => void) | null = null;
 let afterUnwind: (() => void) | null = null;
 
@@ -26,10 +28,12 @@ export function buildProductsUrl(params: URLSearchParams) {
 function detach() {
   window.removeEventListener("popstate", onPopState);
   depth = 0;
+  backPending = false;
   onExhausted = null;
 }
 
 function onPopState() {
+  backPending = false;
   if (afterUnwind) {
     const callback = afterUnwind;
     afterUnwind = null;
@@ -57,7 +61,11 @@ export function beginPanelHistory(onBackPastStart: () => void) {
 
 /** Enter a deeper level: one history entry per level. */
 export function pushLevel(params: URLSearchParams) {
-  window.history.pushState(null, "", buildProductsUrl(params));
+  const url = buildProductsUrl(params);
+  if (backPending) return;
+  // Double clicks must not stack identical entries (back would need two taps).
+  if (url === window.location.pathname + window.location.search) return;
+  window.history.pushState(null, "", url);
   depth += 1;
 }
 
@@ -68,7 +76,9 @@ export function replaceLevel(params: URLSearchParams) {
 
 /** Go up one level, reusing the history entry when the panel created it. */
 export function goUpLevel(parentParams: URLSearchParams) {
+  if (backPending) return;
   if (depth > 1) {
+    backPending = true;
     window.history.back();
   } else {
     replaceLevel(parentParams);

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
 interface InfiniteScrollOptions {
@@ -6,6 +6,11 @@ interface InfiniteScrollOptions {
   itemsRef: React.RefObject<(HTMLLIElement | null)[]>;
   itemCount: number;
   isActive?: boolean;
+  /**
+   * `true`: infinite wheel/drag loop when the items overflow the viewport.
+   * `false`: plain centered stack; overflow falls back to native scrolling.
+   */
+  loop?: boolean;
   /** Fraction of the remaining distance covered per 60fps frame. */
   smoothing?: number;
   /** Change it when the rendered items are replaced (e.g. another category's subcategories). */
@@ -21,13 +26,16 @@ const FLING_MS = 180;
  *
  * Items are positioned with one `quickSetter` each and the loop runs on the
  * GSAP ticker only while the list is moving, so an idle panel costs nothing.
- * When every item fits in the viewport the list is centered and static.
+ * When every item fits in the viewport (or `loop` is off) the list is static
+ * and ignores wheel/drag, which `isStatic` exposes so the UI can drop its
+ * drag affordances.
  */
 export function useInfiniteVerticalScroll({
   menuRef,
   itemsRef,
   itemCount,
   isActive = true,
+  loop = true,
   smoothing = 0.1,
   resetKey = null,
 }: InfiniteScrollOptions) {
@@ -36,6 +44,7 @@ export function useInfiniteVerticalScroll({
   const positionRef = useRef(Number.NaN);
   const lastResetKeyRef = useRef(resetKey);
   const nudgeRef = useRef<(direction: 1 | -1) => void>(() => {});
+  const [isStatic, setIsStatic] = useState(true);
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -58,19 +67,30 @@ export function useInfiniteVerticalScroll({
     let itemHeight = 0;
     let viewportHeight = 0;
     let totalHeight = 0;
-    let isStatic = false;
+    let fits = true;
+    let staticList = true;
     let wrap = (value: number) => value;
 
     let current = 0;
     let target = 0;
     let running = false;
 
+    // Returns false while the menu has no layout yet (e.g. first frame of the panel).
     const measure = () => {
+      const height = menu.clientHeight;
+      if (height === 0) return false;
       itemHeight = items[0].offsetHeight || 144;
-      viewportHeight = menu.clientHeight;
+      viewportHeight = height;
       totalHeight = itemHeight * items.length;
-      isStatic = totalHeight <= viewportHeight;
+      fits = totalHeight <= viewportHeight;
+      staticList = !loop || fits;
       wrap = gsap.utils.wrap(-itemHeight * 0.5, totalHeight - itemHeight * 0.5);
+      menu.classList.toggle("is-static", staticList);
+      // Non-looping lists that overflow scroll natively (transforms count as scrollable overflow).
+      menu.style.overflowY = !loop && !fits ? "auto" : "";
+      setIsStatic(staticList);
+      if (staticList) stop();
+      return true;
     };
 
     const setHidden = (index: number, value: boolean) => {
@@ -80,8 +100,9 @@ export function useInfiniteVerticalScroll({
     };
 
     const render = () => {
-      if (isStatic) {
-        const offset = (viewportHeight - totalHeight) / 2;
+      if (viewportHeight === 0) return;
+      if (staticList) {
+        const offset = Math.max(0, (viewportHeight - totalHeight) / 2);
         items.forEach((_, i) => {
           setY[i](offset + i * itemHeight);
           setHidden(i, false);
@@ -112,7 +133,7 @@ export function useInfiniteVerticalScroll({
     };
 
     const start = () => {
-      if (running || isStatic) return;
+      if (running || staticList) return;
       running = true;
       gsap.ticker.add(tick);
     };
@@ -123,19 +144,30 @@ export function useInfiniteVerticalScroll({
       gsap.ticker.remove(tick);
     }
 
-    const moveBy = (delta: number) => {
-      if (isStatic) return;
+    // Rest positions keep one title exactly centered, never half cut by the edges.
+    const snapTarget = (value: number) => {
+      const center = viewportHeight / 2 - itemHeight / 2;
+      return center + Math.round((value - center) / itemHeight) * itemHeight;
+    };
+
+    const moveBy = (delta: number, snap = false) => {
+      if (staticList) return;
       target += delta;
+      if (snap) target = snapTarget(target);
       start();
     };
 
-    nudgeRef.current = (direction) => moveBy(-direction * itemHeight);
+    nudgeRef.current = (direction) => moveBy(-direction * itemHeight, true);
 
-    // Wheel
+    // Wheel: accumulate freely, snap once the wheel goes quiet.
+    let wheelTimer: ReturnType<typeof setTimeout> | undefined;
     const onWheel = (e: WheelEvent) => {
+      if (staticList) return;
       e.preventDefault();
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? viewportHeight : 1;
       moveBy(-e.deltaY * unit);
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => moveBy(0, true), 140);
     };
 
     // Drag (mouse, pen and touch through Pointer Events)
@@ -146,9 +178,20 @@ export function useInfiniteVerticalScroll({
     let velocity = 0;
     let dragging = false;
     let suppressClick = false;
+    let suppressTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const endDrag = () => {
+      if (pointerId !== null && menu.hasPointerCapture(pointerId)) {
+        menu.releasePointerCapture(pointerId);
+      }
+      pointerId = null;
+      dragging = false;
+      menu.classList.remove("is-dragging");
+    };
 
     const onPointerDown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
+      suppressClick = false;
+      if (staticList || e.button !== 0) return;
       pointerId = e.pointerId;
       startY = lastY = e.clientY;
       lastTime = e.timeStamp;
@@ -177,14 +220,18 @@ export function useInfiniteVerticalScroll({
 
     const onPointerEnd = (e: PointerEvent) => {
       if (e.pointerId !== pointerId) return;
-      pointerId = null;
-      if (!dragging) return;
+      const wasDragging = dragging;
+      endDrag();
+      if (!wasDragging) return;
 
-      dragging = false;
+      // Only the click synthesized by this very release is swallowed; if the
+      // release happened off a button no click comes and the flag must not linger.
       suppressClick = true;
-      menu.classList.remove("is-dragging");
-      if (menu.hasPointerCapture(e.pointerId)) menu.releasePointerCapture(e.pointerId);
-      moveBy(velocity * FLING_MS);
+      clearTimeout(suppressTimer);
+      suppressTimer = setTimeout(() => {
+        suppressClick = false;
+      }, 0);
+      moveBy(velocity * FLING_MS, true);
     };
 
     const onClickCapture = (e: MouseEvent) => {
@@ -194,8 +241,9 @@ export function useInfiniteVerticalScroll({
       e.stopPropagation();
     };
 
-    // Keyboard: arrows move one item; focusing an item brings it to the center.
+    // Keyboard: arrows move one item; keyboard focus brings the item to the center.
     const onKeyDown = (e: KeyboardEvent) => {
+      if (staticList) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
         nudgeRef.current(1);
@@ -206,8 +254,11 @@ export function useInfiniteVerticalScroll({
     };
 
     const onFocusIn = (e: FocusEvent) => {
-      if (isStatic) return;
-      const index = items.findIndex((item) => item.contains(e.target as Node));
+      if (staticList || pointerId !== null) return;
+      const element = e.target as HTMLElement;
+      // Pointer focus (click / drag start) must not move the list under the finger.
+      if (!element.matches?.(":focus-visible")) return;
+      const index = items.findIndex((item) => item.contains(element));
       if (index === -1) return;
       let desired = viewportHeight / 2 - itemHeight / 2 - index * itemHeight;
       desired += Math.round((target - desired) / totalHeight) * totalHeight;
@@ -215,17 +266,25 @@ export function useInfiniteVerticalScroll({
       start();
     };
 
+    const initPosition = () => {
+      if (Number.isNaN(positionRef.current)) {
+        positionRef.current = snapTarget(0);
+      }
+      current = target = positionRef.current;
+    };
+
+    let initialized = measure();
+    if (initialized) initPosition();
+    render();
+
     const resizeObserver = new ResizeObserver(() => {
-      measure();
+      if (!measure()) return;
+      if (!initialized) {
+        initialized = true;
+        initPosition();
+      }
       render();
     });
-
-    measure();
-    if (Number.isNaN(positionRef.current)) {
-      positionRef.current = viewportHeight / 2 - itemHeight / 2;
-    }
-    current = target = positionRef.current;
-    render();
     resizeObserver.observe(menu);
 
     menu.addEventListener("wheel", onWheel, { passive: false });
@@ -239,8 +298,13 @@ export function useInfiniteVerticalScroll({
 
     return () => {
       stop();
+      endDrag();
+      clearTimeout(wheelTimer);
+      clearTimeout(suppressTimer);
+      // Resume exactly where the list was heading, already snapped.
+      if (initialized && !staticList) positionRef.current = snapTarget(target);
       resizeObserver.disconnect();
-      menu.classList.remove("is-dragging");
+      menu.style.overflowY = "";
       menu.removeEventListener("wheel", onWheel);
       menu.removeEventListener("pointerdown", onPointerDown);
       menu.removeEventListener("pointermove", onPointerMove);
@@ -251,10 +315,10 @@ export function useInfiniteVerticalScroll({
       menu.removeEventListener("focusin", onFocusIn);
       nudgeRef.current = () => {};
     };
-  }, [menuRef, itemsRef, itemCount, isActive, smoothing, resetKey]);
+  }, [menuRef, itemsRef, itemCount, isActive, loop, smoothing, resetKey]);
 
   /** Move the list one item up (-1) or down (1). */
   const nudge = useCallback((direction: 1 | -1) => nudgeRef.current(direction), []);
 
-  return { nudge };
+  return { nudge, isStatic };
 }

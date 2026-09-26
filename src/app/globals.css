@@ -564,6 +564,13 @@ box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 1
   cursor: grabbing;
 }
 
+/* Nothing to drag: no grab cursor, and touch/native scrolling works normally. */
+.categories-list.is-static {
+  touch-action: pan-y;
+  cursor: auto;
+  overscroll-behavior: contain;
+}
+
 .categories-back {
   opacity: 0;
   visibility: hidden;

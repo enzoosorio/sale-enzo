@@ -18,6 +18,8 @@ gsap.registerPlugin(useGSAP);
 const LEVELS: CategoryLevel[] = ["PARENTS", "SUBCATEGORIES", "FILTERS"];
 const EASE_OUT = "power3.out";
 const EASE_IN = "power2.in";
+/** Safety net: a navigation lock never outlives this, even if the URL didn't change. */
+const NAV_LOCK_MS = 700;
 
 const toCategories = (list: ProductCategory[]): Categories[] =>
   list.map((cat) => ({ id: cat.id, name: cat.name.toUpperCase(), slug: cat.slug }));
@@ -32,6 +34,10 @@ export const InfiniteScrollCategories = () => {
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const enterAtRef = useRef(0);
   const previousRef = useRef<{ level: CategoryLevel; key: string } | null>(null);
+  // Ignores clicks between a navigation and the URL/level actually changing, so
+  // rapid clicks can't push duplicate entries or build params from a stale URL.
+  const navLockRef = useRef(false);
+  const navLockTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { level, category, searchParams, selectCategory, selectSubcategory, goBack, navigate } =
     useCategoryLevel();
@@ -93,6 +99,8 @@ export const InfiniteScrollCategories = () => {
     itemsRef: parentsItemsRef,
     itemCount: categories.length,
     isActive: level === "PARENTS",
+    // Few parents: a looping wheel adds nothing for shopping, a still list reads better.
+    loop: false,
   });
 
   const subScroll = useInfiniteVerticalScroll({
@@ -115,10 +123,27 @@ export const InfiniteScrollCategories = () => {
         ? `SUBCATEGORIES:${selectedId ?? ""}:${subcategories.length}`
         : "FILTERS";
 
+  useEffect(() => () => clearTimeout(navLockTimerRef.current), []);
+
+  const runLocked = useCallback((action: () => void) => {
+    if (navLockRef.current) return;
+    navLockRef.current = true;
+    clearTimeout(navLockTimerRef.current);
+    navLockTimerRef.current = setTimeout(() => {
+      navLockRef.current = false;
+    }, NAV_LOCK_MS);
+    action();
+  }, []);
+
   useGSAP(
     () => {
       const previous = previousRef.current;
       previousRef.current = { level, key: transitionKey };
+      if (previous?.level !== level) {
+        // The level the user asked for is now rendered: accept the next navigation.
+        navLockRef.current = false;
+        clearTimeout(navLockTimerRef.current);
+      }
       if (previous?.key === transitionKey) return;
 
       const viewFor = (lvl: CategoryLevel) =>
@@ -140,8 +165,8 @@ export const InfiniteScrollCategories = () => {
       const itemsFrom = level === "FILTERS" ? { y: "100%" } : { yPercent: 100, autoAlpha: 0 };
       const itemsTo =
         level === "FILTERS"
-          ? { y: 0, duration: 0.5, ease: EASE_OUT, stagger: 0.12 }
-          : { yPercent: 0, autoAlpha: 1, duration: 0.45, ease: EASE_OUT, stagger: { amount: 0.15 } };
+          ? { y: 0, duration: 0.5, ease: EASE_OUT, stagger: 0.12, overwrite: "auto" as const }
+          : { yPercent: 0, autoAlpha: 1, duration: 0.45, ease: EASE_OUT, stagger: { amount: 0.15 }, overwrite: "auto" as const };
 
       // Same level, items arrived while the transition is still running (e.g. the
       // subcategories fetch resolved): reveal them inside the running timeline.
@@ -154,13 +179,26 @@ export const InfiniteScrollCategories = () => {
         return;
       }
 
+      const blobs = rootRef.current
+        ?.closest(".categories-section")
+        ?.querySelectorAll(".blurred, .blurred-2");
+
+      // Interrupting a transition must never leave anything half way: blobs go
+      // home and every view that isn't part of this transition is fully reset
+      // (hidden, items at rest) so it enters cleanly next time.
       running?.kill();
+      if (blobs?.length) gsap.set(blobs, { x: 0 });
 
       LEVELS.forEach((lvl) => {
         const view = viewFor(lvl);
         if (!view || lvl === level || lvl === leavingLevel) return;
         gsap.set(view, { autoAlpha: 0, pointerEvents: "none" });
+        const items = itemsFor(lvl);
+        if (items.length) {
+          gsap.set(items, lvl === "FILTERS" ? { y: 0 } : { yPercent: 0, autoAlpha: 1 });
+        }
       });
+      if (next) gsap.set(next, { pointerEvents: "none" });
 
       const tl = gsap.timeline({
         onComplete: () => {
@@ -191,9 +229,6 @@ export const InfiniteScrollCategories = () => {
           tl.to(leaving, { autoAlpha: 0, duration: 0.15 }, reduceMotion ? 0 : 0.25);
           enterAt = reduceMotion ? 0.15 : 0.3;
 
-          const blobs = rootRef.current
-            ?.closest(".categories-section")
-            ?.querySelectorAll(".blurred, .blurred-2");
           if (blobs?.length && !reduceMotion) {
             tl.to(
               blobs,
@@ -228,17 +263,21 @@ export const InfiniteScrollCategories = () => {
 
   const handleParentClick = useCallback(
     (cat: Categories) => {
-      if (cat.slug) selectCategory(cat.slug);
+      const slug = cat.slug;
+      if (slug) runLocked(() => selectCategory(slug));
     },
-    [selectCategory],
+    [runLocked, selectCategory],
   );
 
   const handleSubcategoryClick = useCallback(
     (sub: Categories) => {
-      if (sub.slug) selectSubcategory(sub.slug);
+      const slug = sub.slug;
+      if (slug) runLocked(() => selectSubcategory(slug));
     },
-    [selectSubcategory],
+    [runLocked, selectSubcategory],
   );
+
+  const handleBack = useCallback(() => runLocked(goBack), [runLocked, goBack]);
 
   const replaceFilters = useCallback(
     (params: URLSearchParams) => navigate(params, "replace"),
@@ -258,7 +297,7 @@ export const InfiniteScrollCategories = () => {
     <>
       <button
         type="button"
-        onClick={goBack}
+        onClick={handleBack}
         aria-label="Volver al nivel anterior"
         className="categories-back fixed z-70 top-[4.5rem] left-3 md:top-1/2 md:-translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full cursor-pointer focus-visible:outline-2 focus-visible:outline-black"
       >
@@ -270,7 +309,9 @@ export const InfiniteScrollCategories = () => {
         className="card-infinite-scroll relative flex flex-col h-full items-center justify-center px-4 lg:px-8 w-full sm:w-6/12"
       >
         <div className="relative w-full pt-20 h-dvh">
-          <div className="categories-nudge absolute right-2 md:right-[10%] top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-1 z-20">
+          <div
+            className={`categories-nudge ${activeScroll.isStatic ? "hidden" : "flex"} absolute right-2 md:right-[10%] top-1/2 -translate-y-1/2 flex-col items-center justify-center gap-1 z-20`}
+          >
             <button
               type="button"
               onClick={() => activeScroll.nudge(-1)}
@@ -313,7 +354,7 @@ export const InfiniteScrollCategories = () => {
                   parentsItemsRef.current[index] = el;
                 }}
                 key={cat.id}
-                className="absolute top-0 left-0 overflow-hidden h-36 w-full flex items-center justify-center"
+                className="absolute top-0 left-0 overflow-hidden h-24 md:h-36 w-full flex items-center justify-center"
               >
                 <IndividualCategory category={cat} onCategoryClick={handleParentClick} />
               </li>
