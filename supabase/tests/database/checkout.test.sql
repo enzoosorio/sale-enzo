@@ -2,7 +2,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET search_path = public, extensions;
-SELECT plan(32);
+SELECT plan(33);
 
 -- Fixtures: three buyers (one guest), one unique second-hand item, one pickup point.
 INSERT INTO auth.users(id, email, raw_user_meta_data, is_anonymous) VALUES
@@ -57,9 +57,12 @@ SELECT throws_ok($$ SELECT public.settle_payment((SELECT id FROM ids WHERE name 
 SELECT throws_ok($$ SELECT public.cart_merge_verified('00000000-0000-4000-a000-00000000000c', '00000000-0000-4000-a000-00000000000b') $$, '42501', NULL, 'clients cannot merge carts');
 SELECT is(public.order_by_token((SELECT id FROM ids WHERE name = 'a1'), repeat('0', 64)), NULL, 'wrong access token reveals nothing');
 
--- Retrying with a new key supersedes the buyer's own unpaid order instead of self-blocking.
+-- Another tab with a different key but the same cart reuses the live order (natural idempotency).
 SELECT pg_temp.as_user('00000000-0000-4000-a000-00000000000a');
-INSERT INTO ids VALUES ('a2', pg_temp.checkout('10000000-0000-4000-8000-000000000002'));
+SELECT is(pg_temp.checkout('10000000-0000-4000-8000-000000000009'), (SELECT id FROM ids WHERE name = 'a1'), 'same cart from another tab reuses the order');
+-- Changing the cart and retrying supersedes the buyer's own unpaid order instead of self-blocking.
+SELECT public.cart_change('00000000-0000-4000-d000-000000000002', 'add');
+INSERT INTO ids VALUES ('a2', pg_temp.checkout('10000000-0000-4000-8000-000000000002', 150));
 RESET ROLE;
 SELECT is((SELECT status FROM public.orders WHERE id = (SELECT id FROM ids WHERE name = 'a1')), 'superseded', 'older unpaid order is superseded');
 SELECT is((SELECT count(*) FROM public.item_reservations WHERE status = 'active' AND product_item_id = '00000000-0000-4000-d000-000000000001'), 1::bigint, 'only one active reservation per unit');
@@ -86,7 +89,6 @@ SELECT is(public.settle_payment((SELECT id FROM ids WHERE name = 'b1'), '9003', 
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.as_user('00000000-0000-4000-a000-00000000000a');
 SELECT public.cart_change('00000000-0000-4000-d000-000000000001', 'remove');
-SELECT public.cart_change('00000000-0000-4000-d000-000000000002', 'add');
 INSERT INTO ids VALUES ('a3', pg_temp.checkout('10000000-0000-4000-8000-000000000003', 50));
 RESET ROLE;
 UPDATE public.orders SET reservation_expires_at = now() - interval '1 minute' WHERE id = (SELECT id FROM ids WHERE name = 'a3');

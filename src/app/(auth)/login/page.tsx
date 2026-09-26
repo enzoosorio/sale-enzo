@@ -53,11 +53,6 @@ export default function LoginPage() {
       const response = await loginUser(formData);
 
       if (response.status === "success") {
-        const guestToken = sessionStorage.getItem('sale-enzo-guest-token');
-        if (guestToken) {
-          const merge = await fetch('/api/cart/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guestToken }) });
-          if (merge.ok) sessionStorage.removeItem('sale-enzo-guest-token');
-        }
         showToast(response.message, "success");
 
         // Redirigir después de login exitoso

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
-import { CartBadge } from "@/components/cart/CartBadge";
+import { Bag } from "@/components/reusable/svgs/Bag";
+import { CartCount } from "@/components/cart/CartBadge";
 import { Favoritos } from "@/components/reusable/svgs/Favoritos";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -128,7 +129,17 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
         </CustomLinkMobile>
 
         {/* Cart with icon */}
-        <div onClick={onClose} className="mobile-menu-link font-prata text-2xl"><CartBadge mobile /></div>
+        <CustomLinkMobile
+          href="/cart"
+          onClose={onClose}
+          auxId="carrito0"
+        >
+          <div className="flex items-center justify-center mx-auto w-max gap-4">
+            <Bag />
+            <span>Carrito</span>
+            <CartCount />
+          </div>
+        </CustomLinkMobile>
       </nav>
     </section>
   );
