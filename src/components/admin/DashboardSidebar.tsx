@@ -15,6 +15,8 @@ import {
   Blend,
   Camera,
   Inbox,
+  ShoppingBag,
+  MapPin,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -44,6 +46,8 @@ const navigationItems = [
     href: "/admin/products", 
     icon: Package 
   },
+  { name: "Pedidos", href: "/admin/orders", icon: ShoppingBag },
+  { name: "Entregas", href: "/admin/delivery", icon: MapPin },
   { 
     name: "Categorías", 
     href: "/admin/categories", 

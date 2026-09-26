@@ -18,6 +18,7 @@ export async function updateSession(request: NextRequest) {
   );
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
+  const isRealUser = !!user && user.is_anonymous !== true;
   const pathname = request.nextUrl.pathname;
 
   // Preserve refreshed/deleted auth cookies on redirects and API errors as well.
@@ -33,11 +34,11 @@ export async function updateSession(request: NextRequest) {
   };
 
   if (pathname === '/') return redirect('/home');
-  if (user && isAuthPage(pathname)) return redirect('/home');
-  if (!user && isAdminApi(pathname)) {
+  if (isRealUser && isAuthPage(pathname)) return redirect('/home');
+  if (!isRealUser && isAdminApi(pathname)) {
     return withCookies(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
   }
-  if (!user && isPrivatePage(pathname)) return redirect('/login');
+  if (!isRealUser && isPrivatePage(pathname)) return redirect('/login');
   // Admin layouts/actions/API handlers still verify is_admin(), never just a session.
   return response;
 }
