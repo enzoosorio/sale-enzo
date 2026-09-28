@@ -11,8 +11,8 @@
 <path id="right-eye" d="M467.383 140.15C480.208 137.66 483.7 136.421 496.447 139.259C518.378 144.142 532.088 152.848 543.332 171.768C553.869 189.501 552.388 204.439 547.756 224.675C543.976 241.19 537.846 249.643 527.867 263.405L527.663 263.686C511.658 285.758 494.07 305.108 474.081 309.2C458.513 312.387 449.061 313.868 433.894 309.2C417.169 304.052 401.987 293.581 390.54 280.671C378.118 266.661 376.451 254.928 377.145 235.158C377.708 219.108 381.799 213.32 390.54 196.146C397.959 181.57 404.361 173.923 417.331 163.637C430.92 152.861 450.178 143.49 467.383 140.15Z" fill="url(#paint4_radial_719_2185)"/>
 </g>
 <defs>
-<filter id="filter0_dii_719_2185" x="0" y="-3.5" width="666" height="439.366" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-<feFlood floodOpacity="0" result="BackgroundImageFix"/>
+<filter id="filter0_dii_719_2185" x="0" y="-3.5" width="666" height="439.366" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
 <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
 <feOffset dx="0.5" dy="0.5"/>
 <feGaussianBlur stdDeviation="0.5"/>

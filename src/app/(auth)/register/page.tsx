@@ -4,22 +4,26 @@ import { PrimaryButton } from "@/components/reusable/CTA/buttons/Button";
 import { SecondaryButton } from "@/components/reusable/CTA/buttons/SecondaryButton";
 import { registerSchema, type RegisterInput } from "@/lib/auth/schemas";
 import { registerUser } from "@/actions/register";
-import { showToast } from "@/lib/auth/toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { AuthWrapper } from "@/components/auth/AuthCardWrapper";
 import { createClient } from "@/utils/supabase/client";
+import { useMascotFeedback } from "@/store/mascotStore";
+import { FormError } from "@/components/auth/FormError";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof RegisterInput, string>>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const fireMascot = useMascotFeedback(isLoading);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
+    setFormError(null);
 
     const formData = new FormData(e.currentTarget);
 
@@ -45,8 +49,8 @@ export default function RegisterPage() {
         }
       });
       setErrors(fieldErrors);
+      fireMascot("fail");
       setIsLoading(false);
-      showToast("Por favor corrige los errores en el formulario", "error");
       return;
     }
 
@@ -55,7 +59,7 @@ export default function RegisterPage() {
       const response = await registerUser(formData);
 
       if (response.status === "success") {
-        showToast(response.message, "success");
+        fireMascot("success");
         
         // Si hay redirect sugerido, usarlo; sino ir a login por defecto
         const redirectTo = response.redirect || "/login";
@@ -63,7 +67,8 @@ export default function RegisterPage() {
           router.push(redirectTo);
         }, 1500);
       } else {
-        showToast(response.message, "error");
+        setFormError(response.message);
+        fireMascot("fail");
         
         // Si hay redirect en error (ej: "ya registrado, ir a login")
         if (response.redirect) {
@@ -73,7 +78,8 @@ export default function RegisterPage() {
         }
       }
     } catch (error) {
-      showToast("Error inesperado. Por favor intenta de nuevo.", "error");
+      setFormError("Error inesperado. Por favor intenta de nuevo.");
+      fireMascot("fail");
       console.error("Error en handleSubmit:", error);
     } finally {
       setIsLoading(false);
@@ -82,6 +88,7 @@ export default function RegisterPage() {
 
   const handleOAuthLogin = async (provider: "google" | "apple" | 'facebook') => {
       setIsLoading(true);
+      setFormError(null);
       try {
         const supabase = createClient();
         const origin = window.location.origin;
@@ -98,13 +105,15 @@ export default function RegisterPage() {
         });
   
         if (error) {
-          showToast(`Error al iniciar sesión con ${provider}: ${error.message}`, "error");
+          setFormError(`Error al iniciar sesión con ${provider}: ${error.message}`);
+          fireMascot("fail");
           setIsLoading(false);
         }
         // Si no hay error, el usuario será redirigido automáticamente
       } catch (error) {
         console.error('OAuth error:', error);
-        showToast("Error inesperado al iniciar sesión", "error");
+        setFormError("Error inesperado al iniciar sesión");
+        fireMascot("fail");
         setIsLoading(false);
       }
     };
@@ -264,6 +273,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            <FormError message={formError} />
             <PrimaryButton 
               type="submit" 
               className="w-full text-sm"
