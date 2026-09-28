@@ -77,6 +77,7 @@ export const getProductDetail = cache(async (productId: string, variantId?: stri
     .map((src) => ({ src, alt: data.name }));
 
   const detail: ProductDetailData = {
+    itemId: variant.item.id,
     name: data.name,
     brand: data.brand,
     description: data.description,

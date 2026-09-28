@@ -14,7 +14,8 @@ export default async function ProductsLayout({
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.getClaims();
-  const userSub = data?.claims.sub || null;  
+  // Guests hold an anonymous session for their cart; the header still treats them as signed out.
+  const userSub = data?.claims.is_anonymous ? null : data?.claims.sub || null;
 
   return (
     <main className="relative flex min-h-screen w-full flex-col bg-off-white">

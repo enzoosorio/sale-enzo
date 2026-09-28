@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { CarouselIndividualProducts, type CarouselImage } from '@/components/categorized-products/CarouselndvProducts'
-import { PrimaryButton } from '@/components/reusable/CTA/buttons/Button'
 import { formatPrice } from '@/lib/images/media'
+import { ProductPurchaseActions } from '@/components/cart/ProductPurchaseActions'
 
 export interface ProductDetailData {
+  itemId?: string
   name: string
   brand: string | null
   description: string | null
@@ -124,10 +125,7 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
             </div>
           </div>
         </div>
-        <div className='flex flex-row w-full items-end justify-end gap-8'>
-          <PrimaryButton>Añadir al carrito</PrimaryButton>
-          <PrimaryButton>Comprar ahora</PrimaryButton>
-        </div>
+        {!preview && product.itemId && <ProductPurchaseActions itemId={product.itemId} title={product.name} size={product.size} available={product.status === 'available' && product.stock > 0} />}
       </aside>
     </section>
   )

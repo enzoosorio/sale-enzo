@@ -1,6 +1,6 @@
 
 import { PrimaryButton } from "../../reusable/CTA/buttons/Button";
-import { Bag } from "@/components/reusable/svgs/Bag";
+import { CartBadge } from "@/components/cart/CartBadge";
 import { Favoritos } from "@/components/reusable/svgs/Favoritos";
 import { CategoriesButton, CategoriesPanelHost } from "./Categories/CategoriesButtonLayout";
 import Link from "next/link";
@@ -65,7 +65,7 @@ export const HeaderBar = async ({
           {/* Desktop Actions - Hidden on mobile */}
           <ul className="hidden md:flex items-center justify-center gap-8" data-dock-bound="end">
             <div className="flex items-center justify-center gap-4">
-              <Bag />
+              <CartBadge />
               <Favoritos id="favoritos0" />
             </div>
             {userId ? (

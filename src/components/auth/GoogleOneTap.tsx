@@ -22,7 +22,8 @@ export default function GoogleOneTap() {
     async function initialize() {
       const supabase = createClient();
       const { data } = await supabase.auth.getSession();
-      if (data.session || cancelled) return;
+      // Guests keep an anonymous cart session; they should still be offered Google sign-in.
+      if ((data.session && !data.session.user.is_anonymous) || cancelled) return;
       const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))));
       const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(nonce));
       if (cancelled) return;
