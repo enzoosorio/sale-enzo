@@ -4,12 +4,13 @@ import { PrimaryButton } from "@/components/reusable/CTA/buttons/Button";
 import { SecondaryButton } from "@/components/reusable/CTA/buttons/SecondaryButton";
 import { loginSchema, type LoginInput } from "@/lib/auth/schemas";
 import { loginUser } from "@/actions/login";
-import { showToast } from "@/lib/auth/toast";
 import { redirect, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {AuthWrapper} from "@/components/auth/AuthCardWrapper";
 import { createClient } from "@/utils/supabase/client";
+import { useMascotFeedback } from "@/store/mascotStore";
+import { FormError } from "@/components/auth/FormError";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,11 +18,14 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<
     Partial<Record<keyof LoginInput, string>>
   >({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const fireMascot = useMascotFeedback(isLoading);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
+    setFormError(null);
 
     const formData = new FormData(e.currentTarget);
 
@@ -43,8 +47,8 @@ export default function LoginPage() {
         }
       });
       setErrors(fieldErrors);
+      fireMascot("fail");
       setIsLoading(false);
-      showToast("Por favor corrige los errores en el formulario", "error");
       return;
     }
 
@@ -53,17 +57,20 @@ export default function LoginPage() {
       const response = await loginUser(formData);
 
       if (response.status === "success") {
-        showToast(response.message, "success");
+        // Sillye winks; give the animation a moment before leaving the page.
+        fireMascot("success");
 
         // Redirigir después de login exitoso
         setTimeout(() => {
           router.push("/home");
-        }, 1000);
+        }, 1600);
       } else {
-        showToast(response.message, "error");
+        setFormError(response.message);
+        fireMascot("fail");
       }
     } catch (error) {
-      showToast("Error inesperado. Por favor intenta de nuevo.", "error");
+      setFormError("Error inesperado. Por favor intenta de nuevo.");
+      fireMascot("fail");
       console.error("Error en handleSubmit:", error);
     } finally {
       setIsLoading(false);
@@ -74,6 +81,7 @@ export default function LoginPage() {
 
   const handleOAuthLogin = async (provider: "google" | "apple" | 'facebook') => {
     setIsLoading(true);
+    setFormError(null);
     try {
       const supabase = createClient();
       const origin = window.location.origin;
@@ -90,13 +98,15 @@ export default function LoginPage() {
       });
 
       if (error) {
-        showToast(`Error al iniciar sesión con ${provider}: ${error.message}`, "error");
+        setFormError(`Error al iniciar sesión con ${provider}: ${error.message}`);
+        fireMascot("fail");
         setIsLoading(false);
       }
       // Si no hay error, el usuario será redirigido automáticamente
     } catch (error) {
       console.error('OAuth error:', error);
-      showToast("Error inesperado al iniciar sesión", "error");
+      setFormError("Error inesperado al iniciar sesión");
+      fireMascot("fail");
       setIsLoading(false);
     }
   };
@@ -178,6 +188,7 @@ export default function LoginPage() {
                 )}
               </div>
             </div>
+            <FormError message={formError} />
             <PrimaryButton
               type="submit"
               className="w-full text-sm"
