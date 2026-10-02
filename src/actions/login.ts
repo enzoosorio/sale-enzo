@@ -4,6 +4,7 @@ import { getUserByEmail } from "@/lib/auth/getUserByEmail";
 import { loginSchema, type AuthResponse } from "@/lib/auth/schemas";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 /**
  * Server Action para inicio de sesión de usuario
  * 
@@ -121,12 +122,13 @@ export async function logoutUser(): Promise<void> {
 }
 
 
-export async function signInWithOauthProvider(provider: 'google' | 'facebook' | 'apple'): Promise<void> {
+export async function signInWithOauthProvider(provider: 'google' | 'facebook'): Promise<void> {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOAuth({ 
+  const origin = (await headers()).get('origin');
+  const { error } = await supabase.auth.signInWithOAuth({
         provider,
          options: {
-        redirectTo: `http://localhost:3000/auth/callback`,
+        redirectTo: `${origin}/auth/callback`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
