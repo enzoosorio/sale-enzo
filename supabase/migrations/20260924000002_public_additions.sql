@@ -55,10 +55,13 @@ select distinct initcap(trim(brand)) from public.products
 where brand is not null and trim(brand) <> ''
 on conflict (name) do nothing;
 
--- Seed the polo taxonomy if missing (category "Polos" -> 2 subcategories)
+-- Seed the polo taxonomy if missing (category "Polos" -> 2 subcategories).
+-- slug is globally unique, so skip when any "polos" row exists (a live catalog may
+-- already hold it as a subcategory, e.g. Ropa Superior -> Polos); the second insert
+-- then finds no root and does nothing.
 insert into public.product_categories (name, slug, parent_id)
 select 'Polos', 'polos', null
-where not exists (select 1 from public.product_categories where slug = 'polos' and parent_id is null);
+where not exists (select 1 from public.product_categories where slug = 'polos');
 
 insert into public.product_categories (name, slug, parent_id)
 select s.name, s.slug, c.id
