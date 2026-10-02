@@ -1,6 +1,7 @@
 "use client";
 
 import { createStore, del, entries, set, update } from "idb-keyval";
+import type { ShotRole } from "@/lib/catalog/schema";
 
 /**
  * Persistent photo queue (IndexedDB). A photo is stored the moment it's taken,
@@ -14,6 +15,8 @@ export interface CaptureJob {
   draftId: string;
   file: Blob;
   fileName: string;
+  /** Slot the photo was taken for; null = unassigned */
+  role?: ShotRole | null;
   createdAt: number;
   status: JobStatus;
   /** staging.draft_images row reserved for this photo */
@@ -26,12 +29,13 @@ export interface CaptureJob {
 
 const store = typeof indexedDB !== "undefined" ? createStore("sale-enzo-capture", "jobs") : undefined;
 
-export async function enqueue(draftId: string, files: File[]): Promise<CaptureJob[]> {
+export async function enqueue(draftId: string, files: File[], role: ShotRole | null = null): Promise<CaptureJob[]> {
   const jobs = files.map<CaptureJob>((file, i) => ({
     id: crypto.randomUUID(),
     draftId,
     file,
     fileName: file.name,
+    role,
     createdAt: Date.now() + i,
     status: "queued",
     imageId: null,

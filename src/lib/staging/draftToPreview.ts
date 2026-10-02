@@ -1,15 +1,21 @@
 import type { ProductDetailData } from "@/components/products/ProductDetailView";
 import type { WholeProductStructure } from "@/types/products/products";
 import type { DraftImageRow, DraftRow } from "@/types/staging";
+import { roleRank } from "@/lib/capture/photoSlots";
 import { conditionLabel } from "@/lib/catalog/schema";
 
 type MediaUrl = (key: string | null) => string | null;
 
-/** Draft images in display order: main first, then by position. Only finished ones. */
+/** Draft images in display order: main first, then by slot (front, back, label…), then position. Only finished ones. */
 export function orderedDoneImages(images: DraftImageRow[]): DraftImageRow[] {
   return images
     .filter((i) => i.status === "done" && i.cutout_web_key)
-    .sort((a, b) => Number(b.is_main) - Number(a.is_main) || a.position - b.position);
+    .sort(
+      (a, b) =>
+        Number(b.is_main) - Number(a.is_main) ||
+        roleRank(a.shot_role) - roleRank(b.shot_role) ||
+        a.position - b.position,
+    );
 }
 
 /** Variant metadata as persisted in product_variants.metadata (public). Defects never go here. */

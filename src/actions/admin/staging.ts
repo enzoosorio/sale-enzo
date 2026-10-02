@@ -8,8 +8,11 @@ import {
   DraftFieldsSchema,
   DraftStatusSchema,
   EMPTY_DRAFT_FIELDS,
+  ShotRoleSchema,
   type DraftFields,
+  type ShotRole,
 } from "@/lib/catalog/schema";
+import { isSingleSlot, roleRank } from "@/lib/capture/photoSlots";
 import { getDraft, staging } from "@/lib/staging/db";
 import { deleteObjects } from "@/lib/r2";
 import type { DraftImageRow, DraftRow, DraftSource, DraftWithImages } from "@/types/staging";
@@ -34,7 +37,7 @@ function fieldsOf(row: Partial<DraftRow>): DraftFields {
 export async function createDraft(
   source: DraftSource = "manual",
   initial: Partial<DraftFields> = {},
-): Promise<Result<{ id: string; sku: string }>> {
+): Promise<Result<{ id: string; sku: string; draft: DraftWithImages }>> {
   if (!(await getAdminUserId())) return unauthorized;
 
   const parsed = DraftFieldsSchema.partial().safeParse(initial);
@@ -53,8 +56,10 @@ export async function createDraft(
     .single();
 
   if (error || !data) return { success: false, error: error?.message ?? "Insert failed" };
+  const draft = await getDraft(data.id);
+  if (!draft) return { success: false, error: "Draft vanished" };
   revalidatePath("/admin/staging");
-  return { success: true, data };
+  return { success: true, data: { ...data, draft } };
 }
 
 const UpdateSchema = DraftFieldsSchema.partial().extend({
@@ -100,31 +105,73 @@ export async function discardDraft(id: string): Promise<Result> {
   return { success: true, data: undefined };
 }
 
+/** Removes a draft row and every R2 object it owns. */
+async function hardDelete(draft: DraftWithImages): Promise<Result> {
+  await deleteObjects("originals", draft.images.map((i) => i.original_key).filter((k): k is string => !!k));
+  await deleteObjects(
+    "media",
+    draft.images.flatMap((i) => [i.cutout_key, i.cutout_web_key]).filter((k): k is string => !!k),
+  );
+  const { error } = await staging().from("product_drafts").delete().eq("id", draft.id);
+  if (error) return { success: false, error: error.message };
+  revalidatePath("/admin/staging");
+  return { success: true, data: undefined };
+}
+
 /** Hard delete a discarded draft and its R2 objects (owner-triggered only). */
 export async function purgeDraft(id: string): Promise<Result> {
   if (!(await getAdminUserId())) return unauthorized;
   const draft = await getDraft(id);
   if (!draft) return { success: false, error: "Draft not found" };
   if (draft.status !== "discarded") return { success: false, error: "Only discarded drafts can be purged" };
+  return hardDelete(draft);
+}
 
-  await deleteObjects("originals", draft.images.map((i) => i.original_key).filter((k): k is string => !!k));
-  await deleteObjects(
-    "media",
-    draft.images.flatMap((i) => [i.cutout_key, i.cutout_web_key]).filter((k): k is string => !!k),
-  );
-  const { error } = await staging().from("product_drafts").delete().eq("id", id);
+/** Permanently deletes any draft that is not published (explicit user action from the staging menu). */
+export async function deleteDraft(id: string): Promise<Result> {
+  if (!(await getAdminUserId())) return unauthorized;
+  const draft = await getDraft(id);
+  if (!draft) return { success: false, error: "Draft not found" };
+  if (draft.status === "published") return { success: false, error: "No se puede eliminar un producto publicado" };
+  return hardDelete(draft);
+}
+
+/** Deletes capturing drafts that never got any data (leftovers from before drafts were created lazily). */
+export async function purgeEmptyDrafts(): Promise<Result<{ deleted: number }>> {
+  if (!(await getAdminUserId())) return unauthorized;
+  const { data, error } = await staging()
+    .from("product_drafts")
+    .select("id")
+    .eq("status", "capturing")
+    .is("name", null)
+    .is("brand", null)
+    .is("size", null)
+    .is("price", null)
+    .is("transcript", null);
   if (error) return { success: false, error: error.message };
-  revalidatePath("/admin/staging");
-  return { success: true, data: undefined };
+
+  let deleted = 0;
+  for (const { id } of data ?? []) {
+    const draft = await getDraft(id);
+    if (!draft || draft.images.length > 0) continue;
+    if ((await hardDelete(draft)).success) deleted++;
+  }
+  return { success: true, data: { deleted } };
 }
 
 // ---------------------------------------------------------------------------
 // Images
 // ---------------------------------------------------------------------------
 
-/** Reserves the next image slot for a draft (called before the worker uploads). */
-export async function reserveDraftImage(draftId: string): Promise<Result<DraftImageRow>> {
+/**
+ * Reserves the next image row for a draft (called before the worker uploads).
+ * With a `role`, the photo takes that slot: whoever held it becomes unassigned
+ * (never deleted), and a new front photo becomes the main one.
+ */
+export async function reserveDraftImage(draftId: string, role: ShotRole | null = null): Promise<Result<DraftImageRow>> {
   if (!(await getAdminUserId())) return unauthorized;
+  const parsedRole = ShotRoleSchema.nullable().safeParse(role);
+  if (!parsedRole.success) return { success: false, error: "Invalid photo role" };
 
   const { data: existing } = await staging()
     .from("draft_images")
@@ -132,10 +179,22 @@ export async function reserveDraftImage(draftId: string): Promise<Result<DraftIm
     .eq("draft_id", draftId)
     .order("position", { ascending: false });
 
+  if (role && isSingleSlot(role)) {
+    await staging().from("draft_images").update({ shot_role: null }).eq("draft_id", draftId).eq("shot_role", role);
+  }
+  const isFront = role === "front";
+  if (isFront) await staging().from("draft_images").update({ is_main: false }).eq("draft_id", draftId);
+
   const position = (existing?.[0]?.position ?? 0) + 1;
   const { data, error } = await staging()
     .from("draft_images")
-    .insert({ draft_id: draftId, position, is_main: !existing?.some((i) => i.is_main), status: "pending" })
+    .insert({
+      draft_id: draftId,
+      position,
+      shot_role: role,
+      is_main: isFront || !existing?.some((i) => i.is_main),
+      status: "pending",
+    })
     .select("*")
     .single();
 
@@ -183,8 +242,8 @@ export async function updateDraftImage(
   return { success: true, data: image };
 }
 
-export async function setMainDraftImage(draftId: string, imageId: string): Promise<Result> {
-  if (!(await getAdminUserId())) return unauthorized;
+/** Makes `imageId` the main image and copies its colors onto the draft. */
+async function applyMainImage(draftId: string, imageId: string): Promise<Result> {
   await staging().from("draft_images").update({ is_main: false }).eq("draft_id", draftId);
   const { data, error } = await staging()
     .from("draft_images")
@@ -196,6 +255,50 @@ export async function setMainDraftImage(draftId: string, imageId: string): Promi
 
   const [main, ...secondary] = (data?.dominant_colors as string[] | null) ?? [];
   if (main) await updateDraft(draftId, { main_color_hex: main, secondary_colors: secondary.slice(0, 3) });
+  return { success: true, data: undefined };
+}
+
+export async function setMainDraftImage(draftId: string, imageId: string): Promise<Result> {
+  if (!(await getAdminUserId())) return unauthorized;
+  const res = await applyMainImage(draftId, imageId);
+  revalidatePath(`/admin/staging/${draftId}`);
+  return res;
+}
+
+/**
+ * Moves a photo into a slot (or back to unassigned with `null`). If the slot is
+ * taken the two photos swap. Assigning `front` makes the photo the main one.
+ */
+export async function assignImageRole(draftId: string, imageId: string, role: ShotRole | null): Promise<Result> {
+  if (!(await getAdminUserId())) return unauthorized;
+  const parsedRole = ShotRoleSchema.nullable().safeParse(role);
+  if (!parsedRole.success) return { success: false, error: "Invalid photo role" };
+
+  const { data: moved } = await staging()
+    .from("draft_images")
+    .select("id, shot_role")
+    .eq("id", imageId)
+    .eq("draft_id", draftId)
+    .maybeSingle();
+  if (!moved) return { success: false, error: "Image not found" };
+  const previousRole = moved.shot_role as ShotRole | null;
+  if (previousRole === role) return { success: true, data: undefined };
+
+  const setRole = (id: string, shot_role: ShotRole | null) =>
+    staging().from("draft_images").update({ shot_role }).eq("id", id);
+
+  const { data: occupant } =
+    role && isSingleSlot(role)
+      ? await staging().from("draft_images").select("id").eq("draft_id", draftId).eq("shot_role", role).maybeSingle()
+      : { data: null };
+
+  // Clear first so the partial unique index never sees two holders of one slot.
+  await setRole(imageId, null);
+  if (occupant) await setRole(occupant.id, previousRole);
+  const { error } = await setRole(imageId, role);
+  if (error) return { success: false, error: error.message };
+
+  if (role === "front") await applyMainImage(draftId, imageId);
   revalidatePath(`/admin/staging/${draftId}`);
   return { success: true, data: undefined };
 }
@@ -254,7 +357,11 @@ export interface DraftListItem {
   missing_fields: string[];
   updated_at: string;
   main_web_key: string | null;
+  /** Finished web cutouts in display order (main first), for the full-screen viewer */
+  photo_keys: string[];
   done_images: number;
+  /** Nothing captured yet: no photos and no basic fields */
+  is_empty: boolean;
 }
 
 export async function listDrafts(filters: { status?: string; subcategory?: string } = {}): Promise<
@@ -265,7 +372,7 @@ export async function listDrafts(filters: { status?: string; subcategory?: strin
   let query = staging()
     .from("product_drafts")
     .select(
-      "id, sku, status, source, name, brand, size, price, match_kind, subcategory_id, missing_fields, updated_at, images:draft_images(cutout_web_key, is_main, status)",
+      "id, sku, status, source, name, brand, size, price, match_kind, subcategory_id, missing_fields, updated_at, images:draft_images(cutout_web_key, is_main, status, shot_role, position)",
     )
     .order("updated_at", { ascending: false });
 
@@ -276,16 +383,26 @@ export async function listDrafts(filters: { status?: string; subcategory?: strin
   const { data, error } = await query;
   if (error) return { success: false, error: error.message };
 
-  type Row = Omit<DraftListItem, "main_web_key" | "done_images"> & {
-    images: Pick<DraftImageRow, "cutout_web_key" | "is_main" | "status">[];
+  type Row = Omit<DraftListItem, "main_web_key" | "photo_keys" | "done_images" | "is_empty"> & {
+    images: Pick<DraftImageRow, "cutout_web_key" | "is_main" | "status" | "shot_role" | "position">[];
   };
   return {
     success: true,
-    data: (data as Row[]).map(({ images, ...d }) => ({
-      ...d,
-      price: d.price === null ? null : Number(d.price),
-      main_web_key: images.find((i) => i.is_main)?.cutout_web_key ?? images[0]?.cutout_web_key ?? null,
-      done_images: images.filter((i) => i.status === "done").length,
-    })),
+    data: (data as Row[]).map(({ images, ...d }) => {
+      const finished = images
+        .filter((i) => i.status === "done" && i.cutout_web_key)
+        .sort(
+          (a, b) =>
+            Number(b.is_main) - Number(a.is_main) || roleRank(a.shot_role) - roleRank(b.shot_role) || a.position - b.position,
+        );
+      return {
+        ...d,
+        price: d.price === null ? null : Number(d.price),
+        main_web_key: finished[0]?.cutout_web_key ?? null,
+        photo_keys: finished.map((i) => i.cutout_web_key as string),
+        done_images: finished.length,
+        is_empty: images.length === 0 && !d.name && !d.brand && !d.size && d.price === null,
+      };
+    }),
   };
 }

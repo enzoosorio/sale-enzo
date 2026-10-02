@@ -1,4 +1,4 @@
-import type { DraftFields, DraftStatus } from "@/lib/catalog/schema";
+import type { DraftFields, DraftStatus, ShotRole } from "@/lib/catalog/schema";
 import type { UUID, Timestamp } from "@/types/shared-types";
 
 export type DraftSource = "voice" | "xlsx" | "manual";
@@ -29,6 +29,8 @@ export interface DraftImageRow {
   draft_id: UUID;
   position: number;
   is_main: boolean;
+  /** Named slot (front, back...) or null while the photo is unassigned */
+  shot_role: ShotRole | null;
   original_key: string | null;
   cutout_key: string | null;
   cutout_web_key: string | null;

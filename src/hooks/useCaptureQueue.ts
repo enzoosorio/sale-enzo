@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reserveDraftImage, updateDraftImage } from "@/actions/admin/staging";
 import { bgProvider } from "@/lib/bg/types";
+import type { ShotRole } from "@/lib/catalog/schema";
 import { enqueue, jobsFor, patchJob, recoverInterrupted, removeJob, type CaptureJob } from "@/lib/capture/queue";
 import type { PresignedUpload, WorkerJob, WorkerMessage } from "@/workers/image.worker";
 import { createImageWorker } from "@/workers/createImageWorker";
@@ -30,7 +31,7 @@ export function useCaptureQueue(draftId: string, onImageDone?: () => void) {
     async (job: CaptureJob) => {
       let { imageId, position } = job;
       if (!imageId || position === null) {
-        const reserved = await reserveDraftImage(draftId);
+        const reserved = await reserveDraftImage(draftId, job.role ?? null);
         if (!reserved.success) throw new Error(reserved.error);
         ({ id: imageId, position } = reserved.data);
         await patchJob(job.id, { imageId, position });
@@ -103,9 +104,9 @@ export function useCaptureQueue(draftId: string, onImageDone?: () => void) {
   }, [draftId, pump, refresh]);
 
   const addFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[], role: ShotRole | null = null) => {
       if (files.length === 0) return;
-      await enqueue(draftId, files);
+      await enqueue(draftId, files, role);
       await refresh();
       void pump();
     },

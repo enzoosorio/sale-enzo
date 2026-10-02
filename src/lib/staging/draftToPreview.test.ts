@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_DRAFT_FIELDS } from "@/lib/catalog/schema";
+import { EMPTY_DRAFT_FIELDS, type ShotRole } from "@/lib/catalog/schema";
 import type { DraftImageRow, DraftRow } from "@/types/staging";
 import { draftToCard, draftToDetail, marketplaceText, orderedDoneImages, publicVariantMetadata } from "./draftToPreview";
 
@@ -35,11 +35,18 @@ const draft: DraftRow = {
   specs_raw: "secreto",
 };
 
-const img = (id: string, position: number, is_main: boolean, status: DraftImageRow["status"] = "done"): DraftImageRow => ({
+const img = (
+  id: string,
+  position: number,
+  is_main: boolean,
+  status: DraftImageRow["status"] = "done",
+  shot_role: ShotRole | null = null,
+): DraftImageRow => ({
   id,
   draft_id: "d1",
   position,
   is_main,
+  shot_role,
   original_key: `originals/polos/SE-0007/${position}.jpg`,
   cutout_key: `cutout/polos/SE-0007/${position}.webp`,
   cutout_web_key: `web/polos/SE-0007/${position}.webp`,
@@ -62,6 +69,17 @@ describe("draftToPreview", () => {
 
   it("main image first, failed ones excluded", () => {
     expect(orderedDoneImages(images).map((i) => i.id)).toEqual(["b", "a"]);
+  });
+
+  it("after the main image, orders by slot then position; unassigned last", () => {
+    const shots = [
+      img("x", 1, false, "done", null),
+      img("l", 2, false, "done", "label"),
+      img("f", 3, true, "done", "front"),
+      img("b", 4, false, "done", "back"),
+      img("d", 5, false, "done", "detail"),
+    ];
+    expect(orderedDoneImages(shots).map((i) => i.id)).toEqual(["f", "b", "l", "d", "x"]);
   });
 
   it("card uses the main web cutout", () => {

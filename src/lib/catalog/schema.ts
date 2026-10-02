@@ -20,6 +20,8 @@ export const DRAFT_STATUSES = [
 export const IMAGE_STATUSES = ["pending", "processing", "done", "failed"] as const;
 export const MATCH_KINDS = ["new_product", "new_variant", "new_item"] as const;
 export const DRAFT_SOURCES = ["voice", "xlsx", "manual"] as const;
+/** Named photo slots of a draft, in display order. `extra` can repeat. */
+export const SHOT_ROLES = ["front", "back", "label", "detail", "defect", "extra"] as const;
 
 /** Closed keys for product_variants.metadata (semantic enrichment). */
 export const METADATA_KEYS = [
@@ -54,6 +56,8 @@ export const MatchKindSchema = z.enum(MATCH_KINDS);
 export const DraftStatusSchema = z.enum(DRAFT_STATUSES);
 export const DraftSourceSchema = z.enum(DRAFT_SOURCES);
 export const ImageStatusSchema = z.enum(IMAGE_STATUSES);
+export const ShotRoleSchema = z.enum(SHOT_ROLES);
+export type ShotRole = z.infer<typeof ShotRoleSchema>;
 
 export type Size = z.infer<typeof SizeSchema>;
 export type Gender = z.infer<typeof GenderSchema>;
