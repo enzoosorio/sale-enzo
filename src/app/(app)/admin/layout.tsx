@@ -25,8 +25,8 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="h-[calc(100vh-var(--navbar-height))] bg-off-white">
-      <div className="flex h-[calc(100vh-var(--navbar-height))] bg-amber-600 overflow-hidden">
+    <div className="h-[calc(100dvh-var(--navbar-height))] bg-off-white">
+      <div className="flex h-[calc(100dvh-var(--navbar-height))] bg-amber-600 overflow-hidden">
         <DashboardSidebar/>
         {children}
       </div>

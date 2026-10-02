@@ -15,7 +15,12 @@ function pickMimeType(): string | undefined {
  * Hold-to-talk capture: record → /api/admin/transcribe → /api/admin/extract.
  * Returns the merged draft; dictating again applies corrections on top.
  */
-export function useVoiceCapture(draftId: string, onDraft: (draft: DraftWithImages, warnings: string[]) => void) {
+export function useVoiceCapture(
+  draftId: string,
+  onDraft: (draft: DraftWithImages, warnings: string[]) => void,
+  /** Resolves the draft id, creating the draft first when it doesn't exist yet. Dictation is the first real input. */
+  ensureDraft?: () => Promise<string>,
+) {
   const [state, setState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,10 +40,11 @@ export function useVoiceCapture(draftId: string, onDraft: (draft: DraftWithImage
         setTranscript(sttBody.text);
 
         setState("extracting");
+        const id = draftId || (await ensureDraft?.()) || "";
         const res = await fetch("/api/admin/extract", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ draftId, transcript: sttBody.text }),
+          body: JSON.stringify({ draftId: id, transcript: sttBody.text }),
         });
         const body = await res.json();
         if (!res.ok) throw new Error(body.error ?? "No se pudo interpretar el dictado");
@@ -49,7 +55,7 @@ export function useVoiceCapture(draftId: string, onDraft: (draft: DraftWithImage
         setState("error");
       }
     },
-    [draftId, onDraft],
+    [draftId, ensureDraft, onDraft],
   );
 
   const start = useCallback(async () => {
@@ -86,10 +92,11 @@ export function useVoiceCapture(draftId: string, onDraft: (draft: DraftWithImage
       setTranscript(text);
       setError(null);
       setState("extracting");
+      const id = draftId || (await ensureDraft?.()) || "";
       const res = await fetch("/api/admin/extract", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ draftId, transcript: text }),
+        body: JSON.stringify({ draftId: id, transcript: text }),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -100,7 +107,7 @@ export function useVoiceCapture(draftId: string, onDraft: (draft: DraftWithImage
       onDraft(body.draft, body.warnings ?? []);
       setState("idle");
     },
-    [draftId, onDraft],
+    [draftId, ensureDraft, onDraft],
   );
 
   return { state, transcript, error, start, stop, submitText };

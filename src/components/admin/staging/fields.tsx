@@ -5,13 +5,13 @@ import type { ReactNode } from "react";
 export type FieldTone = "missing" | "uncertain" | "ok";
 
 const TONE_CLASS: Record<FieldTone, string> = {
-  missing: "border-red-400 bg-red-50/60",
-  uncertain: "border-amber-400 bg-amber-50/60",
-  ok: "border-gray-300 bg-white",
+  missing: "border-rose-300 bg-rose-50/50",
+  uncertain: "border-amber-300 bg-amber-50/50",
+  ok: "border-gray-200 bg-white",
 };
 
 export const inputClass = (tone: FieldTone = "ok") =>
-  `w-full rounded-lg border px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-gray-900/20 ${TONE_CLASS[tone]}`;
+  `w-full rounded-xl border px-3.5 py-3 text-base md:text-sm outline-none transition-shadow focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 disabled:opacity-60 ${TONE_CLASS[tone]}`;
 
 export function Field({
   label,
@@ -25,11 +25,11 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1.5 min-w-0">
-      <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+    <label className="flex flex-col gap-2 min-w-0">
+      <span className="text-sm font-medium text-gray-800 flex items-center gap-2">
         {label}
-        {tone === "missing" && <span className="text-[11px] font-semibold text-red-600">Falta</span>}
-        {tone === "uncertain" && <span className="text-[11px] font-semibold text-amber-700">Revisar</span>}
+        {tone === "missing" && <span className="text-[11px] font-medium text-rose-600">Falta</span>}
+        {tone === "uncertain" && <span className="text-[11px] font-medium text-amber-700">Revisar</span>}
       </span>
       {children}
       {hint && <span className="text-xs text-gray-500">{hint}</span>}
@@ -70,13 +70,16 @@ export function SelectField<T extends string>({
   );
 }
 
-export function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+/** Titled group of fields. No card chrome: spacing does the grouping. */
+export function Section({ title, subtitle, children }: { title?: string; subtitle?: string; children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
-      <header>
-        <h2 className="font-prata text-lg text-gray-900">{title}</h2>
-        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
-      </header>
+    <section className="space-y-5">
+      {title && (
+        <header className="space-y-1">
+          <h2 className="font-prata text-xl text-gray-900">{title}</h2>
+          {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+        </header>
+      )}
       {children}
     </section>
   );

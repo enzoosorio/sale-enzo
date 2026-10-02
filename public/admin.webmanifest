@@ -2,7 +2,7 @@
   "name": "Sale Enzo · Captura",
   "short_name": "Sale Enzo",
   "description": "Captura de productos por voz y fotos",
-  "start_url": "/admin/capture",
+  "start_url": "/admin/capture/new",
   "scope": "/admin/",
   "display": "standalone",
   "orientation": "portrait",

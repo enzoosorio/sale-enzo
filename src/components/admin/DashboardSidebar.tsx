@@ -33,7 +33,7 @@ const navigationItems = [
   },
   { 
     name: "Capturar",
-    href: "/admin/capture",
+    href: "/admin/capture/new",
     icon: Camera
   },
   {
