@@ -55,8 +55,8 @@ export function OrderStatusPage({ id, token }: { id: string; token?: string }) {
       {order.payment_status === 'refunded' && <p className="text-sm text-black/60 mb-8">Otra persona completó la compra antes que tú. Devolvimos el importe a tu medio de pago.</p>}
       <div className="border-t border-black/20 py-6"><ul className="space-y-2">{order.order_items.map((item, index) => <li key={index} className="flex justify-between gap-4"><span>{item.title_snapshot}{item.size_snapshot ? ` · ${item.size_snapshot}` : ''}</span><span>{formatPrice(Number(item.price))}</span></li>)}</ul></div>
       <div className="flex justify-between border-t border-black py-5 text-lg"><strong>Total</strong><strong>{formatPrice(Number(order.total))}</strong></div>
-      {retry && <Link href="/checkout" className="inline-block bg-black text-white px-6 py-3 mt-4 focus-visible:outline-2 focus-visible:outline-offset-2">Reintentar compra</Link>}
+      {retry && chat && <a href={chat} target="_blank" rel="noopener noreferrer" className="inline-block bg-black text-white px-6 py-3 mt-4 focus-visible:outline-2 focus-visible:outline-offset-2">Pedir por WhatsApp</a>}
     </>}
-    <div className="flex gap-5 mt-8">{chat && <a href={chat} target="_blank" rel="noopener noreferrer" className="underline">Consultar por WhatsApp</a>}<Link href="/home" className="underline">Seguir explorando</Link></div>
+    <div className="flex gap-5 mt-8">{chat && !retry && <a href={chat} target="_blank" rel="noopener noreferrer" className="underline">Consultar por WhatsApp</a>}<Link href="/home" className="underline">Seguir explorando</Link></div>
   </div></main>;
 }

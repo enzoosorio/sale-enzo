@@ -1,3 +1,4 @@
-import { CheckoutPage } from '@/components/cart/CheckoutPage';
-export const metadata = { title: 'Checkout | Sale Enzo' };
-export default function Page() { return <CheckoutPage />; }
+import { redirect } from 'next/navigation';
+
+// Purchases are closed over WhatsApp from the cart; online checkout is retired.
+export default function Page() { redirect('/cart'); }
