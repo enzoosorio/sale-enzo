@@ -2,10 +2,23 @@ import type { Metadata } from "next";
 import "./globals.css";
 import {Toaster} from 'react-hot-toast'
 import GoogleOneTap from "@/components/auth/GoogleOneTap";
+import { BASE_OPEN_GRAPH, DEFAULT_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
-  title: { default: "Sale Enzo", template: "%s | Sale Enzo" },
-  description: "Prendas de segunda mano seleccionadas con cuidado.",
+  metadataBase: new URL(siteUrl()),
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    ...BASE_OPEN_GRAPH,
+    title: SITE_NAME,
+    description: DEFAULT_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: DEFAULT_DESCRIPTION,
+  },
 };
 
 
