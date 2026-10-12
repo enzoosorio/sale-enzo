@@ -21,6 +21,16 @@ export default function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const fireMascot = useMascotFeedback(isLoading);
 
+  // Coming back from the OAuth provider can restore this page from the back/forward cache with
+  // isLoading still true, which would leave every button disabled.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setIsLoading(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -90,10 +100,11 @@ export default function LoginPage() {
         provider,
         options: {
           redirectTo: `${origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          // Google-only params: Facebook rejects/ignores them.
+          queryParams:
+            provider === 'google'
+              ? { access_type: 'offline', prompt: 'consent' }
+              : undefined,
         },
       });
 

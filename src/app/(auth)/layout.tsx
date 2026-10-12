@@ -24,22 +24,21 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="h-[90vh] md:h-auto">
+    <div>
       <HeaderBar />
-      <main className="relative overflow-hidden flex flex-col h-[calc(100vh-var(--navbar-height))]">
-        {/* sillye svg head - fixed background - Desktop positioned right, Mobile positioned bottom center */}
+      {/* dvh follows the visible viewport on phones (100vh ignores the browser toolbars). The page
+          scrolls naturally on mobile, so nothing at the bottom of the card can end up unreachable. */}
+      <main className="relative overflow-clip flex flex-col min-h-[calc(100dvh-var(--navbar-height))]">
+        {/* sillye svg head - Mobile: in flow, centered under the card (fully visible, small canvas).
+            sm and up: absolute background figure positioned beside the card. */}
         <SillyMascot
-          className={`absolute md:top-40 top-1/2 left-1/2 -translate-x-1/2 scale-[0.32]
-            sm:left-2/12 sm:translate-x-0 opacity-85 sm:opacity-90 sm:top-1/3 sm:scale-[0.6]
-            md:left-1/4 md:scale-90 md:opacity-100
+          className={`relative mx-auto max-sm:order-last max-sm:-mt-6 opacity-85
+            sm:absolute sm:mx-0 sm:left-2/12 sm:opacity-90 sm:top-1/3 sm:scale-[0.6]
+            md:top-40 md:left-1/4 md:scale-90 md:opacity-100
             lg:left-5/12 lg:scale-100 lg:top-28
             xl:left-[45%] pointer-events-none z-0`}
         />
-        {/* Scrollable content area */}
-        {/* Altura estatica deberia acoplarse a lo restante del screen (viewport)
-      podria calcularlo dinamicamente (js)
-      */}
-        <div className="relative max-h-[90vh] z-10 overflow-auto pt-1 pb-16 scrollbar-hide">
+        <div className="relative z-10 pt-1 pb-[max(4rem,env(safe-area-inset-bottom))]">
           {children}
         </div>
       </main>
