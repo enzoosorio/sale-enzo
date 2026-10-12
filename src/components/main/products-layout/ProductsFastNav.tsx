@@ -48,13 +48,13 @@ export const ProductsFastNav = memo(({ items, mainItem }: ProductsFastNavProps) 
     }, [carouselApi, items, mainItem.slug]);
 
     return (
-        <div className="fast-nav-wrapper h-32 absolute w-screen z-20 top-20 flex items-center justify-center bg-off-white">
+        <div className="fast-nav-wrapper h-32 absolute w-full z-20 top-20 flex items-center justify-center bg-off-white">
             <Carousel
                 opts={{ align: "start", dragFree: true, containScroll: "trimSnaps" }}
                 setApi={setCarouselApi}
                 className="min-w-full h-32 flex items-center justify-start"
             >
-                <CarouselContent className="flex justify-start gap-12 items-center px-9 min-h-full h-32 min-w-full">
+                <CarouselContent className="flex justify-start gap-12 items-center px-gutter min-h-full h-32 min-w-full">
                     <CarouselItem className="basis-auto w-max h-max">
                             <h1 className="block subcategory-title hover:text-black/75 w-max whitespace-nowrap shrink-0 transition-colors title-main font-prata text-8xl">
                                 {mainItem.name}

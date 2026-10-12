@@ -9,7 +9,7 @@ interface ProductGridProps {
 export const ProductGrid = forwardRef<HTMLElement, ProductGridProps>(
   ({ products,  }, ref) => {
     return (
-      <section ref={ref} className={`products-grid bg-off-white w-full pb-16 transition-all`}>
+      <section ref={ref} className="products-grid bg-off-white w-full">
         {products.map((product) => (
           <ProductCard key={product.item.id} product={product} />
         ))}

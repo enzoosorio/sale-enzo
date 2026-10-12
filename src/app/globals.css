@@ -239,60 +239,63 @@
 
 /* ============================================================ */
 
-/* ===== DEFAULT STATE ===== */
-.wrapper-pf {
-  display: flex;
-  width: 100%;
-}
+/* Layered so Tailwind utilities on the same elements win instead of fighting these rules. */
+@layer components {
+  /* ===== DEFAULT STATE ===== */
+  .wrapper-pf {
+    display: flex;
+    width: 100%;
+  }
 
-/* SIDEBAR */
-.filters-wrapper {
-  flex-basis: 0%;
-  width: 0vw;
-  flex-shrink: 0;
-  
-  visibility: hidden;
-  
-  pointer-events: none;
-  background-color: transparent;
-  overflow: hidden;
-}
+  /* SIDEBAR */
+  .filters-wrapper {
+    flex-basis: 0%;
+    width: 0vw;
+    flex-shrink: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background-color: transparent;
+    overflow: hidden;
+  }
 
-/* GRID */
-.products-grid {
-  flex-basis: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  grid-auto-rows: max-content;
-  align-items: start;
-  gap: 1.5rem;
-  padding: 4rem 2rem;
-  transform: translate(-1rem, 12rem);
-  transition: none; /* importante: GSAP controla */
-}
+  /* GRID */
+  .products-grid {
+    /* Column floor scales with the viewport so wide screens get more columns; auto-fill keeps few products from stretching. */
+    --grid-min-col: min(100%, clamp(220px, 14vw, 280px));
+    flex-basis: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-min-col), 1fr));
+    grid-auto-rows: max-content;
+    align-items: start;
+    gap: 1.5rem;
+    /* Top padding clears the absolute fast-nav bar (top 5rem + 8rem tall) with the original breathing room. */
+    padding: 16rem var(--page-gutter) 4rem;
+    transition: none; /* importante: GSAP controla */
+  }
 
-/* ===== ACTIVE STATE ===== */
+  /* ===== ACTIVE STATE ===== */
 
-.wrapper-pf.layout-active .filters-wrapper {
-  flex-basis: 33%;
-  visibility: visible;
-  pointer-events: auto;
-  background-color: #221C1C;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-}
+  .wrapper-pf.layout-active .filters-wrapper {
+    flex-basis: 33%;
+    visibility: visible;
+    pointer-events: auto;
+    background-color: #221C1C;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
 
-.filters-wrapper.opacity-off {
-  opacity: 1;
-}
+  .filters-wrapper.opacity-off {
+    opacity: 1;
+  }
 
-.wrapper-pf.layout-active .products-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  grid-auto-rows: max-content;
-  align-items: start;
-  flex-basis: 67%;
-  transform: translateY(0rem);
+  .wrapper-pf.layout-active .products-grid {
+    --grid-min-col: min(100%, 220px);
+    flex-basis: 67%;
+    /* Fast-nav is hidden while filters are open, so the grid moves up. */
+    padding-top: 4rem;
+  }
 }
 
 
@@ -543,11 +546,13 @@ box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 1
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
-@media (max-width: 767px) {
- .wrapper-pf.layout-active { flex-direction: column; }
- .wrapper-pf.layout-active .filters-wrapper { position: relative; width: 100%; flex-basis: auto; height: auto; max-height: 60vh; }
- .products-grid { min-width: 0; width: 100%; padding-inline: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); transform: translateY(12rem); }
- .wrapper-pf.layout-active .products-grid { width: 100%; flex-basis: auto; }
+@layer components {
+  /* Phones: filters stack above the grid. Gutters and columns come from the base .products-grid rule. */
+  @media (max-width: 767px) {
+    .wrapper-pf.layout-active { flex-direction: column; }
+    .wrapper-pf.layout-active .filters-wrapper { position: relative; width: 100%; flex-basis: auto; height: auto; max-height: 60vh; }
+    .wrapper-pf.layout-active .products-grid { width: 100%; flex-basis: auto; }
+  }
 }
 
 /* ===== CATEGORIES PANEL ===== */

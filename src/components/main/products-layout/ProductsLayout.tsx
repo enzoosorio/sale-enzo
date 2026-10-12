@@ -544,10 +544,10 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
       <section className="products-section w-full min-h-screen overflow-clip flex flex-col items-start justify-start gap-0 relative ">
         <div
           ref={containerRef}
-          className={`wrapper-pf relative grid grid-cols-1 grid-rows-2 w-screen gap-0`}
+          className="wrapper-pf relative w-full"
         >
-          <div className="absolute -top-4 -left-4 w-full z-30">
-            <Breadcrumbs id="bread-in-layout" />
+          <div className="absolute -top-4 left-0 w-full z-30">
+            <Breadcrumbs id="bread-in-layout" className="absolute top-14 left-gutter z-20" />
           </div>
           <ProductsFastNav
             items={headerNavigationItems}
@@ -555,7 +555,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           />
           <aside
             ref={sidebarRef}
-            className="relative filters-wrapper overflow-y-auto text-white transition-colors"
+            className="relative filters-wrapper text-white transition-colors"
           >
             <h1 className="subcategory-title pt-10 pb-6 px-4 bg-black/30  font-prata text-6xl bg-">
               {mainFastNavItem.name}
