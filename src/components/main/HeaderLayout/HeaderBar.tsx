@@ -29,11 +29,12 @@ export const HeaderBar = async ({
       <header
         className={` text-black
         min-h-(--navbar-height) flex items-center justify-center
-        ${variant === "product-detail" ? "absolute z-10 top-10 left-1/2 -translate-x-1/2 bg-white/15 shadow-xl backdrop-blur-2xl w-11/12 rounded-sm" : "sticky top-0 z-30 has-[[data-search-elevated]]:z-[101] gradial-radient w-full"}
+        ${variant === "product-detail" ? "absolute z-10 top-10 inset-x-gutter bg-white/15 shadow-xl backdrop-blur-2xl rounded-sm" : "sticky top-0 z-30 has-[[data-search-elevated]]:z-[101] gradial-radient w-full"}
         
         `}
       >
-        <nav className="relative p-2 bg-transparent px-4 md:px-16 xl:px-20 w-full h-full flex items-center justify-between">
+        {/* The floating detail header already sits on the page gutter, so it only needs inner padding. */}
+        <nav className={`relative py-2 bg-transparent ${variant === "product-detail" ? "px-4 md:px-8" : "px-gutter"} w-full h-full flex items-center justify-between`}>
           {/* Desktop Navigation - Hidden on mobile */}
           <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata" data-dock-bound="start">
             <li className="cursor-pointer">
