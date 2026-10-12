@@ -4,6 +4,40 @@ import { parseSearchParams } from "@/utils/filters/urlFilters";
 import { ProductsLayout } from "@/components/main/products-layout/ProductsLayout";
   import { getProductsForGrid } from "@/utils/filters/rpcProductsGrid";
   import { getCategoryFiltersPayloadServer } from "@/utils/filters/rpcCategoryFiltersServer";
+import type { Metadata } from "next";
+import { listingSlugs, productsListingPath } from "@/lib/seo/canonical";
+import { resolveListingNames } from "@/lib/seo/catalog";
+import { BASE_OPEN_GRAPH, DEFAULT_OG_IMAGE } from "@/lib/seo/site";
+
+type ProductsSearchParams = { [key: string]: string | string[] | undefined };
+
+/**
+ * Title and description follow the category hierarchy only. The canonical
+ * keeps category/subcategory and drops color, size, gender, fit and page.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<ProductsSearchParams>;
+}): Promise<Metadata> {
+  const slugs = listingSlugs(await searchParams);
+  const names = await resolveListingNames(slugs.category, slugs.subcategory);
+
+  const title = names.subcategory
+    ? `${names.subcategory.name} · ${names.category?.name}`
+    : (names.category?.name ?? "Todas las prendas");
+  const subject = names.subcategory?.name ?? names.category?.name ?? "Ropa";
+  const description = `${subject} de segunda mano de mi clóset, con fotos reales, talla y estado de cada prenda. Coordinamos la compra por WhatsApp.`;
+  const canonical = productsListingPath(names.category?.slug, names.subcategory?.slug);
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { ...BASE_OPEN_GRAPH, title, description, url: canonical, images: [DEFAULT_OG_IMAGE] },
+    twitter: { card: "summary_large_image", title, description, images: [DEFAULT_OG_IMAGE] },
+  };
+}
 
 /**
  * Products Page - Server Component
