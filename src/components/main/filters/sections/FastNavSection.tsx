@@ -38,8 +38,10 @@ export const FastNavSection = ({
           return (
             <button
               key={item.slug}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => onSelectItem?.(item.slug)}
-              className={`px-4 min-w-28 py-2.5 border text-base rounded-none transition-colors cursor-pointer
+              className={`min-h-11 px-4 min-w-28 py-2.5 border text-base rounded-none transition-colors cursor-pointer
                 ${darkMode 
                   ? isSelected 
                     ? 'bg-[#FAF9F6] text-[#221C1C] border-[#FAF9F6]' 

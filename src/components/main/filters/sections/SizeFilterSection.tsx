@@ -34,8 +34,10 @@ export const SizeFilterSection = ({
           return (
             <button
               key={size}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => onToggleSize?.(size)}
-              className={`relative px-4 overflow-hidden max-h-24 flex-1 py-2.5 min-w-1/2 text-base border transition-colors cursor-pointer
+              className={`relative min-h-11 px-4 overflow-hidden max-h-24 flex-1 py-2.5 min-w-1/2 text-base border transition-colors cursor-pointer
                 ${darkMode 
                   ? isSelected 
                     ? 'bg-[#FAF9F6] text-[#221C1C] border-[#FAF9F6]' 

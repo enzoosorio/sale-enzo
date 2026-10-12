@@ -38,9 +38,11 @@ export const ColorFilterSection = ({
               key={color.name}
               onMouseEnter={() => setKeyColorHovered(index)}
               onMouseLeave={() => setKeyColorHovered(null)}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => onToggleColor?.(color.name)}
               className={`
-                relative w-full flex items-center justify-between px-4 py-3
+                relative min-h-11 w-full flex items-center justify-between px-4 py-3
                 border border-current transition-colors overflow-hidden cursor-pointer
                 ${!isSelected ? "opacity-90 hover:opacity-100" : ""}
               `}
