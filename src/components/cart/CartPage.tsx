@@ -23,7 +23,7 @@ export function CartPage() {
   return <main className="min-h-screen bg-off-white px-5 py-12 md:px-16 font-inria text-foreground">
     <div className="mx-auto max-w-5xl"><p className="text-xs uppercase tracking-[0.25em] mb-4">Sale Enzo / Compra</p>
       <h1 className="font-prata text-3xl md:text-5xl mb-4">Tu carrito</h1>
-      <p className="text-sm text-black/65 mb-6">Añadir una prenda no la reserva. Confirmaremos disponibilidad y precio al continuar al pago.</p>
+      <p className="text-sm text-black/65 mb-6">Añadir una prenda no la reserva. La compra se cierra por WhatsApp: ahí confirmamos disponibilidad y coordinamos la entrega.</p>
       <ReservationNotice pending={cart.pending_order} />
       {loading ? <p role="status">Cargando carrito…</p> : cart.items.length === 0 ?
         <div className="border-t border-black/20 py-14"><p className="mb-6">Tu carrito está vacío.</p><Link className="underline" href="/home">Explorar prendas</Link></div> :
@@ -48,11 +48,12 @@ export function CartPage() {
           <aside className="border-t border-black pt-6 h-fit"><h2 className="font-prata text-xl mb-6">Resumen</h2>
             <div className="flex justify-between mb-2"><span>Prendas</span><span>{cart.items.length}</span></div>
             <div className="flex justify-between border-t border-black/20 pt-4 mb-2"><span>Subtotal</span><strong>{formatPrice(cartSubtotal(cart))}</strong></div>
-            <p className="text-sm text-black/60 mb-6">La entrega se calcula en checkout.</p>
-            {cartBlocked(cart)
-              ? <span className="block text-center bg-black/40 text-white px-5 py-3" aria-disabled="true">Continuar</span>
-              : <Link href="/checkout" className="block text-center bg-black text-white px-5 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">Continuar</Link>}
-            {chat && <a href={chat} target="_blank" rel="noopener noreferrer" className="block text-center border border-black px-5 py-3 mt-3">Consultar por WhatsApp</a>}
+            <p className="text-sm text-black/60 mb-6">La entrega y el pago se coordinan por chat.</p>
+            {!chat
+              ? <p className="text-sm text-black/60 border border-black/20 px-4 py-3" role="note">El contacto por WhatsApp aún no está disponible. Vuelve pronto.</p>
+              : cartBlocked(cart)
+                ? <span className="block text-center bg-black/40 text-white px-5 py-3" aria-disabled="true">Pedir por WhatsApp</span>
+                : <a href={chat} target="_blank" rel="noopener noreferrer" className="block text-center bg-black text-white px-5 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">Pedir por WhatsApp</a>}
           </aside>
         </div>}
       {error && <p role="alert" className="text-red-700 mt-4">{error}</p>}
