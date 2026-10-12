@@ -1,10 +1,12 @@
 import { isAdmin } from '@/lib/auth/isAdmin';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
+import { NO_INDEX } from '@/lib/seo/site';
 import { DashboardSidebar } from '@/components/admin/DashboardSidebar';
 
 export const metadata: Metadata = {
   title: 'Admin Dashboard',
+  robots: NO_INDEX,
   description: 'Panel de administración seguro para gestionar productos, categorías y más',
   // Installable capture app (iPhone: Share → Add to Home Screen)
   manifest: '/admin.webmanifest',

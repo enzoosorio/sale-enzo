@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
 import { CartPage } from '@/components/cart/CartPage';
-export const metadata = { title: 'Carrito | Sale Enzo' };
+import { NO_INDEX } from '@/lib/seo/site';
+export const metadata: Metadata = { title: 'Carrito', robots: NO_INDEX };
 export default function Page() { return <CartPage />; }
