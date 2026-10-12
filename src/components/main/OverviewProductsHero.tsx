@@ -9,19 +9,20 @@ interface OverviewProductsHeroProps {
 export const OverviewProductsHero = ({ products }: OverviewProductsHeroProps) => {
   return (
     <section className="section-overview w-full flex flex-col items-center justify-center py-8 gap-6">
-      <div className="products-wrapper w-full max-w-5xl overflow-hidden xl:max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-8 flex flex-wrap gap-6 items-center justify-center">
+      {/* Fluid grid on the page gutter: the column floor grows with the viewport so wide screens fill the width. */}
+      <div className="products-wrapper w-full px-gutter py-8 grid grid-cols-[repeat(auto-fill,minmax(min(100%,clamp(9rem,10vw,12rem)),1fr))] gap-6 items-start">
         {products?.map((product, index) => {
           const paddedId = product.id.toString().padStart(2, '0');
           const imgSrc = product.variant.main_img_url || '/images/products/polo-1.png';
           return (
-            <div key={product.id} className="w-36 xl:w-40 aspect-auto bg-white">
+            <div key={product.id} className="w-full bg-white">
               <Link href={`/products/${product.id}`} className="flex flex-col items-center justify-center gap-2">
                 <Image
                   src={imgSrc}
                   alt={product.name}
-                  width={160}
-                  height={200}
-                  sizes="(max-width: 1280px) 144px, 160px"
+                  width={192}
+                  height={240}
+                  sizes="(max-width: 640px) 50vw, (max-width: 1280px) 20vw, 12rem"
                   className="object-cover w-full h-auto"
                   priority={index === 0}
                 />
