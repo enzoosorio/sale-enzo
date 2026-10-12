@@ -51,3 +51,7 @@ next-env.d.ts
 
 # Prebundled capture worker
 /public/workers/
+
+# Self-hosted dotLottie player WASM (copied by scripts/build-worker.mjs)
+/public/lottie/dotlottie-player.wasm
+/.playwright-mcp

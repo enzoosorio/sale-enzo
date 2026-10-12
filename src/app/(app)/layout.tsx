@@ -18,9 +18,7 @@ export default async function AppLayout({
         <HeaderBar userId={userSub} />
         <div className="flex-1">
           {children}
-        </div>
-        {/* <MusicPlayer/> */}
-        <FooterLoader />
+        </div> 
     </main>
   );
 }

@@ -6,7 +6,7 @@ import { registerSchema, type RegisterInput } from "@/lib/auth/schemas";
 import { registerUser } from "@/actions/register";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthWrapper } from "@/components/auth/AuthCardWrapper";
 import { createClient } from "@/utils/supabase/client";
 import { useMascotFeedback } from "@/store/mascotStore";
@@ -18,6 +18,16 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof RegisterInput, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const fireMascot = useMascotFeedback(isLoading);
+
+  // Coming back from the OAuth provider can restore this page from the back/forward cache with
+  // isLoading still true, which would leave every button disabled.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setIsLoading(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -97,10 +107,11 @@ export default function RegisterPage() {
           provider,
           options: {
             redirectTo: `${origin}/auth/callback`,
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
+            // Google-only params: Facebook rejects/ignores them.
+            queryParams:
+              provider === 'google'
+                ? { access_type: 'offline', prompt: 'consent' }
+                : undefined,
           },
         });
   
