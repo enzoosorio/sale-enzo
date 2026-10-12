@@ -125,7 +125,7 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
             </div>
           </div>
         </div>
-        {!preview && product.itemId && <ProductPurchaseActions itemId={product.itemId} title={product.name} size={product.size} available={product.status === 'available' && product.stock > 0} />}
+        {!preview && product.itemId && <ProductPurchaseActions itemId={product.itemId} title={product.name} size={product.size} price={product.price} available={product.status === 'available' && product.stock > 0} />}
       </aside>
     </section>
   )
