@@ -23,7 +23,7 @@ export async function updateSession(request: NextRequest) {
   const isRealUser = !!user && user.is_anonymous !== true;
   const pathname = request.nextUrl.pathname;
 
-  // First request after any sign-in method (password, OAuth, One Tap) moves the guest cart to the account.
+  // First request after any sign-in method (password, OAuth) moves the guest cart to the account.
   const guestCookie = request.cookies.get(GUEST_CART_COOKIE)?.value;
   if (isRealUser && guestCookie) {
     const guestId = await verifyGuestCookie(guestCookie);
