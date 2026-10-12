@@ -36,3 +36,11 @@ for (const file of ["webp_enc.wasm", "webp_enc_simd.wasm"]) {
 }
 
 console.log(`✓ worker bundled → ${OUT}`);
+
+// Self-host the dotLottie player WASM (same version as the installed JS) so Sillye never
+// depends on jsdelivr/unpkg at runtime. Referenced by SillyMascot via setWasmUrl.
+await cp(
+  "node_modules/@lottiefiles/dotlottie-web/dist/dotlottie-player.wasm",
+  "public/lottie/dotlottie-player.wasm",
+);
+console.log("✓ dotlottie wasm → public/lottie");

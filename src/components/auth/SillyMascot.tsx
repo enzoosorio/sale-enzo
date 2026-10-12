@@ -6,14 +6,22 @@ import type { DotLottieWorker, RenderConfig } from "@lottiefiles/dotlottie-react
 import { useMascotStore } from "@/store/mascotStore";
 
 const SILLYE_SRC = "/lottie/sillye.lottie";
+const SILLYE_WASM = "/lottie/dotlottie-player.wasm";
 const SILLYE_FALLBACK = "/svgs/sillye/nav-animation/syllie-3d-idle.svg";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 // Player JS + WASM stay out of the initial bundle; the static SVG covers first paint.
 // The worker variant rasterizes on an OffscreenCanvas in a Web Worker, so Sillye's frames
 // never compete with typing, scrolling or form work on the main thread.
+// The WASM is self-hosted (copied to public/lottie by scripts/build-worker.mjs) so a blocked or
+// slow jsdelivr/unpkg can't leave a phone stuck on the static head. It must be set before the
+// first player is constructed.
 const DotLottieWorkerReact = dynamic(
-  () => import("@lottiefiles/dotlottie-react").then((mod) => mod.DotLottieWorkerReact),
+  () =>
+    import("@lottiefiles/dotlottie-react").then((mod) => {
+      mod.setWasmUrl(new URL(SILLYE_WASM, window.location.origin).href);
+      return mod.DotLottieWorkerReact;
+    }),
   { ssr: false },
 );
 
@@ -76,9 +84,17 @@ export function SillyMascot({ className = "" }: { className?: string }) {
     let cancelled = false;
 
     const onLoad = async () => {
+      // A state machine that can't start would otherwise leave the static head forever, silently.
+      const fail = (reason: string) => {
+        if (cancelled) return;
+        console.warn(`[SillyMascot] ${reason}; falling back to the static head`);
+        setHasFailed(true);
+      };
       const machineId = dotLottie.manifest?.stateMachines?.[0]?.id;
-      if (!machineId || !(await dotLottie.stateMachineLoad(machineId))) return;
-      if (!(await dotLottie.stateMachineStart()) || cancelled) return;
+      if (!machineId) return fail("no state machine in the .lottie file");
+      if (!(await dotLottie.stateMachineLoad(machineId))) return fail("state machine failed to load");
+      if (!(await dotLottie.stateMachineStart())) return fail("state machine failed to start");
+      if (cancelled) return;
 
       const { inputFocused, loading } = useMascotStore.getState();
       await dotLottie.stateMachineSetBooleanInput("emailFocused", inputFocused);
@@ -117,7 +133,9 @@ export function SillyMascot({ className = "" }: { className?: string }) {
   const showPlayer = !reducedMotion && !hasFailed;
 
   return (
-    <div className={`w-[1077px] h-[705px] ${className}`}>
+    // Below `sm` the box and canvas are sized to what is actually shown (no CSS scale), so the
+    // canvas backing store stays small on phones; sm and up keep the original large layout.
+    <div className={`w-[345px] h-[226px] sm:w-[1077px] sm:h-[705px] ${className}`}>
       {/* Static idle head: first paint, error and reduced-motion fallback */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -146,7 +164,7 @@ export function SillyMascot({ className = "" }: { className?: string }) {
           renderConfig={RENDER_CONFIG}
           dotLottieRefCallback={setDotLottie}
           aria-label="Sillye"
-          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1325px] h-[1325px] pointer-events-none transition-opacity duration-300 ${
+          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[424px] h-[424px] sm:w-[1325px] sm:h-[1325px] pointer-events-none transition-opacity duration-300 ${
             isReady ? "opacity-100" : "opacity-0"
           }`}
         />
