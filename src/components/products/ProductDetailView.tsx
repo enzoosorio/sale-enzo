@@ -55,11 +55,11 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
   const specs = Object.entries(product.metadata).filter(([key]) => META_LABEL[key])
 
   return (
-    <section className={`individual-product translate-y-0 flex lg:flex-row flex-col items-center justify-center w-full ${preview ? 'min-h-[80vh]' : 'lg:h-screen'} bg-off-white`}>
+    <section className={`individual-product translate-y-0 flex lg:flex-row flex-col items-center justify-center w-full ${preview ? 'min-h-[80vh]' : 'pt-32 lg:pt-0 lg:h-screen'} bg-off-white`}>
       <div className={`carousel-indv-product flex w-full ${preview ? 'h-[80vh]' : 'h-[70vh] lg:h-full'} items-center justify-center`}>
         <CarouselIndividualProducts images={product.images} heightClass={preview ? 'h-[80vh]' : 'h-[70vh] lg:h-screen'} />
       </div>
-      <aside className='details-indv-product flex flex-col items-start justify-center gap-16 p-8 w-full h-full'>
+      <aside className='details-indv-product flex flex-col items-start justify-center gap-16 py-8 px-gutter w-full h-full'>
         <div className='flex flex-col items-start justify-center w-full gap-16'>
           <div className='flex flex-col items-start justify-center gap-8 w-full'>
             <div className='text-base font-vidaloka flex flex-col items-start justify-start gap-4'>

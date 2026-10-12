@@ -473,24 +473,31 @@
   box-shadow: inset 2px 1px 4px 0px rgba(0, 0, 0, 25%), 0px 4px 4px 0px rgba(0, 0, 0, 25%),
 }
 
-.individual-product{
-  display: flex;
-  flex-direction: row;
-  gap: 0;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-}
+@layer components {
+  /* Stacked on phones and tablets; image and details side by side from Tailwind's lg (64rem). */
+  .individual-product {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
 
-.carousel-indv-product{
-  flex-basis: 48%;
-  
-  
-}
+  @media (min-width: 64rem) {
+    .individual-product {
+      flex-direction: row;
+    }
 
-.details-indv-product{
-  flex-basis: 52%;
+    .carousel-indv-product {
+      flex-basis: 48%;
+    }
+
+    .details-indv-product {
+      flex-basis: 52%;
+    }
+  }
 }
 
 .li-effect {
