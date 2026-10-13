@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
 import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { createClient } from "@/utils/supabase/server";
 import { FooterLoader } from "@/components/main/Footer/FooterLoader";
-
-export const metadata: Metadata = {
-  description: "Layout for the application with header and music player",
-};
 
 export default async function AppLayout({
   children,

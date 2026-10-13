@@ -4,9 +4,10 @@ import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { SillyMascot } from "@/components/auth/SillyMascot";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { NO_INDEX } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
-  description: "Layout for the application with header and music player",
+  robots: NO_INDEX,
 };
 
 export default async function AuthLayout({
