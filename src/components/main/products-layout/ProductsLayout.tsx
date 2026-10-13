@@ -328,6 +328,12 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
               stagger: 0.01,
               onComplete: () => {
                 if (section) gsap.set(section, { clearProps: "minHeight" });
+                // Flip can leave an identity transform and frozen sizes behind. A transformed ancestor
+                // becomes the containing block of the pinned (position: fixed) fast-nav and would
+                // scroll it away with the page, and frozen sizes break responsive layout.
+                gsap.set([container, grid, sidebar], {
+                  clearProps: "transform,translate,rotate,scale,width,height",
+                });
                 // The grid and sidebar changed size, so the fast-nav triggers must re-measure.
                 // Refresh outside this context so nothing it touches is recorded here.
                 context.ignore(() => ScrollTrigger.refresh());
