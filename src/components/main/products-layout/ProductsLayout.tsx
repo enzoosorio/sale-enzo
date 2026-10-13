@@ -9,8 +9,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { WholeProductStructure } from "@/types/products/products";
 import { ProductGrid } from "./ProductGrid";
 import { ProductsFastNav, type ProductsFastNavItem } from "./ProductsFastNav";
-import { finalBackground, initialBackground } from "@/components/main/home/homeAnimations.constants";
-import { AllFiltersPanel } from "@/components/main/filters/AllFiltersPanel";
 import {
   type CategoryFiltersRpcPayload,
   type RpcNavigationNode,
@@ -47,10 +45,11 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
   const gridRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
-  const tlFastBar = useRef<gsap.core.Timeline | null>(null);
-  const fastNavTriggerRef = useRef<ScrollTrigger | null>(null);
-  const isFirstMount = useRef(true);
-  const { contextSafe } = useGSAP({ scope: containerRef });
+  const fastNavRef = useRef<HTMLDivElement>(null);
+  const breadcrumbsRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  // Last layout state that was animated; also keeps Strict Mode's double effect run from animating on mount.
+  const renderedLayoutActive = useRef(layoutActive);
 
   const parsedFilters = useMemo(
     () => parseSearchParams(new URLSearchParams(searchParams.toString())),
@@ -210,7 +209,9 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
   const mainSlug = parsedFilters.subcategory ?? parsedFilters.category ?? "all";
 
   const clearHierarchyHref = useMemo(() => {
-    const { category: _, subcategory: __, ...rest } = parsedFilters;
+    const rest = { ...parsedFilters };
+    delete rest.category;
+    delete rest.subcategory;
     const baseParams = buildSearchParams(rest);
     const query = baseParams.toString();
     return query ? `${pathname}?${query}` : pathname;
@@ -222,7 +223,9 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
       : payload.navigation.categories || [];
 
     return source.map((entry) => {
-      const { category: _, subcategory: __, ...rest } = parsedFilters;
+      const rest = { ...parsedFilters };
+      delete rest.category;
+      delete rest.subcategory;
       const nextFilters = {
         ...rest,
         ...(hasSubcategorySelected && parsedFilters.category
@@ -261,283 +264,97 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
 
 
 
-  const createFastNavScrollTrigger = useCallback(() => {
-    // Verificar que los elementos existan en el DOM
-    const fastNavWrapper = containerRef.current?.querySelector('.fast-nav-wrapper');
+  // A new result set changes the grid height, which moves where the fast-nav pin ends.
+  // Re-measure after paint instead of rebuilding any animation.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => ScrollTrigger.refresh());
+    return () => cancelAnimationFrame(frame);
+  }, [products]);
 
-    
-    if (!fastNavWrapper) {
-      console.warn('ProductsFastNav: fast-nav-wrapper no encontrado');
-      return;
-    }
+  useGSAP(
+    () => {
+      if (renderedLayoutActive.current === layoutActive) return;
+      renderedLayoutActive.current = layoutActive;
 
-    // Guardar el scroll actual
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      gsap.set('.other-subcategories-fast-nav', { opacity: 1, pointerEvents: 'auto' });
-      return;
-    }
-    const currentScroll = window.scrollY;
-    // Matar cualquier trigger anterior COMPLETAMENTE
-    if (fastNavTriggerRef.current) {
-      fastNavTriggerRef.current.kill();
-      fastNavTriggerRef.current = null;
-    }
-    if (tlFastBar.current) {
-      tlFastBar.current.kill();
-      tlFastBar.current = null;
-    }
+      const container = containerRef.current;
+      const grid = gridRef.current;
+      const sidebar = sidebarRef.current;
+      const fastNav = fastNavRef.current;
+      const breadcrumbs = breadcrumbsRef.current;
+      const overlay = overlayRef.current;
+      if (!container || !grid || !sidebar || !fastNav || !breadcrumbs || !overlay) return;
 
-    // Resetear estilos de las subcategorías a su estado inicial
-    gsap.set('.other-subcategories-fast-nav', {
-      opacity: 0,
-      pointerEvents: 'none',
-    });
-
-    let animatingFastBar = false;
-
-    // Crear nuevo timeline
-    tlFastBar.current = gsap.timeline({ paused: true });
-    tlFastBar.current.to('.other-subcategories-fast-nav', {
-      opacity: 1,
-      pointerEvents: 'auto',
-      duration: 0.3,
-      stagger: { each: 0.25, from: "start" },
-      ease: "circ.out"
-    }, 0);
-
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        id: "fastNavTrigger",
-        trigger: ".fast-nav-wrapper",
-        start: "top top",
-        end: () => {
-          const productSection = document.querySelector(".products-section");
-          const sectionHeight = productSection ? productSection.clientHeight : 0;
-          return `+=${sectionHeight}`;
+      const mm = gsap.matchMedia();
+      mm.add(
+        // Two complementary queries so the toggle runs either way; only the duration differs.
+        {
+          reduceMotion: "(prefers-reduced-motion: reduce)",
+          motionOk: "(prefers-reduced-motion: no-preference)",
         },
-        pin: '.fast-nav-wrapper',
-        pinSpacing: false,
-        invalidateOnRefresh: true,
-        scrub: true,
-        onUpdate: (self) => {
-          const progress = self.progress;
-          if (progress > 0.03 && !animatingFastBar && tlFastBar.current) {
-            gsap.to(".title-main", {
-              fontSize: "3rem",
-              duration: 1.2,
-              ease: "power2.out",
+        (context) => {
+          const flipDuration = context.conditions?.reduceMotion ? 0 : 0.45;
+
+          // Only called from callbacks of tweens created here; GSAP runs those inside this
+          // matchMedia context, so the Flip and follow-up tweens are reverted with it. Wrapping
+          // them with the hook's contextSafe would nest the two contexts inside each other.
+          const flipLayout = (open: boolean, onComplete: () => void) => {
+            const state = Flip.getState([container, grid, sidebar]);
+            // Flip lifts the targets out of flow; holding the section's height keeps the page
+            // from collapsing, so the browser never clamps the scroll position mid-animation.
+            const section = container.parentElement;
+            if (section) gsap.set(section, { minHeight: section.offsetHeight });
+            container.classList.toggle("layout-active", open);
+            Flip.from(state, {
+              duration: flipDuration,
+              ease: "power3.inOut",
+              absolute: true,
+              nested: true,
+              stagger: 0.01,
+              onComplete: () => {
+                if (section) gsap.set(section, { clearProps: "minHeight" });
+                // The grid and sidebar changed size, so the fast-nav triggers must re-measure.
+                // Refresh outside this context so nothing it touches is recorded here.
+                context.ignore(() => ScrollTrigger.refresh());
+                onComplete();
+              },
             });
-            animatingFastBar = true;
-            tlFastBar.current.progress(0).play();
-          } else if (progress <= 0.03 && animatingFastBar && tlFastBar.current) {
-            gsap.to(".title-main", {
-              fontSize: "6rem",
-              duration: 1.2,
-              ease: "power2.out",
-            });
-            animatingFastBar = false;
-            tlFastBar.current.progress(1).reverse();
+          };
+
+          setIsAnimating(true);
+
+          if (layoutActive) {
+            gsap
+              .timeline()
+              .to([breadcrumbs, fastNav], { autoAlpha: 0, duration: 0.25 }, 0)
+              .call(() =>
+                flipLayout(true, () => {
+                  gsap
+                    .timeline()
+                    .to(sidebar, { opacity: 1, duration: 0.1 }, 0)
+                    .to(overlay, { x: "-100%", duration: 0.5 }, 0.05);
+                  setIsAnimating(false);
+                }),
+              );
+            return;
           }
-        }
-      }
-    });
-    tl.to('.fast-nav-wrapper', { top: 0, ease: "power2.out", duration: 0.5 }, 0);
-    tl.fromTo(".fast-nav-wrapper",
-      { background: initialBackground },
-      {
-        background: finalBackground,
-        backdropFilter: "blur(16px)",
-        ease: "elastic.out(1,1)",
-        duration: 0.025,
-      },
-      0
-    );
 
-    fastNavTriggerRef.current = tl.scrollTrigger!;
-
-    // Sincronizar estado inicial con el progress actual del ScrollTrigger
-    if (fastNavTriggerRef.current && fastNavTriggerRef.current.progress > 0.105) {
-      gsap.set(".title-main", { fontSize: "3rem", overwrite: true });
-      if (tlFastBar.current) {
-        tlFastBar.current.progress(1);
-      }
-      animatingFastBar = true;
-    } else {
-      if (tlFastBar.current) {
-        tlFastBar.current.progress(0);
-      }
-    }
-    
-    // Refresh después de crear todo
-    ScrollTrigger.refresh();
-    
-    // Restaurar scroll si es necesario
-    window.scrollTo(0, currentScroll);
-    
-    return tl;
-  }, []);
-
-  useGSAP(() => {
-    createFastNavScrollTrigger();
-    return () => {
-      fastNavTriggerRef.current?.kill();
-      tlFastBar.current?.kill();
-      fastNavTriggerRef.current = null;
-      tlFastBar.current = null;
-    };
-  }, { scope: containerRef, dependencies: [headerNavigationItems, mainFastNavItem, createFastNavScrollTrigger], revertOnUpdate: true });
-
-  const killFastNavTrigger = useCallback(() => {
-    if (fastNavTriggerRef.current) {
-      fastNavTriggerRef.current.kill();
-      fastNavTriggerRef.current = null;
-    }
-    if (tlFastBar.current) {
-      tlFastBar.current.kill();
-      tlFastBar.current = null;
-    }
-    // Solo resetear estilos específicos, no usar clearProps
-    gsap.set('.other-subcategories-fast-nav', {
-      opacity: 0,
-      pointerEvents: 'none',
-    });
-    gsap.killTweensOf(".title-main");
-  }, []);
-
-  useGSAP(() => {
-  const activateLayout = contextSafe(() => {
-    if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
-
-    const container = containerRef.current;
-    const currentScroll = window.scrollY;
-
-    killFastNavTrigger();
-
-    gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
-
-    const state = Flip.getState([
-      container,
-      gridRef.current,
-      sidebarRef.current,
-    ]);
-
-    container.classList.add("layout-active");
-
-    Flip.from(state, {
-      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.45,
-      ease: "power3.inOut",
-      absolute: true,
-      nested: true,
-      stagger: 0.01,
-      onComplete: contextSafe(() => {
-        ScrollTrigger.refresh();
-        window.scrollTo(0, currentScroll);
-        const tl = gsap.timeline();
-        tl.to(sidebarRef.current, { opacity: 1, duration: 0.1 }, 0);
-        tl.to(".subcategory-title", { color: "#fff", duration: 0.35 }, 0.05);
-        tl.to(".title-main", { opacity: 0, duration: 0.35 }, 0.06);
-        tl.to(".overlay-filters", { x: "-100%", duration: 0.5 }, 0.05);
-
-        setIsAnimating(false);
-      }),
-    });
-  });
-  const deactivateLayout = contextSafe(() => {
-    if (!containerRef.current || !gridRef.current || !sidebarRef.current) return;
-
-    const container = containerRef.current;
-    const currentScroll = window.scrollY;
-
-    killFastNavTrigger();
-
-    gsap.set(".fast-nav-wrapper", { visibility: "hidden", opacity: 0 });
-
-    const state = Flip.getState([
-      container,
-      gridRef.current,
-      sidebarRef.current,
-    ]);
-
-    container.classList.remove("layout-active");
-
-    Flip.from(state, {
-      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.45,
-      ease: "power3.inOut",
-      absolute: true,
-      nested: true,
-      stagger: 0.01,
-      onComplete: contextSafe(() => {
-        gsap.set(".fast-nav-wrapper", { visibility: "visible", opacity: 1 });
-        createFastNavScrollTrigger();
-
-        ScrollTrigger.refresh();
-        window.scrollTo(0, currentScroll);
-
-        gsap.to(".fast-nav-wrapper", {
-          opacity: 1,
-          pointerEvents: "auto",
-          duration: 0.1,
-        });
-         gsap.to("#bread-in-layout", {
-          opacity: 1,
-          pointerEvents: "auto",
-          duration: 0.1,
-        });
-        setIsAnimating(false);
-      }),
-    });
-  });
-
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return; // No ejecutar animaciones al montar
-    }
-
-    if (layoutActive) {
-      setIsAnimating(true);
-      const tl = gsap.timeline();
-      tl.to(
-        "#bread-in-layout",
-        {
-          opacity: 0,
-          pointerEvents: "none",
-          duration: 0.25,
+          // revertOnUpdate just restored the bar; keep it hidden until the grid settles.
+          gsap.set(fastNav, { autoAlpha: 0 });
+          gsap
+            .timeline()
+            .to(overlay, { x: "0%", duration: 0.5 }, 0)
+            .to(sidebar, { opacity: 0, duration: 0.1 }, ">0.05")
+            .call(() =>
+              flipLayout(false, () => {
+                gsap.to([fastNav, breadcrumbs], { autoAlpha: 1, duration: 0.1 });
+                setIsAnimating(false);
+              }),
+            );
         },
-        0,
-      )
-      tl.to(
-        ".fast-nav-wrapper",
-        {
-          opacity: 0,
-          pointerEvents: "none",
-          duration: 0.25,
-        },
-        0,
-      ).call(activateLayout);
-    } else {
-      setIsAnimating(true);
-      const tl = gsap.timeline();
-      tl.to(
-        ".subcategory-title",
-        { color: "#221C1C", duration: 0.1 },
-        0,
-      ).to(
-        ".title-main",
-        { opacity: 1, duration: 0.1 },
-        0.05,
       );
-      tl.to(
-        ".overlay-filters",
-        { x: "0%", duration: 0.5 },
-        0,
-      );
-      tl.to(
-        sidebarRef.current,
-        { opacity: 0, duration: 0.1 },
-        ">0.05",
-      ).call(deactivateLayout);
-    }
-  }, { scope: containerRef, dependencies: [layoutActive], revertOnUpdate: true });
+    },
+    { scope: containerRef, dependencies: [layoutActive], revertOnUpdate: true },
+  );
 
   return (
     <main className="main-products">
@@ -546,20 +363,24 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           ref={containerRef}
           className="wrapper-pf relative w-full"
         >
-          <div className="absolute -top-4 left-0 w-full z-30">
+          <div ref={breadcrumbsRef} className="absolute -top-4 left-0 w-full z-30">
             <Breadcrumbs id="bread-in-layout" className="absolute top-14 left-gutter z-20" />
           </div>
           <ProductsFastNav
             items={headerNavigationItems}
             mainItem={mainFastNavItem}
+            categorySlug={parsedFilters.category ?? null}
+            subcategorySlug={parsedFilters.subcategory ?? null}
+            rootRef={fastNavRef}
           />
           <aside
             ref={sidebarRef}
             className="relative filters-wrapper text-white transition-colors"
           >
-            <h1 className="subcategory-title pt-10 pb-6 px-4 bg-black/30  font-prata text-6xl bg-">
+            {/* The fast-nav title is the page heading; this one only labels the filters panel. */}
+            <h2 className="pt-10 pb-6 px-4 bg-black/30 font-prata text-6xl">
               {mainFastNavItem.name}
-            </h1>
+            </h2>
             <AsideFilters
             isLoading={isLoadingFilters}
               availableFilters={payload?.available_filters}
@@ -584,7 +405,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
               onSelectGender={(gender) => toggleSingleParam("gender", gender)}
               onChangePrice={handlePriceChange}
             />
-            <div className="overlay-filters fixed inset-0 w-full h-screen bg-off-white" />
+            <div ref={overlayRef} className="overlay-filters fixed inset-0 w-full h-screen bg-off-white" />
           </aside>
           <ProductGrid ref={gridRef} products={products} />
         </div>
