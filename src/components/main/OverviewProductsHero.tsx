@@ -1,36 +1,56 @@
-import { WholeProductStructure } from '@/types/products/products';
-import Image from 'next/image';
 import Link from 'next/link';
+import { formatPrice } from '@/lib/images/media';
+import { HomeProductImage } from './HomeProductImage';
+import type { HomeProductCard } from '@/lib/products/homeProducts';
 
 interface OverviewProductsHeroProps {
-  products: WholeProductStructure[];
+  products: HomeProductCard[];
 }
 
 export const OverviewProductsHero = ({ products }: OverviewProductsHeroProps) => {
+  if (products.length === 0) {
+    return (
+      <section className="section-overview flex w-full flex-col items-center gap-4 px-gutter py-16 text-center text-[#221C1C]">
+        <p className="font-nanum text-xl">Pronto subiremos nuevas prendas.</p>
+        <p className="font-inria text-sm text-black/60">Vuelve en unos días para ver lo nuevo del catálogo.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="section-overview w-full flex flex-col items-center justify-center py-8 gap-6">
-      <div className="products-wrapper w-full max-w-5xl overflow-hidden xl:max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-8 flex flex-wrap gap-6 items-center justify-center">
-        {products?.map((product, index) => {
-          const paddedId = product.id.toString().padStart(2, '0');
-          const imgSrc = product.variant.main_img_url || '/images/products/polo-1.png';
+      {/* Fluid grid on the page gutter: the column floor grows with the viewport so wide screens fill the width. */}
+      <ul className="products-wrapper w-full px-gutter py-8 grid grid-cols-[repeat(auto-fill,minmax(min(100%,clamp(9rem,10vw,12rem)),1fr))] gap-6 items-start">
+        {products.map((product, index) => {
           return (
-            <div key={product.id} className="w-36 xl:w-40 aspect-auto bg-white">
-              <Link href={`/products/${product.id}`} className="flex flex-col items-center justify-center gap-2">
-                <Image
-                  src={imgSrc}
-                  alt={product.name}
-                  width={160}
-                  height={200}
-                  sizes="(max-width: 1280px) 144px, 160px"
-                  className="object-cover w-full h-auto"
-                  priority={index === 0}
-                />
-                <span className="text-sm font-semibold">{paddedId}</span>
+            <li key={product.id} className="w-full">
+              <Link
+                href={`/products/${product.id}`}
+                className="group flex flex-col gap-2 text-[#221C1C] outline-offset-4"
+              >
+                <div className="relative aspect-4/5 w-full overflow-hidden bg-white">
+                  <HomeProductImage src={product.imageUrl} alt={product.name} index={index} />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <h3 className="line-clamp-2 font-nanum text-sm leading-tight">{product.name}</h3>
+                  <p className="font-inria text-sm">
+                    {formatPrice(product.price)}
+                    {product.compareAtPrice ? (
+                      <span className="ml-2 text-xs text-black/40 line-through">{formatPrice(product.compareAtPrice)}</span>
+                    ) : null}
+                  </p>
+                </div>
               </Link>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
+      <Link
+        href="/products"
+        className="font-inria text-sm uppercase tracking-[0.08em] text-[#221C1C] underline underline-offset-4 hover:text-black/60"
+      >
+        Ver todas las prendas
+      </Link>
     </section>
   );
 };

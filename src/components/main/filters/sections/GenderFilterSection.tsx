@@ -1,4 +1,5 @@
 import { ReusableFilterSection } from "./ReusableFilterSection";
+import { genderLabel } from "@/lib/copy/labels";
 
 interface GenderFilterSectionProps {
   genders: string[];
@@ -30,8 +31,10 @@ export const GenderFilterSection = ({
           return (
             <button
               key={gender}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => onSelectGender?.(gender)}
-              className={`px-4 py-2.5 text-base w-full border min-w-1/2 ${gender === 'Unisex' ? "w-full" : "w-1/2"} transition-colors cursor-pointer
+              className={`min-h-11 px-4 py-2.5 text-base w-full border min-w-1/2 ${gender === 'Unisex' ? "w-full" : "w-1/2"} transition-colors cursor-pointer
                 ${darkMode 
                   ? isSelected 
                     ? 'bg-[#FAF9F6] text-[#221C1C] border-[#FAF9F6]' 
@@ -41,7 +44,7 @@ export const GenderFilterSection = ({
                     : 'border-current text-current opacity-90 hover:opacity-100'
                 }`}
             >
-              {gender}
+              {genderLabel(gender)}
             </button>
           );
         })}

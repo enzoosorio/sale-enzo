@@ -23,7 +23,7 @@ export const MobileMainLogo = () => {
   }, [isMobileMenuOpen]);
   return <>
     <button ref={buttonRef} type="button" aria-label="Abrir menú" aria-expanded={isMobileMenuOpen}
-      onClick={() => setIsMobileMenuOpen(open => !open)} className="w-max h-max md:hidden cursor-pointer">
+      onClick={() => setIsMobileMenuOpen(open => !open)} className="flex min-h-11 min-w-11 items-center justify-center md:hidden cursor-pointer">
       <MainLogo className="w-10" />
     </button>
     <MobileMenu isOpened={isMobileMenuOpen} onClose={() => {

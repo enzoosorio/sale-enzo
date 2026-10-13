@@ -19,14 +19,14 @@ export const TagsFilterSection = ({
 }: TagsFilterSectionProps) => {
   return (
     <ReusableFilterSection
-    title="TAGS"
+    title="ETIQUETAS"
     className={`flex flex-wrap gap-x-4 gap-y-8 ${className || ""}`}
     classNameForWrapper={classNameForWrapper}
     darkMode={darkMode}
     >
         {tags.length === 0 && (
           <p className={`px-4 text-sm ${darkMode ? 'text-white/60' : 'text-black/60'}`}>
-            No tags available
+            Aún no hay etiquetas
           </p>
         )}
         {tags.map((tag) => {
@@ -34,8 +34,10 @@ export const TagsFilterSection = ({
           return (
             <button
               key={tag}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => onToggleTag?.(tag)}
-              className={`px-4 min-w-28 py-2.5 border text-base rounded-none transition-colors cursor-pointer
+              className={`min-h-11 px-4 min-w-28 py-2.5 border text-base rounded-none transition-colors cursor-pointer
                 ${darkMode 
                   ? isSelected 
                     ? 'bg-[#FAF9F6] text-[#221C1C] border-[#FAF9F6]' 

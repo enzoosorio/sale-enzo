@@ -3,8 +3,8 @@ import Link from 'next/link';
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return <section className="mx-auto max-w-xl px-6 py-20">
-    <h1 className="font-prata text-3xl">No pudimos cargar esta página</h1>
-    <p className="my-6">Inténtalo de nuevo en unos momentos.</p>
+    <h1 className="font-prata text-3xl">Algo salió mal al cargar esta página</h1>
+    <p className="my-6">Puede ser algo pasajero. Prueba de nuevo y, si sigue igual, vuelve al inicio.</p>
     <div className="flex gap-6">
       <button onClick={reset} className="underline">Reintentar</button>
       <Link href="/home" className="underline">Volver al inicio</Link>

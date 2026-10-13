@@ -9,6 +9,7 @@ import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
 import { HeaderCenter } from "./HeaderCenter";
+import { contactWhatsAppUrl } from "@/content/legal";
 
 
 interface HeaderBarProps {
@@ -22,6 +23,7 @@ export const HeaderBar = async ({
 }: HeaderBarProps) => {
   // Server-side check if user is admin
   const userIsAdmin = userId ? await isAdmin() : false;
+  const contactUrl = contactWhatsAppUrl();
 
   return (
     <>
@@ -29,19 +31,21 @@ export const HeaderBar = async ({
       <header
         className={` text-black
         min-h-(--navbar-height) flex items-center justify-center
-        ${variant === "product-detail" ? "absolute z-10 top-10 left-1/2 -translate-x-1/2 bg-white/15 shadow-xl backdrop-blur-2xl w-11/12 rounded-sm" : "sticky top-0 z-30 has-[[data-search-elevated]]:z-[101] gradial-radient w-full"}
+        ${variant === "product-detail" ? "absolute z-10 top-10 inset-x-gutter bg-white/15 shadow-xl backdrop-blur-2xl rounded-sm" : "sticky top-0 z-30 has-[[data-search-elevated]]:z-[101] gradial-radient w-full"}
         
         `}
       >
-        <nav className="relative p-2 bg-transparent px-4 md:px-16 xl:px-20 w-full h-full flex items-center justify-between">
+        {/* The floating detail header already sits on the page gutter, so it only needs inner padding. */}
+        <nav className={`relative py-2 bg-transparent ${variant === "product-detail" ? "px-4 md:px-8" : "px-gutter"} w-full h-full flex items-center justify-between`}>
           {/* Desktop Navigation - Hidden on mobile */}
           <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata" data-dock-bound="start">
-            <li className="cursor-pointer">
-              {/* todo: agregar el contacto */}
-              <Link href="#" className="linkk font-prata">
-                Contacto
-              </Link>
-            </li>
+            {contactUrl && (
+              <li className="cursor-pointer">
+                <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="linkk font-prata">
+                  Contacto
+                </a>
+              </li>
+            )}
             <li className="cursor-pointer linkk font-prata">
               <CategoriesButton />
             </li>
@@ -78,12 +82,13 @@ export const HeaderBar = async ({
             </ul>
 
           {/* Mobile Actions - Shown only on mobile */}
-          <div className="flex md:hidden items-center justify-center gap-4" data-dock-bound="end">
+          <div className="flex md:hidden items-center justify-center gap-2" data-dock-bound="end">
+            <CartBadge className="min-h-11 min-w-11 justify-center" />
             {userId ? (
               <LogoutButton />
             ) : (
               <Link className="w-max h-max" href={"/login"}>
-                <PrimaryButton className="text-sm px-4 py-2">
+                <PrimaryButton className="min-h-11 text-sm px-4 py-2">
                   Iniciar sesión
                 </PrimaryButton>
               </Link>

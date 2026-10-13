@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CarouselIndividualProducts, type CarouselImage } from '@/components/categorized-products/CarouselndvProducts'
 import { formatPrice } from '@/lib/images/media'
 import { ProductPurchaseActions } from '@/components/cart/ProductPurchaseActions'
+import { genderLabel, sizeLabel, stockLabel } from '@/lib/copy/labels'
 
 export interface ProductDetailData {
   itemId?: string
@@ -31,8 +32,6 @@ const STATUS_LABEL: Record<string, string> = {
   sold: 'Vendido',
 }
 
-const GENDER_LABEL: Record<string, string> = { male: 'Hombre', female: 'Mujer', unisex: 'Unisex' }
-
 const META_LABEL: Record<string, string> = {
   team: 'Equipo',
   university: 'Universidad',
@@ -47,6 +46,15 @@ const META_LABEL: Record<string, string> = {
   material: 'Material',
 }
 
+/** Honest reminder about condition; remove this block to drop the hint. */
+function ConditionHint() {
+  return (
+    <p className='font-nanum text-sm text-black/60 max-w-[40ch]'>
+      Las fotos muestran cómo está la prenda, con sus detalles. Si quieres más fotos o las medidas, pídelas por WhatsApp.
+    </p>
+  )
+}
+
 /**
  * Presentational product detail. Used by the public page and by the admin
  * staging preview, so a draft looks exactly like it will once published.
@@ -55,11 +63,11 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
   const specs = Object.entries(product.metadata).filter(([key]) => META_LABEL[key])
 
   return (
-    <section className={`individual-product translate-y-0 flex lg:flex-row flex-col items-center justify-center w-full ${preview ? 'min-h-[80vh]' : 'lg:h-screen'} bg-off-white`}>
+    <section className={`individual-product translate-y-0 flex lg:flex-row flex-col items-center justify-center w-full ${preview ? 'min-h-[80vh]' : 'pt-32 lg:pt-0 lg:h-screen'} bg-off-white`}>
       <div className={`carousel-indv-product flex w-full ${preview ? 'h-[80vh]' : 'h-[70vh] lg:h-full'} items-center justify-center`}>
         <CarouselIndividualProducts images={product.images} heightClass={preview ? 'h-[80vh]' : 'h-[70vh] lg:h-screen'} />
       </div>
-      <aside className='details-indv-product flex flex-col items-start justify-center gap-16 p-8 w-full h-full'>
+      <aside className='details-indv-product flex flex-col items-start justify-center gap-16 py-8 px-gutter w-full h-full'>
         <div className='flex flex-col items-start justify-center w-full gap-16'>
           <div className='flex flex-col items-start justify-center gap-8 w-full'>
             <div className='text-base font-vidaloka flex flex-col items-start justify-start gap-4'>
@@ -85,14 +93,14 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
                     </Link>
                   ))
                 ) : (
-                  <p>{product.size}</p>
+                  <p>{sizeLabel(product.size)}</p>
                 )}
               </div>
               <p className='font-nanum text-sm text-black/70'>
                 {[
                   product.fitsLike && `Le queda como ${product.fitsLike}`,
                   product.fit && `Corte ${product.fit}`,
-                  product.gender && GENDER_LABEL[product.gender],
+                  product.gender && genderLabel(product.gender),
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -104,13 +112,12 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
           </div>
           <div className='flex lg:flex-row flex-col items-start lg:justify-between justify-center gap-8 w-full'>
             <div className='flex flex-col items-start justify-center gap-6 font-vidaloka text-base'>
-              {product.conditionScore !== null && <p>Estado: {product.conditionScore}/10</p>}
-              <p>{STATUS_LABEL[product.status] ?? product.status}</p>
-              <p>{product.stock} Disponible{product.stock === 1 ? '' : 's'}</p>
-              {product.sku && <p>SKU: {product.sku}</p>}
+              {product.conditionScore !== null && <p>Estado: {product.conditionScore} de 10</p>}
+              <p>{product.status === 'available' ? stockLabel(product.stock) : (STATUS_LABEL[product.status] ?? product.status)}</p>
+              {product.sku && <p>Código: {product.sku}</p>}
             </div>
             <div className='flex flex-col items-start justify-center gap-4'>
-              <h4 className='font-vidaloka'>Especificaciones</h4>
+              <h4 className='font-vidaloka'>Detalles de la prenda</h4>
               {product.conditionNote && <p className='font-nanum max-w-[40ch]'>{product.conditionNote}</p>}
               {specs.length > 0 && (
                 <dl className='font-nanum text-sm grid grid-cols-[auto_1fr] gap-x-4 gap-y-1'>
@@ -122,10 +129,11 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
                   ))}
                 </dl>
               )}
+              <ConditionHint />
             </div>
           </div>
         </div>
-        {!preview && product.itemId && <ProductPurchaseActions itemId={product.itemId} title={product.name} size={product.size} available={product.status === 'available' && product.stock > 0} />}
+        {!preview && product.itemId && <ProductPurchaseActions itemId={product.itemId} title={product.name} size={product.size} price={product.price} available={product.status === 'available' && product.stock > 0} />}
       </aside>
     </section>
   )

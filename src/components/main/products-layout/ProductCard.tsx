@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { WholeProductStructure } from "@/types/products/products";
 import { canOptimize, formatPrice, isCutoutUrl } from "@/lib/images/media";
+import { sizeLabel } from "@/lib/copy/labels";
 
 interface ProductCardProps {
   product: WholeProductStructure;
@@ -20,21 +21,21 @@ export const ProductCard = ({ product, href }: ProductCardProps) => {
           src={src}
           alt={product.name}
           fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1024px) 33vw, 25vw"
           unoptimized={!canOptimize(src)}
           className={cutout ? "object-contain p-4" : "object-cover"}
         />
       </div>
 
       <div className="flex flex-col gap-1 text-[#221C1C]">
-        <h3 className="line-clamp-2 font-nanum text-lg leading-tight">{product.name}</h3>
-        <p className="font-inria text-base">
+        <h3 className="line-clamp-2 font-nanum text-base leading-tight sm:text-lg">{product.name}</h3>
+        <p className="font-inria text-base tabular-nums">
           {formatPrice(product.item.price)}
           {product.item.compare_at_price ? (
-            <span className="ml-2 text-sm text-black/40 line-through">{formatPrice(product.item.compare_at_price)}</span>
+            <span className="ml-2 inline-block text-sm text-black/40 line-through">{formatPrice(product.item.compare_at_price)}</span>
           ) : null}
         </p>
-        <p className="font-inria text-sm uppercase tracking-[0.08em] text-black/60">Size {product.variant.size}</p>
+        <p className="font-inria text-sm uppercase tracking-[0.08em] text-black/60">{sizeLabel(product.variant.size)}</p>
       </div>
     </Link>
   );

@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
 import { HeaderBar } from "@/components/main/HeaderLayout/HeaderBar";
 import { createClient } from "@/utils/supabase/server";
-
-export const metadata: Metadata = {
-  description: "Layout for the product detail page with header ",
-};
 
 export default async function ProductDetailLayout({
   children,

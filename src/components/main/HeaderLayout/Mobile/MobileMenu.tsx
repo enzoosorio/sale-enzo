@@ -11,6 +11,7 @@ import { SplitText } from "gsap/all";
 import { CustomLinkMobile } from "./CustomLinkMobile";
 import { useCategoriesStore } from "@/store/categorySection";
 import { preloadCategoriesPanel } from "../Categories/preloadCategories";
+import { contactWhatsAppUrl } from "@/content/legal";
 
 interface MobileMenuProps {
   isOpened: boolean;
@@ -22,6 +23,7 @@ gsap.registerPlugin(useGSAP, SplitText);
 export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
   const menuRef = useRef<HTMLElement>(null);
   const openPanel = useCategoriesStore((s) => s.openPanel);
+  const contactUrl = contactWhatsAppUrl();
 
   // Warm up the categories panel while the menu is open, so the tap feels instant.
   useEffect(() => {
@@ -107,14 +109,17 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
           </p>
         </button>
 
-        <CustomLinkMobile
-          href="#"
-          onClose={onClose}
-        >
-          <p className="w-max mx-auto">
-            Contacto
-          </p>
-        </CustomLinkMobile>
+        {contactUrl && (
+          <CustomLinkMobile
+            href={contactUrl}
+            onClose={onClose}
+            external
+          >
+            <p className="w-max mx-auto">
+              Contacto
+            </p>
+          </CustomLinkMobile>
+        )}
 
         {/* Favorites with icon */}
         <CustomLinkMobile

@@ -106,7 +106,7 @@ export const SuperBarraBusqueda = ({ variant = "hero" }: SuperBarraBusquedaProps
           aria-controls="search-results-panel"
           aria-keyshortcuts={docked ? "/" : undefined}
         />
-        <Microphone barraBusquedaRef={formRef} />
+        <Microphone />
         <button type="submit"
           className={`flex ${docked ? "h-full aspect-square" : "h-12 w-12"} shrink-0 items-center justify-center border-l border-[#221C1C]/15 transition-colors hover:bg-[#F4F1EB] focus-visible:outline-2 focus-visible:outline-offset-[-3px]`}
           aria-label="Buscar">

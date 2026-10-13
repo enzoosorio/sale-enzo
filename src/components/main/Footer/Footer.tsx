@@ -4,15 +4,15 @@ import { useGSAP } from "@gsap/react";
 import { LinkForFooter } from "./LinkForFooter";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { LEGAL_PAGES, contactWhatsAppUrl } from "@/content/legal";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export const Footer = () => {
+  const contactUrl = contactWhatsAppUrl();
   const links = [
-    { name: "Términos y condiciones", href: "#" },
-    { name: "Política de privacidad", href: "#" },
-    { name: "Contacto", href: "#" },
-    { name: "Términos y condiciones", href: "#" },
+    ...LEGAL_PAGES.map((page) => ({ name: page.label, href: page.path, external: false })),
+    ...(contactUrl ? [{ name: "Contacto", href: contactUrl, external: true }] : []),
   ];
 
 
@@ -47,32 +47,33 @@ export const Footer = () => {
     });
   }, []);
 
+  // Every text node carries `text-color` so the scroll-driven tween keeps it in contrast with the background.
   return (
-    <section className="footer flex flex-col items-start bg-off-white justify-between w-full py-16 pl-16 pr-20 gap-4 min-h-(--footer-height)">
+    <section className="footer flex flex-col items-start bg-off-white justify-between w-full py-16 px-gutter gap-12 min-h-(--footer-height)">
       {/* parte de arriba */}
-      <div className="flex items-start justify-between w-full ">
-        <h4 className="text-color font-prata text-[8rem] text-black">Sale</h4>
-        <ul className="flex flex-col items-start justify-start gap-6 pr-0 pt-8 text-base font-light font-prata">
-          {links.map((link, index) => (
-            <LinkForFooter key={index} href={link.href} name={link.name} />
+      <div className="flex flex-col sm:flex-row items-start justify-between w-full gap-8">
+        <h4 className="text-color font-prata text-[clamp(4.5rem,12vw,8rem)] leading-none text-off-black">Sale</h4>
+        <ul className="flex flex-col items-start sm:items-end justify-start gap-6 sm:pt-8 text-base font-light font-prata">
+          {links.map((link) => (
+            <LinkForFooter key={link.href} href={link.href} name={link.name} external={link.external} />
           ))}
         </ul>
       </div>
       {/* parte de abajo */}
-      <div className="flex items-start justify-between w-full ">
-        <ul className="">
-          <li className="text-off-white text-left font-nanum text-base">
+      <div className="flex flex-col md:flex-row items-start justify-between w-full gap-4">
+        <ul>
+          <li className="text-color text-off-black text-left font-nanum text-base">
             Creado por Enzo Osorio.
           </li>
-          <li className="text-off-white text-left font-nanum text-base">
-            Productos con historia, listos para una segunda oportunidad.
+          <li className="text-color text-off-black text-left font-nanum text-base">
+            Prendas con historia, listas para una segunda oportunidad.
           </li>
         </ul>
-        <ul className="">
-          <li className="text-off-white text-left font-nanum text-base">
+        <ul className="md:text-right">
+          <li className="text-color text-off-black font-nanum text-base">
             Tecnología, diseño y un poco de obsesión por hacerlo bien.
           </li>
-          <li className="text-off-white text-right font-nanum text-base">
+          <li className="text-color text-off-black font-nanum text-base">
             La IA ayuda. La intención es humana.
           </li>
         </ul>
