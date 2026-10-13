@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CarouselIndividualProducts, type CarouselImage } from '@/components/categorized-products/CarouselndvProducts'
 import { formatPrice } from '@/lib/images/media'
 import { ProductPurchaseActions } from '@/components/cart/ProductPurchaseActions'
+import { genderLabel, sizeLabel, stockLabel } from '@/lib/copy/labels'
 
 export interface ProductDetailData {
   itemId?: string
@@ -31,8 +32,6 @@ const STATUS_LABEL: Record<string, string> = {
   sold: 'Vendido',
 }
 
-const GENDER_LABEL: Record<string, string> = { male: 'Hombre', female: 'Mujer', unisex: 'Unisex' }
-
 const META_LABEL: Record<string, string> = {
   team: 'Equipo',
   university: 'Universidad',
@@ -45,6 +44,15 @@ const META_LABEL: Record<string, string> = {
   sport: 'Deporte',
   use: 'Uso',
   material: 'Material',
+}
+
+/** Honest reminder about condition; remove this block to drop the hint. */
+function ConditionHint() {
+  return (
+    <p className='font-nanum text-sm text-black/60 max-w-[40ch]'>
+      Las fotos muestran cómo está la prenda, con sus detalles. Si quieres más fotos o las medidas, pídelas por WhatsApp.
+    </p>
+  )
 }
 
 /**
@@ -85,14 +93,14 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
                     </Link>
                   ))
                 ) : (
-                  <p>{product.size}</p>
+                  <p>{sizeLabel(product.size)}</p>
                 )}
               </div>
               <p className='font-nanum text-sm text-black/70'>
                 {[
                   product.fitsLike && `Le queda como ${product.fitsLike}`,
                   product.fit && `Corte ${product.fit}`,
-                  product.gender && GENDER_LABEL[product.gender],
+                  product.gender && genderLabel(product.gender),
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -104,13 +112,12 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
           </div>
           <div className='flex lg:flex-row flex-col items-start lg:justify-between justify-center gap-8 w-full'>
             <div className='flex flex-col items-start justify-center gap-6 font-vidaloka text-base'>
-              {product.conditionScore !== null && <p>Estado: {product.conditionScore}/10</p>}
-              <p>{STATUS_LABEL[product.status] ?? product.status}</p>
-              <p>{product.stock} Disponible{product.stock === 1 ? '' : 's'}</p>
-              {product.sku && <p>SKU: {product.sku}</p>}
+              {product.conditionScore !== null && <p>Estado: {product.conditionScore} de 10</p>}
+              <p>{product.status === 'available' ? stockLabel(product.stock) : (STATUS_LABEL[product.status] ?? product.status)}</p>
+              {product.sku && <p>Código: {product.sku}</p>}
             </div>
             <div className='flex flex-col items-start justify-center gap-4'>
-              <h4 className='font-vidaloka'>Especificaciones</h4>
+              <h4 className='font-vidaloka'>Detalles de la prenda</h4>
               {product.conditionNote && <p className='font-nanum max-w-[40ch]'>{product.conditionNote}</p>}
               {specs.length > 0 && (
                 <dl className='font-nanum text-sm grid grid-cols-[auto_1fr] gap-x-4 gap-y-1'>
@@ -122,6 +129,7 @@ export function ProductDetailView({ product, preview = false }: { product: Produ
                   ))}
                 </dl>
               )}
+              <ConditionHint />
             </div>
           </div>
         </div>

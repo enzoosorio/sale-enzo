@@ -26,7 +26,7 @@ export function CartPage() {
       <p className="text-sm text-black/65 mb-6">Añadir una prenda no la reserva. La compra se cierra por WhatsApp: ahí confirmamos disponibilidad y coordinamos la entrega.</p>
       <ReservationNotice pending={cart.pending_order} />
       {loading ? <p role="status">Cargando carrito…</p> : cart.items.length === 0 ?
-        <div className="border-t border-black/20 py-14"><p className="mb-6">Tu carrito está vacío.</p><Link className="underline" href="/home">Explorar prendas</Link></div> :
+        <div className="border-t border-black/20 py-14"><p className="mb-2">Tu carrito está vacío.</p><p className="mb-6 text-sm text-black/65">Cada prenda es única. Cuando una te guste, añádela y la pides por WhatsApp.</p><Link className="underline" href="/products">Ver todas las prendas</Link></div> :
         <div className="grid gap-10 lg:grid-cols-[1fr_300px]">
           <ul className="divide-y divide-black/15 border-t border-black/15">{cart.items.map(item => {
             const changed = priceChanged(item);
@@ -36,7 +36,7 @@ export function CartPage() {
               <div className="flex-1 space-y-2"><Link href={`/products/${item.product_id}`} className="font-prata underline-offset-4 hover:underline">{item.title}</Link>
                 <p className="text-sm">{item.size ? `Talla ${item.size} · ` : ''}{item.condition ?? 'Segunda mano'}</p>
                 <p>{formatPrice(Number(item.price))}</p>
-                {!item.available && <p className="text-sm text-red-700" role="alert">Ya no está disponible: otra persona la está pagando o ya se vendió.</p>}
+                {!item.available && <p className="text-sm text-red-700" role="alert">Esta prenda ya no está disponible. Puede que se haya vendido.</p>}
                 {changed && item.available && <div className="text-sm text-amber-800" role="alert">
                   <p>El precio cambió desde que la añadiste: antes {formatPrice(Number(item.price_at_add))}, ahora {formatPrice(Number(item.price))}.</p>
                   <button type="button" disabled={busy} className="underline mt-1 focus-visible:outline-2 disabled:opacity-50" onClick={() => run(item.item_id, 'accept_price', 'No se pudo actualizar el precio')}>Aceptar nuevo precio</button>
