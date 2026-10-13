@@ -9,6 +9,7 @@ import { MobileMainLogo } from "./Mobile/MobileMainLogo";
 import { isAdmin } from "@/lib/auth/isAdmin";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
 import { HeaderCenter } from "./HeaderCenter";
+import { contactWhatsAppUrl } from "@/content/legal";
 
 
 interface HeaderBarProps {
@@ -22,6 +23,7 @@ export const HeaderBar = async ({
 }: HeaderBarProps) => {
   // Server-side check if user is admin
   const userIsAdmin = userId ? await isAdmin() : false;
+  const contactUrl = contactWhatsAppUrl();
 
   return (
     <>
@@ -37,12 +39,13 @@ export const HeaderBar = async ({
         <nav className={`relative py-2 bg-transparent ${variant === "product-detail" ? "px-4 md:px-8" : "px-gutter"} w-full h-full flex items-center justify-between`}>
           {/* Desktop Navigation - Hidden on mobile */}
           <ul className="hidden md:flex items-center text-lg justify-center gap-6 font-prata" data-dock-bound="start">
-            <li className="cursor-pointer">
-              {/* todo: agregar el contacto */}
-              <Link href="#" className="linkk font-prata">
-                Contacto
-              </Link>
-            </li>
+            {contactUrl && (
+              <li className="cursor-pointer">
+                <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="linkk font-prata">
+                  Contacto
+                </a>
+              </li>
+            )}
             <li className="cursor-pointer linkk font-prata">
               <CategoriesButton />
             </li>

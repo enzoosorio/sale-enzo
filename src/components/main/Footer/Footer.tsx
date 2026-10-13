@@ -4,15 +4,15 @@ import { useGSAP } from "@gsap/react";
 import { LinkForFooter } from "./LinkForFooter";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { LEGAL_PAGES, contactWhatsAppUrl } from "@/content/legal";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export const Footer = () => {
+  const contactUrl = contactWhatsAppUrl();
   const links = [
-    { name: "Términos y condiciones", href: "#" },
-    { name: "Política de privacidad", href: "#" },
-    { name: "Contacto", href: "#" },
-    { name: "Términos y condiciones", href: "#" },
+    ...LEGAL_PAGES.map((page) => ({ name: page.label, href: page.path, external: false })),
+    ...(contactUrl ? [{ name: "Contacto", href: contactUrl, external: true }] : []),
   ];
 
 
@@ -54,8 +54,8 @@ export const Footer = () => {
       <div className="flex flex-col sm:flex-row items-start justify-between w-full gap-8">
         <h4 className="text-color font-prata text-[clamp(4.5rem,12vw,8rem)] leading-none text-off-black">Sale</h4>
         <ul className="flex flex-col items-start sm:items-end justify-start gap-6 sm:pt-8 text-base font-light font-prata">
-          {links.map((link, index) => (
-            <LinkForFooter key={index} href={link.href} name={link.name} />
+          {links.map((link) => (
+            <LinkForFooter key={link.href} href={link.href} name={link.name} external={link.external} />
           ))}
         </ul>
       </div>
