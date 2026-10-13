@@ -10,8 +10,11 @@ import { FastNavSection } from "../filters/sections/FastNavSection";
 import { RpcAvailableFilters } from "@/utils/filters";
 import { RpcNavigation } from "@/utils/filters/rpcCategoryFilters";
 import { PriceFilterSection } from "../filters/sections/PriceFilterSection";
+import { cn } from "@/lib/utils";
 
-interface AsideFilterProps {
+export interface AsideFilterProps {
+  /** Extra classes for the scroll container (the mobile sheet trims the sidebar padding). */
+  className?: string;
   isLoading?: boolean;
   availableFilters?: RpcAvailableFilters;
   navigation?: RpcNavigation;
@@ -34,6 +37,7 @@ interface AsideFilterProps {
 }
 
 export const AsideFilters = ({
+  className,
   isLoading = false,
   availableFilters,
   navigation,
@@ -91,28 +95,23 @@ export const AsideFilters = ({
     ? (selectedSubcategory ? [selectedSubcategory] : [])
     : (selectedCategory ? [selectedCategory] : []);
 
+  // Keep wheel scrolling inside the filters list from reaching page-level wheel handlers.
+  // Attached once per mounted element; the handler never reads props.
   useEffect(() => {
-   
-    // we must avoid scrolling propagation to body when scrolling in filters, but only when the filters are in their own scrollable container (not on mobile)
-      const handleWheel = (e: WheelEvent) => {
-       e.stopPropagation();
-      }
+    const current = asideFiltersRef.current;
+    if (!current) return;
 
-      const current = asideFiltersRef.current;
-      if (current) {
-        current.addEventListener("wheel", handleWheel, { passive: true });
-      }
+    const handleWheel = (e: WheelEvent) => {
+      e.stopPropagation();
+    };
 
-      return () => {
-        if (current) {
-          current.removeEventListener("wheel", handleWheel);
-        }
-      };
-  })
+    current.addEventListener("wheel", handleWheel, { passive: true });
+    return () => current.removeEventListener("wheel", handleWheel);
+  }, []);
 
   return (
     <div ref={asideFiltersRef}
-     className="flex h-full flex-col gap-8 pb-40 pt-4 overflow-auto px-4">
+     className={cn("flex h-full flex-col gap-8 pb-40 pt-4 overflow-auto px-4", className)}>
       <FastNavSection
         items={navigationItems}
         selectedSlugs={selectedNavigationSlugs}

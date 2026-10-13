@@ -15,9 +15,15 @@ import {
 } from "@/utils/filters/rpcCategoryFilters";
 import { buildSearchParams, parseSearchParams } from "@/utils/filters/urlFilters";
 import { Breadcrumbs } from "@/components/main/HeaderLayout/Categories/Breadcrumbs/Breadcrumbs";
-import { AsideFilters } from "./AsideFilters";
+import { AsideFilters, type AsideFilterProps } from "./AsideFilters";
+import { MobileFiltersSheet } from "@/components/main/filters/MobileFiltersSheet";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 gsap.registerPlugin(useGSAP, Flip, ScrollTrigger);
+
+/** The Flip sidebar needs room beside the grid; below this the filters open in a bottom sheet. */
+const SIDEBAR_QUERY = "(min-width: 64rem)";
+const FILTERS_SHEET_ID = "mobile-filters-sheet";
 
 interface ProductsLayoutProps {
   products: WholeProductStructure[];
@@ -38,6 +44,9 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [layoutActive, setLayoutActive] = useState(false);
+  const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
+  const isSidebarViewport = useMediaQuery(SIDEBAR_QUERY);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
 
   const payload = initialFiltersPayload;
   const isLoadingFilters = false;
@@ -276,6 +285,13 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
       if (renderedLayoutActive.current === layoutActive) return;
       renderedLayoutActive.current = layoutActive;
 
+      // Below lg the filters live in the bottom sheet; the Flip sidebar only has to be reset.
+      if (!window.matchMedia(SIDEBAR_QUERY).matches) {
+        containerRef.current?.classList.remove("layout-active");
+        setIsAnimating(false);
+        return;
+      }
+
       const container = containerRef.current;
       const grid = gridRef.current;
       const sidebar = sidebarRef.current;
@@ -356,6 +372,59 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     { scope: containerRef, dependencies: [layoutActive], revertOnUpdate: true },
   );
 
+  // Crossing lg closes whichever filters surface no longer fits the viewport.
+  useEffect(() => {
+    const media = window.matchMedia(SIDEBAR_QUERY);
+    const onChange = () => {
+      if (media.matches) setFiltersSheetOpen(false);
+      else setLayoutActive(false);
+    };
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  const closeFiltersSheet = useCallback(() => {
+    setFiltersSheetOpen(false);
+    filterButtonRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const toggleFilters = () => {
+    // Below lg the Flip sidebar never runs: it has no room and left the panel at width 0.
+    if (!window.matchMedia(SIDEBAR_QUERY).matches) {
+      setFiltersSheetOpen((open) => !open);
+      return;
+    }
+    if (isAnimating) return;
+    setLayoutActive(!layoutActive);
+  };
+
+  const filtersOpen = isSidebarViewport ? layoutActive : filtersSheetOpen;
+
+  const filterProps: AsideFilterProps = {
+    isLoading: isLoadingFilters,
+    availableFilters: payload?.available_filters,
+    navigation: payload?.navigation,
+    selectedCategory: parsedFilters.category,
+    selectedSubcategory: parsedFilters.subcategory,
+    selectedSizes: parsedFilters.sizes || [],
+    selectedColors: parsedFilters.colors || [],
+    selectedBrands: parsedFilters.brands || [],
+    selectedTags: parsedFilters.tags || [],
+    selectedGender: parsedFilters.gender,
+    priceValue: [
+      parsedFilters.minPrice ?? normalizedRange[0],
+      parsedFilters.maxPrice ?? normalizedRange[1],
+    ],
+    onSelectCategory: selectCategory,
+    onSelectSubcategory: selectSubcategory,
+    onToggleSize: (size) => toggleMultiParam("size", size),
+    onToggleColor: (color) => toggleMultiParam("color", color),
+    onToggleBrand: (brand) => toggleMultiParam("brand", brand),
+    onToggleTag: (tag) => toggleMultiParam("tag", tag),
+    onSelectGender: (gender) => toggleSingleParam("gender", gender),
+    onChangePrice: handlePriceChange,
+  };
+
   return (
     <main className="main-products">
       <section className="products-section w-full min-h-screen overflow-clip flex flex-col items-start justify-start gap-0 relative ">
@@ -381,49 +450,35 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
             <h2 className="pt-10 pb-6 px-4 bg-black/30 font-prata text-6xl">
               {mainFastNavItem.name}
             </h2>
-            <AsideFilters
-            isLoading={isLoadingFilters}
-              availableFilters={payload?.available_filters}
-              navigation={payload?.navigation}
-              selectedCategory={parsedFilters.category}
-              selectedSubcategory={parsedFilters.subcategory}
-              selectedSizes={parsedFilters.sizes || []}
-              selectedColors={parsedFilters.colors || []}
-              selectedBrands={parsedFilters.brands || []}
-              selectedTags={parsedFilters.tags || []}
-              selectedGender={parsedFilters.gender}
-              priceValue={[
-                parsedFilters.minPrice ?? normalizedRange[0],
-                parsedFilters.maxPrice ?? normalizedRange[1],
-              ]}
-              onSelectCategory={selectCategory}
-              onSelectSubcategory={selectSubcategory}
-              onToggleSize={(size) => toggleMultiParam("size", size)}
-              onToggleColor={(color) => toggleMultiParam("color", color)}
-              onToggleBrand={(brand) => toggleMultiParam("brand", brand)}
-              onToggleTag={(tag) => toggleMultiParam("tag", tag)}
-              onSelectGender={(gender) => toggleSingleParam("gender", gender)}
-              onChangePrice={handlePriceChange}
-            />
+            <AsideFilters {...filterProps} />
             <div ref={overlayRef} className="overlay-filters fixed inset-0 w-full h-screen bg-off-white" />
           </aside>
           <ProductGrid ref={gridRef} products={products} />
         </div>
       </section>
+      <MobileFiltersSheet
+        id={FILTERS_SHEET_ID}
+        open={filtersSheetOpen && !isSidebarViewport}
+        onClose={closeFiltersSheet}
+        resultCount={products.length}
+      >
+        <AsideFilters {...filterProps} className="min-h-0 flex-1 h-auto overscroll-contain px-2 pb-8 pt-4" />
+      </MobileFiltersSheet>
       <button
-        aria-label={layoutActive ? "Cerrar filtros" : "Abrir filtros"}
-        aria-expanded={layoutActive}
-        onClick={() => {
-          if (isAnimating) return;
-          setLayoutActive(!layoutActive);
-        }}
-        className={`filter-button fixed bottom-8 right-8 z-50
-         bg-black/5 stroke stroke-[rgba(181,179,179,0.6)] 
-         backdrop-blur-md shadow rounded-full p-3.5 w-16
+        ref={filterButtonRef}
+        type="button"
+        aria-label={filtersOpen ? "Cerrar filtros" : "Abrir filtros"}
+        aria-expanded={filtersOpen}
+        aria-haspopup={isSidebarViewport ? undefined : "dialog"}
+        aria-controls={!isSidebarViewport && filtersSheetOpen ? FILTERS_SHEET_ID : undefined}
+        onClick={toggleFilters}
+        className={`filter-button fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-gutter lg:bottom-8 lg:right-8 z-50
+         bg-black/5 stroke stroke-[rgba(181,179,179,0.6)]
+         backdrop-blur-md shadow rounded-full p-3.5 size-16
          ${isAnimating ? "pointer-events-none cursor-not-allowed opacity-50" : "pointer-events-auto cursor-pointer opacity-100"}
          `}
       >
-        <svg viewBox="0 0 32 32" fill="none" className="stroke-black">
+        <svg viewBox="0 0 32 32" fill="none" className="stroke-black" aria-hidden="true">
           <g id="filters-svg">
             <path
               id="Vector"

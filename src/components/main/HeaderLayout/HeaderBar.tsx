@@ -79,12 +79,13 @@ export const HeaderBar = async ({
             </ul>
 
           {/* Mobile Actions - Shown only on mobile */}
-          <div className="flex md:hidden items-center justify-center gap-4" data-dock-bound="end">
+          <div className="flex md:hidden items-center justify-center gap-2" data-dock-bound="end">
+            <CartBadge className="min-h-11 min-w-11 justify-center" />
             {userId ? (
               <LogoutButton />
             ) : (
               <Link className="w-max h-max" href={"/login"}>
-                <PrimaryButton className="text-sm px-4 py-2">
+                <PrimaryButton className="min-h-11 text-sm px-4 py-2">
                   Iniciar sesión
                 </PrimaryButton>
               </Link>

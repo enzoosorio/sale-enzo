@@ -554,11 +554,15 @@ box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 1
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 @layer components {
-  /* Phones: filters stack above the grid. Gutters and columns come from the base .products-grid rule. */
-  @media (max-width: 767px) {
-    .wrapper-pf.layout-active { flex-direction: column; }
-    .wrapper-pf.layout-active .filters-wrapper { position: relative; width: 100%; flex-basis: auto; height: auto; max-height: 60vh; }
-    .wrapper-pf.layout-active .products-grid { width: 100%; flex-basis: auto; }
+  /* Phones from 360px: two columns with a tighter gap so a row shows two garments at once.
+     Below 360px the base rule keeps a single column. Filters open in a bottom sheet below lg,
+     so the sidebar layout never activates here. */
+  @media (min-width: 360px) and (max-width: 767px) {
+    .products-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 0.75rem;
+      row-gap: 1.75rem;
+    }
   }
 }
 

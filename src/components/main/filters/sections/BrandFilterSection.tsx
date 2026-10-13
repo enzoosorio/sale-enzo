@@ -32,8 +32,10 @@ export const BrandFilterSection = ({
           return (
             <button
               key={brand}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => onToggleBrand?.(brand)}
-              className={`px-3 py-2.5 text-base border transition-colors cursor-pointer
+              className={`min-h-11 px-3 py-2.5 text-base border transition-colors cursor-pointer
                 ${darkMode 
                   ? isSelected 
                     ? 'bg-[#FAF9F6] text-[#221C1C] border-[#FAF9F6]' 

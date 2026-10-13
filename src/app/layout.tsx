@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import {Toaster} from 'react-hot-toast'
-import GoogleOneTap from "@/components/auth/GoogleOneTap";
 
 export const metadata: Metadata = {
   title: { default: "Sale Enzo", template: "%s | Sale Enzo" },
@@ -34,7 +33,6 @@ export default async function RootLayout(props: {
   }}
       /> */}
         <Toaster position="bottom-right" />
-        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <GoogleOneTap />}
         {children}   
       </body>
     </html>
