@@ -20,6 +20,7 @@ export default async function Home() {
 
   return (
     <main className="main-home relative z-0">
+      <h1 className="sr-only">Sale Enzo: ropa de segunda mano</h1>
       {/* Reserves the hero room where the header's search bar rests before it docks (HomeSearchDock). */}
       <div aria-hidden="true" className="h-(--dock-space)" />
       <OverviewProductsHero products={products} />

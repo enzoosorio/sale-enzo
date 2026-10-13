@@ -66,7 +66,7 @@ export const Footer = () => {
             Creado por Enzo Osorio.
           </li>
           <li className="text-color text-off-black text-left font-nanum text-base">
-            Productos con historia, listos para una segunda oportunidad.
+            Prendas con historia, listas para una segunda oportunidad.
           </li>
         </ul>
         <ul className="md:text-right">
