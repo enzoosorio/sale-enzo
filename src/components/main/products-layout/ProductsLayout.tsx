@@ -259,7 +259,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     if (mainSlug === "all") {
       return {
         slug: "all",
-        name: "ALL",
+        name: "Todo",
         href: clearHierarchyHref,
       };
     }

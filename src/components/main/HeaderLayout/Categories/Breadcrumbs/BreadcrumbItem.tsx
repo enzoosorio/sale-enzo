@@ -4,13 +4,14 @@ import {
   BreadcrumbLink,
 } from "@/components/ui/breadcrumb"
 import { BreadcrumbItemCustomProps } from "./Breadcrumbs"
+import { slugLabel } from "@/lib/copy/labels"
 
 
 export const BreadcrumbItemCustom = ({ href, label, svgIcon, onSelect }: BreadcrumbItemCustomProps) => {
   const content = (
     <>
       {label && (
-        <span className="flex items-center gap-1 capitalize">{label}</span>
+        <span className="flex items-center gap-1">{slugLabel(label)}</span>
       )}
       {svgIcon}
     </>

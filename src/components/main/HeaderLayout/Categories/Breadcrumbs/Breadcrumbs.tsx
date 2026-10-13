@@ -12,6 +12,7 @@ import { buildSearchParams } from "@/utils/filters/urlFilters";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MainLogoAnimated } from "@/components/reusable/svgs/MainLogo-w-Animations";
 import { useRouter } from "next/navigation";
+import { genderLabel } from "@/lib/copy/labels";
 
 export interface BreadcrumbItemCustomProps {
   href: string;
@@ -68,7 +69,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
     colors.forEach((value) => {
       entries.push({
         id: `color:${value}`,
-        label: `color: ${value}`,
+        label: `Color: ${value}`,
         kind: "multi",
         key: "color",
         value,
@@ -78,7 +79,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
     sizes.forEach((value) => {
       entries.push({
         id: `size:${value}`,
-        label: `size: ${value}`,
+        label: `Talla: ${value}`,
         kind: "multi",
         key: "size",
         value,
@@ -88,7 +89,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
     brands.forEach((value) => {
       entries.push({
         id: `brand:${value}`,
-        label: `brand: ${value}`,
+        label: `Marca: ${value}`,
         kind: "multi",
         key: "brand",
         value,
@@ -98,7 +99,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
     tags.forEach((value) => {
       entries.push({
         id: `tag:${value}`,
-        label: `tag: ${value}`,
+        label: `Etiqueta: ${value}`,
         kind: "multi",
         key: "tag",
         value,
@@ -108,7 +109,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
     if (gender) {
       entries.push({
         id: `gender:${gender}`,
-        label: `gender: ${gender}`,
+        label: `Género: ${genderLabel(gender)}`,
         kind: "single",
         key: "gender",
       });
@@ -117,7 +118,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
     if (fit) {
       entries.push({
         id: `fit:${fit}`,
-        label: `fit: ${fit}`,
+        label: `Corte: ${fit}`,
         kind: "single",
         key: "fit",
       });
@@ -126,7 +127,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
     if (minPrice || maxPrice) {
       entries.push({
         id: "price-range",
-        label: `price: S/${minPrice ?? "0"} - S/${maxPrice ?? "max"}`,
+        label: maxPrice ? `Precio: S/${minPrice ?? "0"} a S/${maxPrice}` : `Precio: desde S/${minPrice}`,
         kind: "price",
       });
     }
@@ -223,7 +224,7 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
                 onClick={() => setIsDropdownOpen((prev) => !prev)}
                 className="px-2 py-1 hover:bg-orange-200/20 rounded-sm transition-colors cursor-pointer flex items-center justify-center min-h-8"
                 aria-expanded={isDropdownOpen}
-                aria-label="Show active filters"
+                aria-label="Ver filtros activos"
               >
                 <svg  className="w-7"  viewBox="0 0 114 114" fill="none">
                   <g id="wrapper-filters-count">

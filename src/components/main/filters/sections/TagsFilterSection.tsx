@@ -19,14 +19,14 @@ export const TagsFilterSection = ({
 }: TagsFilterSectionProps) => {
   return (
     <ReusableFilterSection
-    title="TAGS"
+    title="ETIQUETAS"
     className={`flex flex-wrap gap-x-4 gap-y-8 ${className || ""}`}
     classNameForWrapper={classNameForWrapper}
     darkMode={darkMode}
     >
         {tags.length === 0 && (
           <p className={`px-4 text-sm ${darkMode ? 'text-white/60' : 'text-black/60'}`}>
-            No tags available
+            Aún no hay etiquetas
           </p>
         )}
         {tags.map((tag) => {

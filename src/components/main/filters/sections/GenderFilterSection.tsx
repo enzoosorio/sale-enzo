@@ -1,4 +1,5 @@
 import { ReusableFilterSection } from "./ReusableFilterSection";
+import { genderLabel } from "@/lib/copy/labels";
 
 interface GenderFilterSectionProps {
   genders: string[];
@@ -43,7 +44,7 @@ export const GenderFilterSection = ({
                     : 'border-current text-current opacity-90 hover:opacity-100'
                 }`}
             >
-              {gender}
+              {genderLabel(gender)}
             </button>
           );
         })}

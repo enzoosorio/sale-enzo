@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { WholeProductStructure } from "@/types/products/products";
 import { canOptimize, formatPrice, isCutoutUrl } from "@/lib/images/media";
+import { sizeLabel } from "@/lib/copy/labels";
 
 interface ProductCardProps {
   product: WholeProductStructure;
@@ -34,7 +35,7 @@ export const ProductCard = ({ product, href }: ProductCardProps) => {
             <span className="ml-2 inline-block text-sm text-black/40 line-through">{formatPrice(product.item.compare_at_price)}</span>
           ) : null}
         </p>
-        <p className="font-inria text-sm uppercase tracking-[0.08em] text-black/60">Size {product.variant.size}</p>
+        <p className="font-inria text-sm uppercase tracking-[0.08em] text-black/60">{sizeLabel(product.variant.size)}</p>
       </div>
     </Link>
   );
