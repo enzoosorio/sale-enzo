@@ -1,7 +1,7 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import Link from "next/link";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { finalBackground, initialBackground } from "@/components/main/home/homeAnimations.constants";
@@ -30,6 +30,12 @@ const MEDIA = {
   reduceMotion: "(prefers-reduced-motion: reduce)",
 } as const;
 
+/** Timeline progress past which the other items count as shown (and become clickable). */
+const CONDENSED_THRESHOLD = 0.35;
+
+/** Links beyond this index share the last stagger step so a long list still finishes fading in. */
+const MAX_STAGGER_STEPS = 6;
+
 /** Scroll distance (px) over which the title condenses once the bar is pinned. */
 const CONDENSE_DISTANCE = 200;
 
@@ -48,7 +54,6 @@ export const ProductsFastNav = memo(
     const titleRef = useRef<HTMLHeadingElement>(null);
     const condensedBgRef = useRef<HTMLDivElement>(null);
     const restingBgRef = useRef<HTMLDivElement>(null);
-    const otherItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
     const isMainInItems = useMemo(
       () => items.some((item) => item.slug === mainItem.slug),
@@ -61,14 +66,14 @@ export const ProductsFastNav = memo(
       return items.filter((item) => item.slug !== mainItem.slug);
     }, [isMainInItems, items, mainItem.slug]);
 
-    // Filter changes only rewrite hrefs; the effect must rebuild only when the set of links changes.
-    const otherSlugsKey = otherItems.map((item) => item.slug).join("|");
-
     useEffect(() => {
       carouselApi?.scrollTo(0, false);
-    }, [carouselApi, mainItem.slug, otherSlugsKey]);
+    }, [carouselApi, mainItem.slug]);
 
-      useGSAP(
+    // Filters change which links exist (and their hrefs) while the user is scrolled, so the links
+    // are driven by CSS variables that the timeline tweens on the root. New links pick up the
+    // current progress by themselves and the animation is never rebuilt for them.
+    useGSAP(
       () => {
         const root = rootRef.current;
         const title = titleRef.current;
@@ -78,17 +83,17 @@ export const ProductsFastNav = memo(
         const condensedBg = condensedBgRef.current;
         if (!root || !title || !boundary || !restingBg || !condensedBg) return;
 
-        const links = otherItemRefs.current
-          .slice(0, otherItems.length)
-          .filter((link): link is HTMLAnchorElement => link !== null);
         const pinStart = () => `top top+=${getHeaderOffset()}`;
+        const setCondensed = (condensed: boolean) => {
+          if (root.dataset.condensed !== String(condensed)) root.dataset.condensed = String(condensed);
+        };
         const mm = gsap.matchMedia();
 
         mm.add(MEDIA, (context) => {
           const { isDesktop, reduceMotion } = context.conditions ?? {};
           const endScale = isDesktop ? 0.5 : 0.6;
           // Scale keeps the title's layout box, so the links slide left to close the freed space.
-          const closeGap = () => -title.offsetWidth * (1 - endScale);
+          const endShift = () => `${-title.offsetWidth * (1 - endScale)}px`;
 
           ScrollTrigger.create({
             trigger: root,
@@ -104,12 +109,13 @@ export const ProductsFastNav = memo(
 
           if (reduceMotion) {
             gsap.set(title, { scale: endScale });
+            gsap.set(root, { "--nav-p": 1, "--nav-shift": endShift });
             gsap.set([restingBg, condensedBg], { autoAlpha: (index: number) => index });
-            if (links.length) gsap.set(links, { x: closeGap, autoAlpha: 1 });
-            return;
+            setCondensed(true);
+            return () => setCondensed(false);
           }
 
-          const tl = gsap
+          gsap
             .timeline({
               defaults: { ease: "none" },
               scrollTrigger: {
@@ -118,19 +124,20 @@ export const ProductsFastNav = memo(
                 end: `+=${CONDENSE_DISTANCE}`,
                 scrub: 0.5,
                 invalidateOnRefresh: true,
+                onUpdate: (self) => setCondensed(self.progress > CONDENSED_THRESHOLD),
               },
             })
+            .fromTo(
+              root,
+              { "--nav-p": 0, "--nav-shift": "0px" },
+              { "--nav-p": 1, "--nav-shift": endShift, duration: 1 },
+              0,
+            )
             .to(title, { scale: endScale, duration: 1 }, 0)
             .to(restingBg, { autoAlpha: 0, duration: 0.5 }, 0)
             .to(condensedBg, { autoAlpha: 1, duration: 0.5 }, 0);
 
-          if (links.length) {
-            tl.to(links, { x: closeGap, duration: 1 }, 0).to(
-              links,
-              { autoAlpha: 1, duration: 0.4, stagger: 0.1 },
-              0.3,
-            );
-          }
+          return () => setCondensed(false);
         });
 
         // Web fonts change the title width that the gap correction depends on.
@@ -138,7 +145,7 @@ export const ProductsFastNav = memo(
       },
       {
         scope: rootRef,
-        dependencies: [categorySlug, subcategorySlug, otherSlugsKey],
+        dependencies: [categorySlug, subcategorySlug],
         revertOnUpdate: true,
       },
     );
@@ -178,11 +185,9 @@ export const ProductsFastNav = memo(
             {otherItems.map((item, index) => (
               <CarouselItem key={item.slug} className="basis-auto w-max h-max">
                 <Link
-                  ref={(node) => {
-                    otherItemRefs.current[index] = node;
-                  }}
                   href={item.href}
-                  className="invisible opacity-0 block w-max whitespace-nowrap"
+                  style={{ "--i": Math.min(index, MAX_STAGGER_STEPS) } as CSSProperties}
+                  className="fast-nav-link block w-max whitespace-nowrap"
                 >
                   <h3 className="font-prata hover:text-white transition-colors text-xl lg:text-3xl">
                     {item.name}
