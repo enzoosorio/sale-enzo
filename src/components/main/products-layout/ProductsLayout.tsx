@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
-import { Flip } from "gsap/Flip";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { WholeProductStructure } from "@/types/products/products";
 import { ProductGrid } from "./ProductGrid";
@@ -19,9 +17,9 @@ import { AsideFilters, type AsideFilterProps } from "./AsideFilters";
 import { MobileFiltersSheet } from "@/components/main/filters/MobileFiltersSheet";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-gsap.registerPlugin(useGSAP, Flip, ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger);
 
-/** The Flip sidebar needs room beside the grid; below this the filters open in a bottom sheet. */
+/** The sidebar drawer needs room beside the grid; below this the filters open in a bottom sheet. */
 const SIDEBAR_QUERY = "(min-width: 64rem)";
 const FILTERS_SHEET_ID = "mobile-filters-sheet";
 
@@ -42,7 +40,6 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [isAnimating, setIsAnimating] = useState(false);
   const [layoutActive, setLayoutActive] = useState(false);
   const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
   const isSidebarViewport = useMediaQuery(SIDEBAR_QUERY);
@@ -54,11 +51,8 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
   const gridRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarMounted = useRef(false);
   const fastNavRef = useRef<HTMLDivElement>(null);
-  const breadcrumbsRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  // Last layout state that was animated; also keeps Strict Mode's double effect run from animating on mount.
-  const renderedLayoutActive = useRef(layoutActive);
 
   const parsedFilters = useMemo(
     () => parseSearchParams(new URLSearchParams(searchParams.toString())),
@@ -280,103 +274,39 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
     return () => cancelAnimationFrame(frame);
   }, [products]);
 
-  useGSAP(
-    () => {
-      if (renderedLayoutActive.current === layoutActive) return;
-      renderedLayoutActive.current = layoutActive;
+  // The sidebar is a fixed drawer: only transform and visibility change, so the grid never reflows.
+  // Plain tweens in an effect (not a reverting GSAP context): the drawer's end state must persist.
+  useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+    const firstRun = !sidebarMounted.current;
+    sidebarMounted.current = true;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = firstRun || reduceMotion ? 0 : 0.35;
 
-      // Below lg the filters live in the bottom sheet; the Flip sidebar only has to be reset.
-      if (!window.matchMedia(SIDEBAR_QUERY).matches) {
-        containerRef.current?.classList.remove("layout-active");
-        setIsAnimating(false);
-        return;
-      }
+    if (layoutActive) {
+      gsap.set(sidebar, { visibility: "visible" });
+      gsap.to(sidebar, { xPercent: 0, duration, ease: "power3.out", overwrite: true });
+    } else {
+      gsap.to(sidebar, {
+        xPercent: -100,
+        duration,
+        ease: "power3.in",
+        overwrite: true,
+        onComplete: () => { gsap.set(sidebar, { visibility: "hidden" }); },
+      });
+    }
+    return () => { gsap.killTweensOf(sidebar); };
+  }, [layoutActive]);
 
-      const container = containerRef.current;
-      const grid = gridRef.current;
-      const sidebar = sidebarRef.current;
-      const fastNav = fastNavRef.current;
-      const breadcrumbs = breadcrumbsRef.current;
-      const overlay = overlayRef.current;
-      if (!container || !grid || !sidebar || !fastNav || !breadcrumbs || !overlay) return;
-
-      const mm = gsap.matchMedia();
-      mm.add(
-        // Two complementary queries so the toggle runs either way; only the duration differs.
-        {
-          reduceMotion: "(prefers-reduced-motion: reduce)",
-          motionOk: "(prefers-reduced-motion: no-preference)",
-        },
-        (context) => {
-          const flipDuration = context.conditions?.reduceMotion ? 0 : 0.45;
-
-          // Only called from callbacks of tweens created here; GSAP runs those inside this
-          // matchMedia context, so the Flip and follow-up tweens are reverted with it. Wrapping
-          // them with the hook's contextSafe would nest the two contexts inside each other.
-          const flipLayout = (open: boolean, onComplete: () => void) => {
-            const state = Flip.getState([container, grid, sidebar]);
-            // Flip lifts the targets out of flow; holding the section's height keeps the page
-            // from collapsing, so the browser never clamps the scroll position mid-animation.
-            const section = container.parentElement;
-            if (section) gsap.set(section, { minHeight: section.offsetHeight });
-            container.classList.toggle("layout-active", open);
-            Flip.from(state, {
-              duration: flipDuration,
-              ease: "power3.inOut",
-              absolute: true,
-              nested: true,
-              stagger: 0.01,
-              onComplete: () => {
-                if (section) gsap.set(section, { clearProps: "minHeight" });
-                // Flip can leave an identity transform and frozen sizes behind. A transformed ancestor
-                // becomes the containing block of the pinned (position: fixed) fast-nav and would
-                // scroll it away with the page, and frozen sizes break responsive layout.
-                gsap.set([container, grid, sidebar], {
-                  clearProps: "transform,translate,rotate,scale,width,height",
-                });
-                // The grid and sidebar changed size, so the fast-nav triggers must re-measure.
-                // Refresh outside this context so nothing it touches is recorded here.
-                context.ignore(() => ScrollTrigger.refresh());
-                onComplete();
-              },
-            });
-          };
-
-          setIsAnimating(true);
-
-          if (layoutActive) {
-            gsap
-              .timeline()
-              .to([breadcrumbs, fastNav], { autoAlpha: 0, duration: 0.25 }, 0)
-              .call(() =>
-                flipLayout(true, () => {
-                  gsap
-                    .timeline()
-                    .to(sidebar, { opacity: 1, duration: 0.1 }, 0)
-                    .to(overlay, { x: "-100%", duration: 0.5 }, 0.05);
-                  setIsAnimating(false);
-                }),
-              );
-            return;
-          }
-
-          // revertOnUpdate just restored the bar; keep it hidden until the grid settles.
-          gsap.set(fastNav, { autoAlpha: 0 });
-          gsap
-            .timeline()
-            .to(overlay, { x: "0%", duration: 0.5 }, 0)
-            .to(sidebar, { opacity: 0, duration: 0.1 }, ">0.05")
-            .call(() =>
-              flipLayout(false, () => {
-                gsap.to([fastNav, breadcrumbs], { autoAlpha: 1, duration: 0.1 });
-                setIsAnimating(false);
-              }),
-            );
-        },
-      );
-    },
-    { scope: containerRef, dependencies: [layoutActive], revertOnUpdate: true },
-  );
+  useEffect(() => {
+    if (!layoutActive) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLayoutActive(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [layoutActive]);
 
   // Crossing lg closes whichever filters surface no longer fits the viewport.
   useEffect(() => {
@@ -395,13 +325,12 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
   }, []);
 
   const toggleFilters = () => {
-    // Below lg the Flip sidebar never runs: it has no room and left the panel at width 0.
+    // Below lg the sidebar has no room, so the filters open in the bottom sheet instead.
     if (!window.matchMedia(SIDEBAR_QUERY).matches) {
       setFiltersSheetOpen((open) => !open);
       return;
     }
-    if (isAnimating) return;
-    setLayoutActive(!layoutActive);
+    setLayoutActive((open) => !open);
   };
 
   const filtersOpen = isSidebarViewport ? layoutActive : filtersSheetOpen;
@@ -438,8 +367,8 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           ref={containerRef}
           className="wrapper-pf relative w-full"
         >
-          <div ref={breadcrumbsRef} className="absolute -top-4 left-0 w-full z-30">
-            <Breadcrumbs id="bread-in-layout" className="absolute top-14 left-gutter z-20" />
+          <div className="absolute -top-4 left-0 w-full z-30">
+            <Breadcrumbs id="bread-in-layout" className="absolute top-14 left-gutter z-20" hideWhenRoot />
           </div>
           <ProductsFastNav
             items={headerNavigationItems}
@@ -450,14 +379,15 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
           />
           <aside
             ref={sidebarRef}
-            className="relative filters-wrapper text-white transition-colors"
+            inert={!layoutActive}
+            aria-label="Filtros"
+            className="filters-wrapper text-white"
           >
             {/* The fast-nav title is the page heading; this one only labels the filters panel. */}
             <h2 className="pt-10 pb-6 px-4 bg-black/30 font-prata text-6xl">
               {mainFastNavItem.name}
             </h2>
-            <AsideFilters {...filterProps} />
-            <div ref={overlayRef} className="overlay-filters fixed inset-0 w-full h-screen bg-off-white" />
+            <AsideFilters {...filterProps} className="min-h-0 flex-1" />
           </aside>
           <ProductGrid ref={gridRef} products={products} />
         </div>
@@ -481,7 +411,7 @@ export const ProductsLayout = ({ products, initialFiltersPayload }: ProductsLayo
         className={`filter-button fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-gutter lg:bottom-8 lg:right-8 z-50
          bg-black/5 stroke stroke-[rgba(181,179,179,0.6)]
          backdrop-blur-md shadow rounded-full p-3.5 size-16
-         ${isAnimating ? "pointer-events-none cursor-not-allowed opacity-50" : "pointer-events-auto cursor-pointer opacity-100"}
+         pointer-events-auto cursor-pointer
          `}
       >
         <svg viewBox="0 0 32 32" fill="none" className="stroke-black" aria-hidden="true">

@@ -241,29 +241,40 @@
 
 /* Layered so Tailwind utilities on the same elements win instead of fighting these rules. */
 @layer components {
-  /* ===== DEFAULT STATE ===== */
   .wrapper-pf {
-    display: flex;
+    position: relative;
     width: 100%;
   }
 
-  /* SIDEBAR */
+  /* SIDEBAR: a drawer over the left of the viewport, so opening it never reflows the grid.
+     GSAP owns its transform and visibility (see ProductsLayout); below lg the filters live in the bottom sheet. */
   .filters-wrapper {
-    flex-basis: 0%;
-    width: 0vw;
-    flex-shrink: 0;
-    visibility: hidden;
-    pointer-events: none;
-    background-color: transparent;
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    width: min(28rem, 33vw);
+    height: calc(100dvh - var(--navbar-height));
     overflow: hidden;
+    visibility: hidden;
+    background-color: #221C1C;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.2);
+  }
+
+  @media (max-width: 63.99rem) {
+    .filters-wrapper {
+      display: none;
+    }
   }
 
   /* GRID */
   .products-grid {
     /* Column floor scales with the viewport so wide screens get more columns; auto-fill keeps few products from stretching. */
     --grid-min-col: min(100%, clamp(220px, 14vw, 280px));
-    flex-basis: 100%;
     min-width: 0;
+    width: 100%;
     /* A filter swap replaces the cards; anchoring to one of them would shift the scroll position. */
     overflow-anchor: none;
     display: grid;
@@ -274,29 +285,6 @@
     /* Top padding clears the absolute fast-nav bar (top 5rem + 8rem tall) with the original breathing room. */
     padding: 16rem var(--page-gutter) 4rem;
     transition: none; /* importante: GSAP controla */
-  }
-
-  /* ===== ACTIVE STATE ===== */
-
-  .wrapper-pf.layout-active .filters-wrapper {
-    flex-basis: 33%;
-    visibility: visible;
-    pointer-events: auto;
-    background-color: #221C1C;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-  }
-
-  .filters-wrapper.opacity-off {
-    opacity: 1;
-  }
-
-  .wrapper-pf.layout-active .products-grid {
-    --grid-min-col: min(100%, 220px);
-    flex-basis: 67%;
-    /* Fast-nav is hidden while filters are open, so the grid moves up. */
-    padding-top: 4rem;
   }
 }
 
@@ -472,7 +460,7 @@
 }
 
 .filter-button{
-  box-shadow: inset 2px 1px 4px 0px rgba(0, 0, 0, 25%), 0px 4px 4px 0px rgba(0, 0, 0, 25%),
+  box-shadow: inset 2px 1px 4px 0px rgba(0, 0, 0, 25%), 0px 4px 4px 0px rgba(0, 0, 0, 25%);
 }
 
 @layer components {
@@ -581,6 +569,11 @@ box-shadow: 0px 4px 1px 0px rgba(0, 0, 0, 5%), inset 0px 2px 5px 0px rgba(197, 1
 
 .categories-list.is-dragging {
   cursor: grabbing;
+}
+
+/* Whole list visible: no edge fade, so the first and last items stay fully legible. */
+.categories-list.is-fit {
+  mask-image: none;
 }
 
 /* Nothing to drag: no grab cursor, and touch/native scrolling works normally. */

@@ -86,6 +86,8 @@ export function useInfiniteVerticalScroll({
       staticList = !loop || fits;
       wrap = gsap.utils.wrap(-itemHeight * 0.5, totalHeight - itemHeight * 0.5);
       menu.classList.toggle("is-static", staticList);
+      // A list that fits has nothing to fade under the edges; the mask would only dim its ends.
+      menu.classList.toggle("is-fit", fits);
       // Non-looping lists that overflow scroll natively (transforms count as scrollable overflow).
       menu.style.overflowY = !loop && !fits ? "auto" : "";
       setIsStatic(staticList);

@@ -42,9 +42,11 @@ interface BreadcrumbsProps {
   className?: string;
   /** Panel mode: navigate with shallow history instead of Next navigations. */
   onNavigate?: (params: URLSearchParams, mode: "push" | "replace") => void;
+  /** Render nothing while the trail would be just the logo (the page header already shows it). */
+  hideWhenRoot?: boolean;
 }
 
-export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", onNavigate }: BreadcrumbsProps) {
+export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", onNavigate, hideWhenRoot = false }: BreadcrumbsProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -186,6 +188,8 @@ export function Breadcrumbs({ id, className = "absolute top-14 left-16 z-20", on
       onSelect: onNavigate ? () => onNavigate(params, "push") : undefined,
     };
   };
+
+  if (hideWhenRoot && !category && activeFilters.length === 0) return null;
 
   const breadcrumbItems: BreadcrumbItemCustomProps[] = [
     crumb(new URLSearchParams(), undefined, <MainLogoAnimated className="w-8" />),

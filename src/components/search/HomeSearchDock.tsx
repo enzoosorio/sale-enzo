@@ -120,12 +120,13 @@ export function HomeSearchDock({ logoRef }: { logoRef: RefObject<HTMLElement | n
         aria-label="Buscar productos"
         aria-haspopup="dialog"
         onClick={(event) => surfaceRef.current?.open(event.currentTarget)}
-        className="dock-compact flex h-12 w-[min(600px,calc(100vw-2rem))] items-center overflow-hidden border border-[#221C1C]/30 bg-white text-[#221C1C] shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 xl:hidden"
+        className="dock-compact relative flex h-12 w-[min(600px,calc(100vw-2rem))] items-center overflow-hidden border border-[#221C1C]/30 bg-white text-[#221C1C] shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 xl:hidden"
       >
-        <span className="dock-compact-label min-w-0 flex-1 truncate px-4 text-left font-nanum text-[#6B635C]">
-          ¿Qué estás buscando?
+        {/* Out of the flex flow so the collapsed circle holds only the icon, centered. */}
+        <span className="dock-compact-label absolute inset-y-0 left-0 right-12 flex items-center px-4 text-left font-nanum text-[#6B635C]">
+          <span className="truncate">¿Qué estás buscando?</span>
         </span>
-        <span className="flex h-full aspect-square shrink-0 items-center justify-center" aria-hidden="true">
+        <span className="ml-auto flex h-full aspect-square shrink-0 items-center justify-center" aria-hidden="true">
           <Search size={20} />
         </span>
       </button>

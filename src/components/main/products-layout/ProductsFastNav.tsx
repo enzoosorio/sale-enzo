@@ -39,6 +39,9 @@ const MAX_STAGGER_STEPS = 6;
 /** Scroll distance (px) over which the title condenses once the bar is pinned. */
 const CONDENSE_DISTANCE = 200;
 
+/** Height (px) the bar settles at once condensed; the resting bar is 7rem on phones and 8rem from lg. */
+const CONDENSED_HEIGHT = 80;
+
 /** Height of the sticky site header, so the pinned bar sits right below it instead of behind it. */
 const getHeaderOffset = () => {
   const header = document.querySelector<HTMLElement>("body header");
@@ -99,7 +102,7 @@ export const ProductsFastNav = memo(
             trigger: root,
             start: pinStart,
             endTrigger: boundary,
-            end: () => `bottom top+=${getHeaderOffset() + root.offsetHeight}`,
+            end: () => `bottom top+=${getHeaderOffset() + CONDENSED_HEIGHT}`,
             pin: true,
             pinSpacing: false,
             invalidateOnRefresh: true,
@@ -109,6 +112,7 @@ export const ProductsFastNav = memo(
 
           if (reduceMotion) {
             gsap.set(title, { scale: endScale });
+            gsap.set(root, { height: CONDENSED_HEIGHT });
             gsap.set(root, { "--nav-p": 1, "--nav-shift": endShift });
             gsap.set([restingBg, condensedBg], { autoAlpha: (index: number) => index });
             setCondensed(true);
@@ -134,6 +138,8 @@ export const ProductsFastNav = memo(
               0,
             )
             .to(title, { scale: endScale, duration: 1 }, 0)
+            // The bar is absolute and pinned without spacing, so shrinking it never reflows the grid.
+            .to(root, { height: CONDENSED_HEIGHT, duration: 1 }, 0)
             .to(restingBg, { autoAlpha: 0, duration: 0.5 }, 0)
             .to(condensedBg, { autoAlpha: 1, duration: 0.5 }, 0);
 
@@ -153,7 +159,7 @@ export const ProductsFastNav = memo(
     return (
       <div
         ref={rootRef}
-        className="fast-nav-wrapper isolate h-32 absolute w-full z-20 top-20 flex items-center justify-center"
+        className="fast-nav-wrapper isolate h-28 lg:h-32 absolute w-full z-20 top-20 flex items-center justify-center"
       >
         <div
           ref={restingBgRef}
@@ -170,9 +176,9 @@ export const ProductsFastNav = memo(
         <Carousel
           opts={{ align: "start", dragFree: true, containScroll: "trimSnaps" }}
           setApi={setCarouselApi}
-          className="min-w-full h-32 flex items-center justify-start"
+          className="min-w-full h-full flex items-center justify-start"
         >
-          <CarouselContent className="flex justify-start gap-8 lg:gap-12 items-center px-gutter min-h-full h-32 min-w-full">
+          <CarouselContent className="flex justify-start gap-8 lg:gap-12 items-center px-gutter min-w-full">
             <CarouselItem className="basis-auto w-max h-max">
               <h1
                 ref={titleRef}
