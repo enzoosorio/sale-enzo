@@ -6,6 +6,23 @@ import { conditionLabel } from "@/lib/catalog/schema";
 
 type MediaUrl = (key: string | null) => string | null;
 
+type ShippableImage = Pick<
+  DraftImageRow,
+  "cutout_key" | "cutout_web_key" | "ironed_status" | "ironed_key" | "ironed_web_key"
+>;
+
+/**
+ * R2 keys that actually ship for a photo: the ironed rendition once the owner
+ * accepted it, otherwise the plain cutout. The original and the plain cutout stay
+ * in R2 either way (the future ComfyUI pipeline starts from them).
+ */
+export function shippedKeys(img: ShippableImage): { web: string | null; full: string | null } {
+  if (img.ironed_status === "accepted" && img.ironed_web_key) {
+    return { web: img.ironed_web_key, full: img.ironed_key ?? img.ironed_web_key };
+  }
+  return { web: img.cutout_web_key, full: img.cutout_key };
+}
+
 /** Draft images in display order: main first, then by slot (front, back, label…), then position. Only finished ones. */
 export function orderedDoneImages(images: DraftImageRow[]): DraftImageRow[] {
   return images
@@ -45,7 +62,7 @@ export function draftToCard(draft: DraftRow, images: DraftImageRow[], mediaUrl: 
       size: draft.size,
       main_color_hex: draft.main_color_hex,
       main_color_category_id: null,
-      main_img_url: mediaUrl(main?.cutout_web_key ?? null),
+      main_img_url: mediaUrl(main ? shippedKeys(main).web : null),
       gender: draft.gender,
       fit: draft.fit,
       metadata: publicVariantMetadata(draft),
@@ -92,7 +109,7 @@ export function draftToDetail(draft: DraftRow, images: DraftImageRow[], mediaUrl
     sku: draft.sku,
     metadata: draft.metadata as Record<string, string>,
     images: orderedDoneImages(images)
-      .map((i) => mediaUrl(i.cutout_web_key))
+      .map((i) => mediaUrl(shippedKeys(i).web))
       .filter((src): src is string => !!src)
       .map((src) => ({ src, alt: draft.name ?? draft.sku })),
   };

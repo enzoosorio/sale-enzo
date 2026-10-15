@@ -13,6 +13,7 @@ import {
   type ShotRole,
 } from "@/lib/catalog/schema";
 import { isSingleSlot, roleRank } from "@/lib/capture/photoSlots";
+import { shippedKeys } from "@/lib/staging/draftToPreview";
 import { getDraft, staging } from "@/lib/staging/db";
 import { deleteObjects } from "@/lib/r2";
 import type { DraftImageRow, DraftRow, DraftSource, DraftWithImages } from "@/types/staging";
@@ -66,6 +67,7 @@ const UpdateSchema = DraftFieldsSchema.partial().extend({
   status: DraftStatusSchema.optional(),
   transcript: z.string().nullable().optional(),
   field_confidence: z.record(z.string(), z.number()).optional(),
+  field_source: z.record(z.string(), z.enum(["user", "ai"])).optional(),
   ai_raw: z.unknown().optional(),
 });
 export type DraftUpdate = z.infer<typeof UpdateSchema>;
@@ -81,9 +83,18 @@ export async function updateDraft(id: string, patch: DraftUpdate): Promise<Resul
   if (current.status === "published") return { success: false, error: "Draft already published" };
 
   const merged = fieldsOf({ ...current, ...parsed.data } as DraftRow);
+  // Any DraftFields key in the update was just decided by the owner: it becomes
+  // theirs (field_source "user"), so future AI passes leave it alone.
+  const editedKeys = (Object.keys(EMPTY_DRAFT_FIELDS) as (keyof DraftFields)[]).filter((k) => k in parsed.data);
+  const fieldSource =
+    parsed.data.field_source ??
+    (editedKeys.length
+      ? { ...(current.field_source ?? {}), ...Object.fromEntries(editedKeys.map((k) => [k, "user"] as const)) }
+      : undefined);
+
   const { error } = await staging()
     .from("product_drafts")
-    .update({ ...parsed.data, missing_fields: computeMissingFields(merged) })
+    .update({ ...parsed.data, field_source: fieldSource, missing_fields: computeMissingFields(merged) })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
 
@@ -110,7 +121,7 @@ async function hardDelete(draft: DraftWithImages): Promise<Result> {
   await deleteObjects("originals", draft.images.map((i) => i.original_key).filter((k): k is string => !!k));
   await deleteObjects(
     "media",
-    draft.images.flatMap((i) => [i.cutout_key, i.cutout_web_key]).filter((k): k is string => !!k),
+    draft.images.flatMap((i) => [i.cutout_key, i.cutout_web_key, i.ironed_key, i.ironed_web_key]).filter((k): k is string => !!k),
   );
   const { error } = await staging().from("product_drafts").delete().eq("id", draft.id);
   if (error) return { success: false, error: error.message };
@@ -213,6 +224,31 @@ const ImagePatchSchema = z.object({
   bytes_cutout: z.number().int().nonnegative().optional(),
   bytes_web: z.number().int().nonnegative().optional(),
   dominant_colors: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/)).optional(),
+  bg_provider: z.enum(["imgly", "replicate"]).optional(),
+  cutout_quality: z
+    .object({
+      verdict: z.enum(["ok", "suspect", "failed"]),
+      reasons: z.array(z.string()),
+      coverage: z.number(),
+      bboxRatio: z.number(),
+      edgeTouch: z.number(),
+      softAlphaRatio: z.number(),
+      components: z.number(),
+      strayShare: z.number(),
+    })
+    .optional(),
+  needs_review: z.boolean().optional(),
+  ironed_status: z.enum(["none", "pending", "ready", "accepted", "rejected", "failed"]).optional(),
+  ironed_key: z.string().optional(),
+  ironed_web_key: z.string().optional(),
+  ironed_check: z
+    .object({
+      verdict: z.enum(["ok", "suspect", "failed"]),
+      reasons: z.array(z.string()),
+      aspectChange: z.number(),
+      paletteShift: z.number(),
+    })
+    .optional(),
   error: z.string().nullable().optional(),
 });
 
@@ -256,6 +292,32 @@ async function applyMainImage(draftId: string, imageId: string): Promise<Result>
   const [main, ...secondary] = (data?.dominant_colors as string[] | null) ?? [];
   if (main) await updateDraft(draftId, { main_color_hex: main, secondary_colors: secondary.slice(0, 3) });
   return { success: true, data: undefined };
+}
+
+/**
+ * The owner's call on an ironed rendition: accepted ships to the storefront,
+ * rejected keeps the plain cutout. Only an existing rendition can be decided on.
+ */
+export async function decideIroned(imageId: string, decision: "accepted" | "rejected"): Promise<Result<DraftImageRow>> {
+  if (!(await getAdminUserId())) return unauthorized;
+
+  const { data: current } = await staging().from("draft_images").select("*").eq("id", imageId).maybeSingle();
+  const image = current as DraftImageRow | null;
+  if (!image) return { success: false, error: "Image not found" };
+  if (!["ready", "accepted", "rejected"].includes(image.ironed_status) || !image.ironed_web_key) {
+    return { success: false, error: "No hay una versión planchada para decidir" };
+  }
+
+  const { data, error } = await staging()
+    .from("draft_images")
+    .update({ ironed_status: decision })
+    .eq("id", imageId)
+    .select("*")
+    .single();
+  if (error || !data) return { success: false, error: error?.message ?? "Update failed" };
+
+  revalidatePath(`/admin/staging/${image.draft_id}`);
+  return { success: true, data: data as DraftImageRow };
 }
 
 export async function setMainDraftImage(draftId: string, imageId: string): Promise<Result> {
@@ -323,7 +385,10 @@ export async function deleteDraftImage(imageId: string): Promise<Result> {
   const img = image as DraftImageRow;
 
   if (img.original_key) await deleteObjects("originals", [img.original_key]);
-  await deleteObjects("media", [img.cutout_key, img.cutout_web_key].filter((k): k is string => !!k));
+  await deleteObjects(
+    "media",
+    [img.cutout_key, img.cutout_web_key, img.ironed_key, img.ironed_web_key].filter((k): k is string => !!k),
+  );
   await staging().from("draft_images").delete().eq("id", imageId);
 
   if (img.is_main) {
@@ -372,7 +437,7 @@ export async function listDrafts(filters: { status?: string; subcategory?: strin
   let query = staging()
     .from("product_drafts")
     .select(
-      "id, sku, status, source, name, brand, size, price, match_kind, subcategory_id, missing_fields, updated_at, images:draft_images(cutout_web_key, is_main, status, shot_role, position)",
+      "id, sku, status, source, name, brand, size, price, match_kind, subcategory_id, missing_fields, updated_at, images:draft_images(cutout_key, cutout_web_key, ironed_status, ironed_key, ironed_web_key, is_main, status, shot_role, position)",
     )
     .order("updated_at", { ascending: false });
 
@@ -384,7 +449,18 @@ export async function listDrafts(filters: { status?: string; subcategory?: strin
   if (error) return { success: false, error: error.message };
 
   type Row = Omit<DraftListItem, "main_web_key" | "photo_keys" | "done_images" | "is_empty"> & {
-    images: Pick<DraftImageRow, "cutout_web_key" | "is_main" | "status" | "shot_role" | "position">[];
+    images: Pick<
+      DraftImageRow,
+      | "cutout_key"
+      | "cutout_web_key"
+      | "ironed_status"
+      | "ironed_key"
+      | "ironed_web_key"
+      | "is_main"
+      | "status"
+      | "shot_role"
+      | "position"
+    >[];
   };
   return {
     success: true,
@@ -398,8 +474,8 @@ export async function listDrafts(filters: { status?: string; subcategory?: strin
       return {
         ...d,
         price: d.price === null ? null : Number(d.price),
-        main_web_key: finished[0]?.cutout_web_key ?? null,
-        photo_keys: finished.map((i) => i.cutout_web_key as string),
+        main_web_key: finished[0] ? shippedKeys(finished[0]).web : null,
+        photo_keys: finished.map((i) => shippedKeys(i).web as string),
         done_images: finished.length,
         is_empty: images.length === 0 && !d.name && !d.brand && !d.size && d.price === null,
       };

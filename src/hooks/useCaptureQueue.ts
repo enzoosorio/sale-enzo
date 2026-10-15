@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reserveDraftImage, updateDraftImage } from "@/actions/admin/staging";
-import { bgProvider } from "@/lib/bg/types";
+import { bgProviders } from "@/lib/bg/types";
 import type { ShotRole } from "@/lib/catalog/schema";
-import { enqueue, jobsFor, patchJob, recoverInterrupted, removeJob, type CaptureJob } from "@/lib/capture/queue";
-import type { PresignedUpload, WorkerJob, WorkerMessage } from "@/workers/image.worker";
+import { enqueue, jobsFor, patchJob, pruneDone, recoverInterrupted, removeJob, type CaptureJob } from "@/lib/capture/queue";
+import { runWorkerJob, WorkerCrash } from "@/lib/capture/runWorkerJob";
+import type { PresignedUpload, WorkerStage } from "@/workers/image.worker";
 import { createImageWorker } from "@/workers/createImageWorker";
 
 /**
@@ -18,13 +19,21 @@ export function useCaptureQueue(draftId: string, onImageDone?: () => void) {
   const workerRef = useRef<Worker | null>(null);
   const runningRef = useRef(false);
   const onDoneRef = useRef(onImageDone);
-  onDoneRef.current = onImageDone;
+  useEffect(() => {
+    onDoneRef.current = onImageDone;
+  });
 
   const refresh = useCallback(async () => setJobs(await jobsFor(draftId)), [draftId]);
 
   const worker = useCallback(() => {
     workerRef.current ??= createImageWorker();
     return workerRef.current;
+  }, []);
+
+  /** A crashed or hung worker is useless (and may hold gigabytes): drop it, the next job gets a fresh one. */
+  const discardWorker = useCallback(() => {
+    workerRef.current?.terminate();
+    workerRef.current = null;
   }, []);
 
   const runJob = useCallback(
@@ -46,29 +55,25 @@ export function useCaptureQueue(draftId: string, onImageDone?: () => void) {
       if (!presign.ok) throw new Error(`presign ${presign.status}`);
       const { uploads } = (await presign.json()) as { uploads: PresignedUpload[] };
 
-      const result = await new Promise<Extract<WorkerMessage, { type: "done" }>["result"]>((resolve, reject) => {
-        const w = worker();
-        const onMessage = (e: MessageEvent<WorkerMessage>) => {
-          if (e.data.jobId !== job.id) return;
-          if (e.data.type === "progress") {
-            const stage = e.data.stage + (e.data.fraction ? ` ${Math.round(e.data.fraction * 100)}%` : "");
-            setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, stage } : j)));
-            return;
-          }
-          w.removeEventListener("message", onMessage);
-          if (e.data.type === "done") resolve(e.data.result);
-          else reject(new Error(e.data.error));
-        };
-        w.addEventListener("message", onMessage);
-        w.postMessage({ jobId: job.id, file: job.file, uploads, provider: bgProvider() } satisfies WorkerJob);
+      const done = await runWorkerJob(
+        worker(),
+        { jobId: job.id, mode: "photo", file: job.file, uploads, providers: bgProviders() },
+        (stage: WorkerStage, fraction?: number) => {
+          const label = stage + (fraction ? ` ${Math.round(fraction * 100)}%` : "");
+          setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, stage: label } : j)));
+        },
+      ).catch((e: unknown) => {
+        if (e instanceof WorkerCrash) discardWorker();
+        throw e;
       });
+      if (done.mode !== "photo") throw new Error("Unexpected worker result");
 
-      const { ms, ...fields } = result;
+      const { ms, ...fields } = done.result;
       const saved = await updateDraftImage(imageId, { ...fields, status: "done", error: null });
       if (!saved.success) throw new Error(saved.error);
       await patchJob(job.id, { status: "done", stage: undefined, ms });
     },
-    [draftId, worker],
+    [draftId, worker, discardWorker],
   );
 
   const pump = useCallback(async () => {
@@ -96,7 +101,8 @@ export function useCaptureQueue(draftId: string, onImageDone?: () => void) {
   }, [draftId, refresh, runJob]);
 
   useEffect(() => {
-    recoverInterrupted(draftId).then(refresh).then(pump);
+    // Interrupted jobs resume; finished ones from earlier sessions no longer need their photo blob.
+    recoverInterrupted(draftId).then(() => pruneDone(draftId)).then(refresh).then(pump);
     return () => {
       workerRef.current?.terminate();
       workerRef.current = null;

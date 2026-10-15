@@ -5,6 +5,15 @@ const MEDIA_BASE = (process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL ?? "").replace(/\
 export const mediaUrl = (key: string | null | undefined): string | null =>
   key && MEDIA_BASE ? `${MEDIA_BASE}/${key}` : null;
 
+/**
+ * Same as mediaUrl with a cache-busting stamp. Public media is cached as immutable,
+ * so a rendition rewritten in place (a redone cutout) needs a new URL to show up.
+ */
+export const mediaUrlStamped = (key: string | null | undefined, stamp: string | number | null | undefined): string | null => {
+  const url = mediaUrl(key);
+  return url && stamp ? `${url}?v=${encodeURIComponent(String(stamp))}` : url;
+};
+
 /** Transparent cutouts look best contained on a neutral backdrop instead of cropped. */
 export const isCutoutUrl = (url: string | null | undefined): boolean =>
   !!url && !!MEDIA_BASE && url.startsWith(MEDIA_BASE) && /\/(web|cutout)\//.test(url);

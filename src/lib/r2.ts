@@ -61,6 +61,13 @@ export async function presignGet(key: string, downloadName?: string, expiresIn =
   return getSignedUrl(r2(), command, { expiresIn });
 }
 
+/** Server-side download of one object (the retouch route reads the private original this way). */
+export async function getObjectBytes(bucket: R2Bucket, key: string): Promise<{ bytes: Uint8Array; contentType: string }> {
+  const res = await r2().send(new GetObjectCommand({ Bucket: bucketName(bucket), Key: key }));
+  if (!res.Body) throw new Error(`R2 object ${key} has no body`);
+  return { bytes: await res.Body.transformToByteArray(), contentType: res.ContentType ?? "application/octet-stream" };
+}
+
 export function publicUrl(key: string): string {
   return `${env("NEXT_PUBLIC_R2_PUBLIC_BASE_URL").replace(/\/$/, "")}/${key}`;
 }

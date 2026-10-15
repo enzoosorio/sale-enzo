@@ -20,6 +20,7 @@ export function blankDraft(): DraftWithImages {
     source_row: null,
     missing_fields: computeMissingFields(fields),
     field_confidence: {},
+    field_source: {},
     published_product_id: null,
     published_variant_id: null,
     published_item_id: null,

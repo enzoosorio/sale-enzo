@@ -6,7 +6,7 @@ import { computeMissingFields, conditionLabel, EMPTY_DRAFT_FIELDS, MIN_DONE_IMAG
 import { generateRagForProduct, linkVariantTags, resolveTagIds, slugify } from "@/lib/catalog/productWrites";
 import { publicUrl } from "@/lib/r2";
 import { getDraft, staging } from "@/lib/staging/db";
-import { orderedDoneImages, publicVariantMetadata } from "@/lib/staging/draftToPreview";
+import { orderedDoneImages, publicVariantMetadata, shippedKeys } from "@/lib/staging/draftToPreview";
 import { getOrCreateColorCluster, processSecondaryColors } from "@/utils/colors/clustering";
 import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
 import type { DraftWithImages } from "@/types/staging";
@@ -107,7 +107,7 @@ export async function publishDraft(draftId: string): Promise<PublishResult> {
           size: f.size,
           gender: f.gender,
           fit: f.fit,
-          main_img_url: publicUrl(images[0].cutout_web_key!),
+          main_img_url: publicUrl(shippedKeys(images[0]).web!),
           main_color_hex: f.main_color_hex,
           main_color_category_id: cluster.color_category_id,
           metadata: publicVariantMetadata(f),
@@ -125,8 +125,8 @@ export async function publishDraft(draftId: string): Promise<PublishResult> {
       const { error: imagesError } = await supabaseAdmin.from("variant_images").insert(
         images.map((img, i) => ({
           variant_id: data.id,
-          image_url: publicUrl(img.cutout_web_key!),
-          cutout_full_url: img.cutout_key ? publicUrl(img.cutout_key) : null,
+          image_url: publicUrl(shippedKeys(img).web!),
+          cutout_full_url: shippedKeys(img).full ? publicUrl(shippedKeys(img).full!) : null,
           original_key: img.original_key,
           position: String(i + 1),
         })),
