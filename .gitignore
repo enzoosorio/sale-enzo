@@ -55,3 +55,6 @@ next-env.d.ts
 # Self-hosted dotLottie player WASM (copied by scripts/build-worker.mjs)
 /public/lottie/dotlottie-player.wasm
 /.playwright-mcp
+
+# Your own garment photos for scripts/eval-photos.ts and its HTML report
+scripts/fixtures/
