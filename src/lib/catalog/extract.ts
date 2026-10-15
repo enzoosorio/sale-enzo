@@ -42,6 +42,11 @@ export interface CatalogVariant {
   fit: string | null;
   color: string | null;
   metadata: Record<string, string>;
+  /** Optional history-learning extras (published: variant_tags; drafts: tags column). */
+  tags?: string[];
+  /** Published products keep these inside metadata jsonb; drafts have dedicated columns. */
+  fits_like_min?: string | null;
+  fits_like_max?: string | null;
 }
 
 export interface CatalogProduct {
@@ -180,7 +185,7 @@ export function buildSystemPrompt(ctx: ExtractionContext): string {
         .join("\n")
     : "(catálogo vacío)";
 
-  return `Eres el catalogador de "Sale Enzo", tienda de ropa deportiva de segunda mano (Perú, precios en soles).
+  return `Eres el catalogador de "Sale Enzo", tienda de ropa de segunda mano (Perú, precios en soles).
 Conviertes una descripción informal (dictado por voz o fila de Excel escrita sin estándar) en un registro con valores CERRADOS.
 
 # Reglas duras

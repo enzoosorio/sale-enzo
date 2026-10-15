@@ -4,6 +4,7 @@ import { getAdminUserId } from "@/lib/auth/isAdmin";
 import { openai } from "@/lib/openai";
 import { extractDraft, narrowCatalog } from "@/lib/catalog/extract";
 import { loadExtractionContext } from "@/lib/catalog/catalogContext";
+import { legacyConfidenceKey, LEGACY_UNCERTAIN_BELOW } from "@/lib/catalog/confidence";
 import { computeMissingFields, EMPTY_DRAFT_FIELDS, type DraftFields } from "@/lib/catalog/schema";
 import { getDraft, staging } from "@/lib/staging/db";
 import { supabaseAdmin } from "@/utils/supabase/supabase-admin";
@@ -66,6 +67,14 @@ export async function POST(req: Request) {
 
     const merged = { ...EMPTY_DRAFT_FIELDS, ...current, ...patch } as DraftFields;
     const transcriptLog = [draft.transcript, transcript].filter(Boolean).join("\n---\n");
+    // What the owner dictated with decent confidence becomes user-sourced so
+    // vision never overwrites it. Doubtful values stay unmarked: the wizard keeps
+    // flagging them "Revisar" (confidence < 0.6) until the owner edits or confirms.
+    const fieldSource = { ...(draft.field_source ?? {}) };
+    for (const k of Object.keys(patch)) {
+      if ((result.confidence[legacyConfidenceKey(k)] ?? 1) >= LEGACY_UNCERTAIN_BELOW) fieldSource[k] = "user";
+      else delete fieldSource[k]; // a doubtful dictation replaces any earlier AI provenance
+    }
 
     const { error } = await staging()
       .from("product_drafts")
@@ -74,6 +83,7 @@ export async function POST(req: Request) {
         transcript: transcriptLog,
         ai_raw: { raw: result.raw, warnings: result.warnings },
         field_confidence: { ...draft.field_confidence, ...result.confidence },
+        field_source: fieldSource,
         missing_fields: computeMissingFields(merged),
       })
       .eq("id", draftId);

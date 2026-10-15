@@ -15,13 +15,17 @@ export async function loadExtractionContext(
     db.from("brands").select("name").order("name"),
     db
       .from("products")
-      .select("id, name, brand, subcategory_id, product_variants(id, size, gender, fit, main_color_hex, metadata)")
+      .select(
+        "id, name, brand, subcategory_id, product_variants(id, size, gender, fit, main_color_hex, metadata, variant_tags(tags(name)))",
+      )
       .order("created_at", { ascending: false })
       .limit(500),
     db
       .schema("staging")
       .from("product_drafts")
-      .select("id, name, brand, subcategory_id, size, gender, fit, main_color_hex, metadata, target_draft_id, match_kind")
+      .select(
+        "id, name, brand, subcategory_id, size, gender, fit, main_color_hex, metadata, tags, fits_like_min, fits_like_max, target_draft_id, match_kind",
+      )
       .in("status", ["capturing", "pending_review", "approved"])
       .order("created_at", { ascending: true }),
   ]);
@@ -68,6 +72,7 @@ type ProductRow = {
     fit: string | null;
     main_color_hex: string | null;
     metadata: Record<string, string> | null;
+    variant_tags: { tags: { name: string } | null }[] | null;
   }[];
 };
 
@@ -84,6 +89,9 @@ function publishedCatalog(rows: ProductRow[]): CatalogProduct[] {
       fit: v.fit,
       color: v.main_color_hex,
       metadata: v.metadata ?? {},
+      tags: (v.variant_tags ?? []).map((vt) => vt.tags?.name).filter((n): n is string => !!n),
+      fits_like_min: v.metadata?.fits_like_min ?? null,
+      fits_like_max: v.metadata?.fits_like_max ?? null,
     })),
   }));
 }
@@ -98,6 +106,9 @@ type DraftRow = {
   fit: string | null;
   main_color_hex: string | null;
   metadata: Record<string, string> | null;
+  tags: string[] | null;
+  fits_like_min: string | null;
+  fits_like_max: string | null;
   target_draft_id: string | null;
   match_kind: string | null;
 };
@@ -127,6 +138,9 @@ export function draftCatalog(rows: DraftRow[]): CatalogProduct[] {
         fit: d.fit,
         color: d.main_color_hex,
         metadata: d.metadata ?? {},
+        tags: d.tags ?? [],
+        fits_like_min: d.fits_like_min,
+        fits_like_max: d.fits_like_max,
       })),
     }));
 }
