@@ -17,8 +17,8 @@ export const CustomLinkMobile = ({ onClose, href, children, auxId, external = fa
           onClick={onClose}
           {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
           className={`${auxId ? `group/${auxId}` : ''} mobile-menu-link overflow-hidden font-prata 
-             w-full hover:bg-black hover:text-white hover:backdrop-brightness-100 backdrop-brightness-150 transition-all  py-2
-            text-2xl text-foreground text-center
+             w-full text-[#221C1C] [@media(hover:hover)]:hover:bg-black [@media(hover:hover)]:hover:text-white active:bg-black/10 transition-colors py-2
+            text-2xl text-center
             `}
         >
           {children}

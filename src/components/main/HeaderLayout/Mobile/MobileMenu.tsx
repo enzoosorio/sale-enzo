@@ -16,11 +16,13 @@ import { contactWhatsAppUrl } from "@/content/legal";
 interface MobileMenuProps {
   isOpened: boolean;
   onClose: () => void;
+  /** Shows the admin Dashboard shortcut; the admin routes are guarded server-side regardless. */
+  isAdmin?: boolean;
 }
 
 gsap.registerPlugin(useGSAP, SplitText);
 
-export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
+export const MobileMenu = ({ isOpened, onClose, isAdmin = false }: MobileMenuProps) => {
   const menuRef = useRef<HTMLElement>(null);
   const openPanel = useCategoriesStore((s) => s.openPanel);
   const contactUrl = contactWhatsAppUrl();
@@ -102,7 +104,7 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
             onClose();
             openPanel();
           }}
-          className="mobile-menu-link overflow-hidden font-prata w-full hover:bg-black hover:text-white backdrop-brightness-150 transition-all py-2 text-2xl text-foreground text-center cursor-pointer"
+          className="mobile-menu-link overflow-hidden font-prata w-full text-[#221C1C] [@media(hover:hover)]:hover:bg-black [@media(hover:hover)]:hover:text-white active:bg-black/10 transition-colors py-2 text-2xl text-center cursor-pointer"
         >
           <p className="w-max mx-auto">
             Categorías
@@ -117,6 +119,14 @@ export const MobileMenu = ({ isOpened, onClose }: MobileMenuProps) => {
           >
             <p className="w-max mx-auto">
               Contacto
+            </p>
+          </CustomLinkMobile>
+        )}
+
+        {isAdmin && (
+          <CustomLinkMobile href="/admin" onClose={onClose}>
+            <p className="w-max mx-auto">
+              Dashboard
             </p>
           </CustomLinkMobile>
         )}

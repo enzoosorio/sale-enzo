@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { NO_INDEX } from '@/lib/seo/site';
 import { DashboardSidebar } from '@/components/admin/DashboardSidebar';
+import { AdminMobileNav } from '@/components/admin/AdminMobileNav';
 
 export const metadata: Metadata = {
   title: 'Admin Dashboard',
@@ -28,7 +29,8 @@ export default async function AdminLayout({
 
   return (
     <div className="h-[calc(100dvh-var(--navbar-height))] bg-off-white">
-      <div className="flex h-[calc(100dvh-var(--navbar-height))] bg-amber-600 overflow-hidden">
+      <div className="flex h-[calc(100dvh-var(--navbar-height))] flex-col bg-amber-600 overflow-hidden md:flex-row">
+        <AdminMobileNav />
         <DashboardSidebar/>
         {children}
       </div>

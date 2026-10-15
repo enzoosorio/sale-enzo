@@ -58,7 +58,7 @@ export const HeaderBar = async ({
           </ul>
           {/* customed mobile logo */}
           <div className="md:hidden" data-dock-bound="start">
-            <MobileMainLogo />
+            <MobileMainLogo isAdmin={userIsAdmin} />
           </div>
           <HeaderCenter>
             <Link className="block w-max h-max rounded-full" href={"/home"}>

@@ -2,78 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Package, 
-  Layers, 
-  Tag, 
-  Palette,
-  Image,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Blend,
-  Camera,
-  Inbox,
-  ShoppingBag,
-  MapPin,
-} from "lucide-react";
+import { LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { adminNavigationItems, isAdminNavActive } from "./adminNav";
 
 interface DashboardSidebarProps {
   onLogout?: () => void;
 }
-
-const navigationItems = [
-  { 
-    name: "Dashboard", 
-    href: "/admin", 
-    icon: LayoutDashboard,
-    exact: true 
-  },
-  { 
-    name: "Capturar",
-    href: "/admin/capture/new",
-    icon: Camera
-  },
-  {
-    name: "Staging",
-    href: "/admin/staging",
-    icon: Inbox
-  },
-  {
-    name: "Productos", 
-    href: "/admin/products", 
-    icon: Package 
-  },
-  { name: "Pedidos", href: "/admin/orders", icon: ShoppingBag },
-  { name: "Entregas", href: "/admin/delivery", icon: MapPin },
-  { 
-    name: "Categorías", 
-    href: "/admin/categories", 
-    icon: Layers 
-  },
-  { 
-    name: "Variantes", 
-    href: "/admin/variants", 
-    icon: Palette 
-  },
-  { 
-    name: "Tags", 
-    href: "/admin/tags", 
-    icon: Tag 
-  },
-  { 
-    name: "Imagenes", 
-    href: "/admin/images", 
-    icon: Image 
-  },
-  { 
-    name: "Cluster Colores", 
-    href: "/admin/clustering", 
-    icon: Blend 
-  }
-];
 
 export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
   const pathname = usePathname();
@@ -110,11 +45,9 @@ export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navigationItems.map((item) => {
+        {adminNavigationItems.map((item) => {
           const Icon = item.icon;
-          const isActive = item.exact 
-            ? pathname === item.href 
-            : pathname.startsWith(item.href);
+          const isActive = isAdminNavActive(pathname, item);
 
           return (
             <Link

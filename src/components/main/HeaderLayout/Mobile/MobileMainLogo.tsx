@@ -3,7 +3,7 @@ import { MainLogo } from "@/components/reusable/svgs/MainLogo";
 import { useEffect, useRef, useState } from "react";
 import { MobileMenu } from "./MobileMenu";
 
-export const MobileMainLogo = () => {
+export const MobileMainLogo = ({ isAdmin = false }: { isAdmin?: boolean }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -26,7 +26,7 @@ export const MobileMainLogo = () => {
       onClick={() => setIsMobileMenuOpen(open => !open)} className="flex min-h-11 min-w-11 items-center justify-center md:hidden cursor-pointer">
       <MainLogo className="w-10" />
     </button>
-    <MobileMenu isOpened={isMobileMenuOpen} onClose={() => {
+    <MobileMenu isOpened={isMobileMenuOpen} isAdmin={isAdmin} onClose={() => {
       setIsMobileMenuOpen(false);
       buttonRef.current?.focus();
     }} />
