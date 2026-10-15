@@ -2,7 +2,7 @@ import { UUID, Timestamp } from "@/types/shared-types"
 
 export type ProductCondition =
   | 'new'
-  | 'like_new'
+  | 'like-new'
   | 'semi-used'
   | 'used'
   | 'worn'

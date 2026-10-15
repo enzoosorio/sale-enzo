@@ -192,9 +192,9 @@ export function computeMissingFields(d: DraftFields): string[] {
 }
 
 /** Legacy text label kept in product_items.condition for existing queries. */
-export function conditionLabel(score: number): "new" | "like_new" | "used" | "worn" {
+export function conditionLabel(score: number): "new" | "like-new" | "used" | "worn" {
   if (score >= 10) return "new";
-  if (score >= 9) return "like_new";
+  if (score >= 9) return "like-new";
   if (score >= 7) return "used";
   return "worn";
 }

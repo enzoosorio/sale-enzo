@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const productConditionEnum = z.enum([
   'new',
-  'like_new',
+  'like-new',
   'semi-used',
   'used',
   'worn'

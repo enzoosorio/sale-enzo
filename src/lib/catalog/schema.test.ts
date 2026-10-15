@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeMissingFields,
+  conditionLabel,
   ConditionScoreSchema,
   DraftFieldsSchema,
   EMPTY_DRAFT_FIELDS,
@@ -23,6 +24,14 @@ describe("DraftFieldsSchema", () => {
   it("condition uses 0.5 steps", () => {
     expect(ConditionScoreSchema.safeParse(8.5).success).toBe(true);
     expect(ConditionScoreSchema.safeParse(8.3).success).toBe(false);
+  });
+
+  it("conditionLabel matches database CHECK values", () => {
+    expect(conditionLabel(10)).toBe("new");
+    expect(conditionLabel(9.5)).toBe("like-new");
+    expect(conditionLabel(9)).toBe("like-new");
+    expect(conditionLabel(8)).toBe("used");
+    expect(conditionLabel(6)).toBe("worn");
   });
 });
 
