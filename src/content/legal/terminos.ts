@@ -36,12 +36,12 @@ export const terminos: LegalContent = {
       heading: 'Cómo se cierra una compra',
       paragraphs: [
         'La web no cobra pagos. La compra se cierra por WhatsApp, donde acordamos el pago y la entrega.',
-        'Métodos de pago: {{METODOS_DE_PAGO}}. Zonas de entrega: {{ZONAS_DE_ENTREGA}}.',
+        'Métodos de pago: Yape, Plin, transferencia bancaria y efectivo. Zonas de entrega: Todo lima (Entrega por app de transporte).',
       ],
     },
     {
       heading: 'Cambios y devoluciones',
-      paragraphs: ['{{POLITICA_DE_CAMBIOS}}'],
+      paragraphs: ['Son prendas de segunda mano, no hay cambios ni devoluciones.'],
     },
     {
       heading: 'Cambios en estas reglas',

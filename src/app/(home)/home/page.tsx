@@ -3,7 +3,7 @@ import { OverviewProductsHero } from '@/components/main/OverviewProductsHero';
 import { getHomeProducts } from '@/lib/products/getHomeProducts';
 import { BASE_OPEN_GRAPH, DEFAULT_DESCRIPTION, DEFAULT_OG_IMAGE, SITE_NAME, SITE_TAGLINE } from '@/lib/seo/site';
 
-const title = `${SITE_NAME}: ${SITE_TAGLINE.toLowerCase()} en Lima`;
+const title = `${SITE_NAME}: ${SITE_TAGLINE.toLowerCase()}`;
 
 export const metadata: Metadata = {
   // Absolute: the brand already leads, so the root template must not append it again.
