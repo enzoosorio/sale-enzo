@@ -21,6 +21,7 @@ const db = createClient(url, key, { auth: { persistSession: false } });
 interface ItemRow {
   id: string;
   condition: string | null;
+  condition_note: string | null;
   price: number;
   stock: number | null;
   status: string | null;
@@ -66,7 +67,7 @@ for (let from = 0; ; from += 500) {
   if (page.length < 500) break;
 }
 
-const select = `id, condition, price, stock, status,
+const select = `id, condition, condition_note, price, stock, status,
   product_variants!inner (
     size, gender, fit, main_color_hex, metadata,
     products!inner (name, description, brand, subcategory_id),
@@ -89,6 +90,7 @@ const pending: {
   item: ItemRow;
   content: string;
   searchText: string;
+  metadata: Record<string, string>;
   version: number;
 }[] = [];
 let skipped = 0;
@@ -99,24 +101,33 @@ for (const item of items) {
   const product = variant.products;
   const subcategory = categories.get(product.subcategory_id ?? "");
   const category = categories.get(subcategory?.parent_id ?? "");
+  const meta = variant.metadata ? { ...variant.metadata } : {};
+  const fitsLikeMin = meta.fits_like_min;
+  const fitsLikeMax = meta.fits_like_max;
+  delete meta.fits_like_min;
+  delete meta.fits_like_max;
+  delete meta.also_unisex;
   const ragData: ProductItemData = {
     product_item_id: item.id,
     product_name: product.name,
-    product_description: product.description ?? undefined,
-    product_brand: product.brand ?? undefined,
-    category_name: category?.name ?? "Sin categoría",
-    subcategory_name: subcategory?.name ?? "Sin subcategoría",
-    variant_size: variant.size ?? undefined,
-    variant_gender: variant.gender ?? undefined,
-    variant_fit: variant.fit ?? undefined,
+    product_description: product.description || undefined,
+    product_brand: product.brand || undefined,
+    category_name: category?.name || "Unknown",
+    subcategory_name: subcategory?.name || "Unknown",
+    variant_size: variant.size || undefined,
+    variant_gender: variant.gender || undefined,
+    variant_fit: variant.fit || undefined,
+    variant_fits_like_min: fitsLikeMin,
+    variant_fits_like_max: fitsLikeMax,
     variant_main_color_hex: variant.main_color_hex,
-    color_category_name: variant.variant_color_categories?.label ?? undefined,
-    item_condition: item.condition ?? undefined,
+    color_category_name: variant.variant_color_categories?.label || variant.main_color_hex,
+    item_condition: item.condition || undefined,
+    item_condition_note: item.condition_note || undefined,
     item_price: item.price,
     item_stock: item.stock ?? 0,
-    item_status: item.status ?? undefined,
+    item_status: item.status || undefined,
     tags: variant.variant_tags.map((link) => link.tags?.name).filter((name): name is string => Boolean(name)),
-    variant_metadata: variant.metadata ?? undefined,
+    variant_metadata: meta,
   };
   const content = buildDeterministicRagContent(ragData);
   const searchText = buildSearchText(ragData);
@@ -135,7 +146,7 @@ for (const item of items) {
     }
     continue;
   }
-  pending.push({ item, content, searchText, version: (existing?.version ?? 0) + 1 });
+  pending.push({ item, content, searchText, metadata: meta, version: (existing?.version ?? 0) + 1 });
 }
 
 console.log(`Items: ${items.length}; embed: ${pending.length}; text only: ${textOnly}; skipped: ${skipped}`);
@@ -162,7 +173,7 @@ for (let from = 0; from < pending.length; from += 100) {
       content: entry.content,
       search_text: entry.searchText,
       embedding,
-      metadata: entry.item.product_variants.metadata,
+      metadata: entry.metadata,
       version: entry.version,
     };
   });

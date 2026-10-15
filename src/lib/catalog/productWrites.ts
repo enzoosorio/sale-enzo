@@ -67,7 +67,7 @@ export async function generateRagForProduct(
     let query = supabaseAdmin
       .from("product_items")
       .select(
-        `id, condition, price, stock, status,
+        `id, condition, condition_note, price, stock, status,
          product_variants!inner (
            id, size, gender, fit, main_color_hex, metadata, product_id,
            products!inner ( id, name, description, brand, subcategory_id ),
@@ -99,6 +99,12 @@ export async function generateRagForProduct(
       items.map((item: any) => {
         const variant = item.product_variants;
         const product = variant.products;
+        const meta = variant.metadata ? { ...variant.metadata } : {};
+        const fitsLikeMin = meta.fits_like_min;
+        const fitsLikeMax = meta.fits_like_max;
+        delete meta.fits_like_min;
+        delete meta.fits_like_max;
+        delete meta.also_unisex;
         const ragData: ProductItemData = {
           product_item_id: item.id,
           product_name: product.name,
@@ -111,15 +117,18 @@ export async function generateRagForProduct(
           variant_size: variant.size || undefined,
           variant_gender: variant.gender || undefined,
           variant_fit: variant.fit || undefined,
+          variant_fits_like_min: fitsLikeMin,
+          variant_fits_like_max: fitsLikeMax,
           variant_main_color_hex: variant.main_color_hex,
           color_category_name: variant.variant_color_categories?.label || variant.main_color_hex,
           item_condition: item.condition || undefined,
+          item_condition_note: item.condition_note || undefined,
           item_price: item.price,
           item_stock: item.stock || 0,
           item_status: item.status || undefined,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           tags: variant.variant_tags?.map((vt: any) => vt.tags?.name).filter(Boolean) || [],
-          variant_metadata: variant.metadata || undefined,
+          variant_metadata: meta,
         };
         return generateProductRAG(ragData);
       }),

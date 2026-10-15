@@ -25,15 +25,30 @@ export interface ProductItemData {
 
   // Item fields
   item_condition?: string;
+  item_condition_note?: string;
   item_price: number;
   item_stock: number;
   item_status?: string;
+
+  // Fits-like sizing (from variant metadata, represented explicitly)
+  variant_fits_like_min?: string;
+  variant_fits_like_max?: string;
 
   // Tags (array of tag names)
   tags: string[];
 
   // Variant metadata (optional, for semantic enrichment)
   variant_metadata?: Record<string, string>;
+}
+
+/** Keys stripped from variant_metadata: represented explicitly above. */
+const EXCLUDED_METADATA_KEYS = new Set(["also_unisex", "fits_like_min", "fits_like_max"]);
+
+/** Renders the fits-like line: "M–L" when min/max differ, "M" when equal or only min. */
+export function fitsLikeText(min?: string, max?: string): string | null {
+  if (!min) return null;
+  if (!max || min === max) return `Fits like: ${min}`;
+  return `Fits like: ${min}–${max}`;
 }
 
 /**
@@ -70,10 +85,13 @@ export function buildDeterministicRagContent(data: ProductItemData): string {
     sections.push(`Fit: ${data.variant_fit}`);
   }
 
-  sections.push(`Main color: ${data.variant_main_color_hex}`);
-
   if (data.color_category_name) {
     sections.push(`Color category: ${data.color_category_name}`);
+  }
+
+  const fitsLike = fitsLikeText(data.variant_fits_like_min, data.variant_fits_like_max);
+  if (fitsLike) {
+    sections.push(fitsLike);
   }
 
   // Item attributes
@@ -82,6 +100,10 @@ export function buildDeterministicRagContent(data: ProductItemData): string {
 
   if (data.item_condition) {
     sections.push(`Condition: ${data.item_condition}`);
+  }
+
+  if (data.item_condition_note) {
+    sections.push(`Condition note: ${data.item_condition_note}`);
   }
 
   sections.push(`Price: ${data.item_price}`);
@@ -172,7 +194,7 @@ export function buildMetadataSemanticBlock(metadata?: Record<string, string>): s
     }
 
     const trimmedKey = key?.trim().toLowerCase();
-    if (!trimmedKey) {
+    if (!trimmedKey || EXCLUDED_METADATA_KEYS.has(trimmedKey)) {
       continue;
     }
 
@@ -208,12 +230,15 @@ export function buildSearchText(data: ProductItemData): string {
   const values = [
     data.product_name,
     data.product_brand,
+    data.product_description,
     data.category_name,
     data.subcategory_name,
     data.variant_size,
     data.variant_gender,
     data.variant_fit,
     data.color_category_name,
+    data.item_condition_note,
+    fitsLikeText(data.variant_fits_like_min, data.variant_fits_like_max),
     ...data.tags,
     ...Object.values(data.variant_metadata ?? {}),
   ];
