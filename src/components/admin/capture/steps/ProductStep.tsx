@@ -2,8 +2,10 @@
 
 import { use, useMemo } from "react";
 import { Section, SelectField } from "@/components/admin/staging/fields";
+import { aiFieldProps } from "@/lib/capture/aiField";
 import type { MatchKind } from "@/lib/catalog/schema";
 import { Disclosure, TextField } from "../controls";
+import { TitleVerifier } from "../TitleVerifier";
 import type { CaptureContext, StepProps } from "../types";
 
 const MATCH_LABEL: Record<MatchKind, string> = {
@@ -66,8 +68,18 @@ export function ProductStep({ draft, locked, tone, save, set, context }: StepPro
             tone={tone("name")}
             onSave={(v) => set("name", v)}
             disabled={locked}
+            {...aiFieldProps(draft, "name", set)}
           />
-          <TextField label="Marca" list="capture-brands" value={draft.brand} tone={tone("brand")} onSave={(v) => set("brand", v)} disabled={locked} />
+          <TitleVerifier draft={draft} locked={locked} set={set} />
+          <TextField
+            label="Marca"
+            list="capture-brands"
+            value={draft.brand}
+            tone={tone("brand")}
+            onSave={(v) => set("brand", v)}
+            disabled={locked}
+            {...aiFieldProps(draft, "brand", set)}
+          />
           <datalist id="capture-brands">
             {brands.map((b) => (
               <option key={b} value={b} />
@@ -80,6 +92,13 @@ export function ProductStep({ draft, locked, tone, save, set, context }: StepPro
             placeholder="Elige una categoría"
             options={subcategories.map((s) => ({ value: s.id, label: `${s.parentName} › ${s.name}` }))}
             onChange={(v) => save({ subcategory_id: v, category_id: subcategories.find((s) => s.id === v)?.parentId ?? null })}
+            {...aiFieldProps(draft, "subcategory_id", set)}
+            // The category follows the subcategory: confirm both together.
+            onConfirm={
+              draft.field_source.subcategory_id === "ai"
+                ? () => save({ subcategory_id: draft.subcategory_id, category_id: draft.category_id })
+                : undefined
+            }
           />
         </div>
       </Section>

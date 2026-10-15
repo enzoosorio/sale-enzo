@@ -4,7 +4,9 @@ import { useState } from "react";
 import { AlertTriangle, ArrowRight, Check, Circle, ExternalLink } from "lucide-react";
 import { DraftPreview } from "@/components/admin/staging/DraftPreview";
 import { Section } from "@/components/admin/staging/fields";
-import { stepMissing, WIZARD_STEPS, type StepKey } from "@/lib/capture/wizardSteps";
+import { slotLabel } from "@/lib/capture/photoSlots";
+import { CONFIDENCE } from "@/lib/catalog/confidence";
+import { FIELD_LABEL, stepMissing, WIZARD_STEPS, type StepKey } from "@/lib/capture/wizardSteps";
 import { orderedDoneImages } from "@/lib/staging/draftToPreview";
 import type { DraftWithImages } from "@/types/staging";
 
@@ -26,6 +28,24 @@ export function ReviewStep({
 
   const rows = CHECKLIST.map((s) => ({ ...s, missing: stepMissing(s.key, draft.missing_fields, done) }));
   const pendingCount = rows.filter((r) => r.missing.length).length;
+
+  const photosToCheck = draft.images
+    .filter((i) => i.status === "done" && (i.needs_review || i.ironed_status === "ready"))
+    .map((i) => ({
+      id: i.id,
+      label: `${i.shot_role ? slotLabel(i.shot_role) : "Foto sin asignar"} (#${i.position})`,
+      why: i.needs_review ? "Recorte dudoso" : "Planchada sin decidir",
+    }));
+
+  // category_id travels with subcategory_id (one picker), so it is listed once, as the latter.
+  const aiSuggested = Object.keys(draft.field_source)
+    .filter((key) => key !== "category_id")
+    .filter((key) => draft.field_source[key] === "ai" && (draft.field_confidence[key] ?? 0) < CONFIDENCE.autofill)
+    .map((key) => ({
+      key,
+      label: FIELD_LABEL[key] ?? key,
+      confidence: draft.field_confidence[key] ?? 0,
+    }));
 
   return (
     <div className="space-y-8">
@@ -84,6 +104,42 @@ export function ReviewStep({
             </li>
           ))}
         </ul>
+      )}
+
+      {photosToCheck.length > 0 && (
+        <Section
+          title="Fotos por revisar"
+          subtitle="Un recorte dudoso o una versión planchada sin decidir. Ábrelas en el paso Fotos; no bloquean la publicación."
+        >
+          <ul className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-amber-200 bg-amber-50">
+            {photosToCheck.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                <span className="flex min-w-0 items-center gap-2 font-medium text-amber-900">
+                  <AlertTriangle className="h-4 w-4 shrink-0" /> {p.label}
+                </span>
+                <span className="shrink-0 text-xs text-amber-700">{p.why}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      {aiSuggested.length > 0 && (
+        <Section
+          title="Sugeridos por la IA — revisa antes de publicar"
+          subtitle="Estos valores se completaron desde las fotos con poca seguridad. Confírmalos o corrígelos; no bloquean la publicación."
+        >
+          <ul className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-amber-200 bg-amber-50">
+            {aiSuggested.map((f) => (
+              <li key={f.key} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                <span className="flex min-w-0 items-center gap-2 font-medium text-amber-900">
+                  <AlertTriangle className="h-4 w-4 shrink-0" /> {f.label}
+                </span>
+                <span className="shrink-0 text-xs text-amber-700">{Math.round(f.confidence * 100)}% confianza</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
       )}
 
       <details

@@ -11,8 +11,10 @@ import { createDraft, updateDraft, type DraftUpdate } from "@/actions/admin/stag
 import type { FieldTone } from "@/components/admin/staging/fields";
 import { blankDraft, isSaved } from "@/lib/capture/blankDraft";
 import { parseStep, STEP_FIELDS, stepStatus, WIZARD_STEPS, type StepKey, type StepStatus } from "@/lib/capture/wizardSteps";
+import { CONFIDENCE, legacyConfidenceKey, LEGACY_UNCERTAIN_BELOW } from "@/lib/catalog/confidence";
 import { MIN_DONE_IMAGES, type DraftFields } from "@/lib/catalog/schema";
 import { orderedDoneImages } from "@/lib/staging/draftToPreview";
+import { usePhotoAnalysis, type PhotoAnalysisMeta } from "@/hooks/usePhotoAnalysis";
 import type { DraftWithImages } from "@/types/staging";
 import { MoreMenu } from "./MoreMenu";
 import { PhotosStep } from "./steps/PhotosStep";
@@ -137,10 +139,15 @@ export function CaptureWizard({ draft: initial, context }: Props) {
         const owner = stepOfField(key);
         return owner && seen.has(owner) ? "missing" : "ok";
       }
-      const confidenceKey = key === "condition_score" ? key : key.replace(/_id$/, "");
-      return (draft.field_confidence[confidenceKey] ?? 1) < 0.6 ? "uncertain" : "ok";
+      const source = draft.field_source[key];
+      // Photo analysis: per-field confidence under the autofill threshold needs a look.
+      if (source === "ai") return (draft.field_confidence[key] ?? 1) < CONFIDENCE.autofill ? "uncertain" : "ok";
+      // The owner decided (typed, dictated, or confirmed): nothing to flag.
+      if (source === "user") return "ok";
+      // Unmarked: dictated with doubt, flagged under the coarse voice confidence keys.
+      return (draft.field_confidence[legacyConfidenceKey(key)] ?? 1) < LEGACY_UNCERTAIN_BELOW ? "uncertain" : "ok";
     },
-    [draft.missing_fields, draft.field_confidence, seen],
+    [draft.missing_fields, draft.field_source, draft.field_confidence, seen],
   );
 
   /** Creates the draft row the first time something real happens; later calls reuse it. */
@@ -196,6 +203,19 @@ export function CaptureWizard({ draft: initial, context }: Props) {
     if (nextWarnings.length) toast(`${nextWarnings.length} aviso(s) para revisar en el último paso`, { icon: "⚠️" });
   }, []);
 
+  const onPhotoDraft = useCallback((next: DraftWithImages, meta: PhotoAnalysisMeta) => {
+    setDraft(next);
+    setWarnings(meta.warnings);
+    const parts: string[] = [];
+    if (meta.autofilled > 0) parts.push(`${meta.autofilled} autocompletados`);
+    if (meta.suggested > 0) parts.push(`${meta.suggested} por revisar`);
+    if (parts.length) toast.success(`Listo: ${parts.join(" · ")}`);
+    else toast("No encontré datos nuevos en las fotos.");
+    if (meta.warnings.length) toast(`${meta.warnings.length} aviso(s) para revisar en el último paso`, { icon: "⚠️" });
+  }, []);
+
+  const photoAnalysis = usePhotoAnalysis(draft.id, onPhotoDraft, ensureDraft);
+
   const saved = isSaved(draft);
   const stepProps: StepProps = { draft, locked, tone, save, set, ensureDraft };
   const index = WIZARD_STEPS.findIndex((s) => s.key === step);
@@ -216,7 +236,13 @@ export function CaptureWizard({ draft: initial, context }: Props) {
             </p>
             <p className="truncate text-sm font-medium text-gray-900">{draft.name ?? "Producto sin nombre"}</p>
           </div>
-          {saved && <MoreMenu draft={draft} />}
+          {saved && (
+            <MoreMenu
+              draft={draft}
+              onAnalyzePhotos={() => void photoAnalysis.analyze()}
+              photoState={photoAnalysis.state}
+            />
+          )}
         </div>
         <WizardStepper current={step} statuses={statuses} onSelect={goTo} />
       </header>
@@ -224,7 +250,9 @@ export function CaptureWizard({ draft: initial, context }: Props) {
       <div className="relative min-h-0 flex-1">
         <div ref={scrollRef} className="h-full overflow-y-auto">
           <div ref={contentRef} className="mx-auto w-full max-w-xl px-5 pb-36 pt-8">
-            {step === "photos" && <PhotosStep draft={draft} locked={locked} ensureDraft={ensureDraft} onChange={() => router.refresh()} />}
+            {step === "photos" && (
+              <PhotosStep draft={draft} locked={locked} ensureDraft={ensureDraft} analysis={photoAnalysis} onChange={() => router.refresh()} />
+            )}
             {step === "product" && (
               <Suspense fallback={<StepSkeleton />}>
                 <ProductStep {...stepProps} context={contextPromise} />

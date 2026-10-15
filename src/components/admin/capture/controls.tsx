@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { DEFECT_SEVERITIES, DEFECT_TYPES, type Defect } from "@/lib/catalog/schema";
-import { Field, inputClass, type FieldTone } from "@/components/admin/staging/fields";
+import { Field, inputClass, SourceBadge, type AiFieldProps, type FieldTone } from "@/components/admin/staging/fields";
 
 export const DEFECT_LABEL: Record<Defect["type"], string> = {
   hole: "Agujero",
@@ -27,7 +27,10 @@ export function TextField({
   disabled,
   list,
   placeholder,
-}: {
+  source,
+  confidence,
+  onConfirm,
+}: AiFieldProps & {
   label: string;
   value: string | null;
   onSave: (value: string | null) => void;
@@ -49,7 +52,7 @@ export function TextField({
     if (next !== (value ?? null)) onSave(next);
   };
   return (
-    <Field label={label} tone={tone} hint={hint}>
+    <Field label={label} tone={tone} hint={hint} source={source} confidence={confidence} onConfirm={onConfirm}>
       {multiline ? (
         <textarea
           className={`${inputClass(tone)} min-h-28 resize-y`}
@@ -82,7 +85,10 @@ export function NumberField({
   step = 0.5,
   disabled,
   prefix,
-}: {
+  source,
+  confidence,
+  onConfirm,
+}: AiFieldProps & {
   label: string;
   value: number | null;
   onSave: (value: number | null) => void;
@@ -98,7 +104,7 @@ export function NumberField({
     setLocal(value === null ? "" : String(Number(value)));
   }
   return (
-    <Field label={label} tone={tone}>
+    <Field label={label} tone={tone} source={source} confidence={confidence} onConfirm={onConfirm}>
       <div className="relative">
         {prefix && <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-base md:text-sm">{prefix}</span>}
         <input
@@ -128,7 +134,10 @@ export function ChipSelect<T extends string | number>({
   onChange,
   tone,
   disabled,
-}: {
+  source,
+  confidence,
+  onConfirm,
+}: AiFieldProps & {
   label: string;
   value: T | null;
   options: readonly { value: T; label: string }[];
@@ -142,6 +151,7 @@ export function ChipSelect<T extends string | number>({
         {label}
         {tone === "missing" && <span className="text-[11px] font-medium text-rose-600">Falta</span>}
         {tone === "uncertain" && <span className="text-[11px] font-medium text-amber-700">Revisar</span>}
+        <SourceBadge source={source} confidence={confidence} onConfirm={onConfirm} />
       </legend>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => {

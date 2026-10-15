@@ -3,22 +3,31 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import toast from "react-hot-toast";
-import { Camera, ImagePlus, RotateCw, Trash2, X } from "lucide-react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { Camera, ImagePlus, Loader2, RotateCw, Sparkles, Trash2, X } from "lucide-react";
 import { assignImageRole, deleteDraftImage } from "@/actions/admin/staging";
 import { Section } from "@/components/admin/staging/fields";
 import { useCaptureQueue } from "@/hooks/useCaptureQueue";
+import { usePhotoRetouch } from "@/hooks/usePhotoRetouch";
+import type { PhotoAnalysis } from "@/hooks/usePhotoAnalysis";
 import { EXTRA_SLOT, isSingleSlot, OPTIONAL_SLOTS, PHOTO_SLOTS, REQUIRED_SLOTS, slotLabel, type PhotoSlot } from "@/lib/capture/photoSlots";
 import type { CaptureJob } from "@/lib/capture/queue";
 import type { ShotRole } from "@/lib/catalog/schema";
-import { mediaUrl } from "@/lib/images/media";
+import { mediaUrlStamped } from "@/lib/images/media";
+import { shippedKeys } from "@/lib/staging/draftToPreview";
 import type { DraftImageRow, DraftWithImages } from "@/types/staging";
 import { BottomSheet } from "../BottomSheet";
+import { PhotoCompare } from "../PhotoCompare";
 import { SlotArt } from "../slotArt";
+
+gsap.registerPlugin(useGSAP);
 
 const STAGE_LABEL: Record<string, string> = {
   "upload-original": "Subiendo original",
   model: "Descargando modelo",
   "remove-bg": "Quitando fondo",
+  fallback: "Probando otro método",
   encode: "Comprimiendo",
   "upload-cutouts": "Subiendo recortes",
 };
@@ -32,6 +41,8 @@ interface Props {
   locked: boolean;
   /** Creates the draft the first time a photo is taken (nothing exists before that) */
   ensureDraft: () => Promise<string>;
+  /** Shared vision analysis run, owned by the wizard so every entry point shows the same run. */
+  analysis: PhotoAnalysis;
   onChange: () => void;
 }
 
@@ -40,13 +51,14 @@ interface Props {
  * what to take; photos can also be taken in any order (unassigned) and moved
  * into their slot afterwards. Processing happens off-thread in the capture queue.
  */
-export function PhotosStep({ draft, locked, ensureDraft, onChange }: Props) {
+export function PhotosStep({ draft, locked, ensureDraft, analysis, onChange }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const roleRef = useRef<ShotRole | null>(null);
   const [sheetImageId, setSheetImageId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const { jobs, addFiles, retry, dismiss } = useCaptureQueue(draft.id, onChange);
+  const retouch = usePhotoRetouch(draft.id, onChange);
 
   // Photos taken before the draft exists wait here until its id arrives, then enter the queue.
   const waitingRef = useRef<{ files: File[]; role: ShotRole | null }[]>([]);
@@ -107,6 +119,8 @@ export function PhotosStep({ draft, locked, ensureDraft, onChange }: Props) {
   const sheetImage = draft.images.find((i) => i.id === sheetImageId) ?? null;
   const unassigned = itemsFor(null);
   const extras = itemsFor("extra");
+  const hasFront = draft.images.some((i) => i.status === "done" && i.shot_role === "front");
+  const canAnalyze = !locked && hasFront && analysis.state !== "analyzing";
 
   const renderTile = (slot: PhotoSlot, item: Item | undefined) => {
     if (!item) {
@@ -120,6 +134,38 @@ export function PhotosStep({ draft, locked, ensureDraft, onChange }: Props) {
 
   return (
     <div className={`space-y-10 ${pending ? "opacity-70 transition-opacity" : ""}`}>
+      {!locked && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={() => void analysis.analyze()}
+                disabled={!canAnalyze}
+                className="flex h-10 items-center gap-2 rounded-xl bg-gray-900 px-3.5 text-sm font-medium text-white disabled:opacity-40"
+              >
+                {analysis.state === "analyzing" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {analysis.state === "analyzing" ? "Analizando…" : "Analizar con IA"}
+              </button>
+              <p className="mt-1.5 text-xs text-gray-500">
+                {hasFront
+                  ? "Rellena marca, talla y detalles desde las fotos. Mejor con foto de etiqueta."
+                  : "Toma al menos una foto de frente para analizar. Mejor con foto de etiqueta."}
+              </p>
+            </div>
+            {analysis.state === "analyzing" && <AnalysisIndicator />}
+          </div>
+          {analysis.state === "error" && analysis.error && (
+            <p className="mt-2 text-sm text-rose-600" role="alert">
+              {analysis.error}
+            </p>
+          )}
+        </div>
+      )}
       <Section
         title="Fotos"
         subtitle="Toca cada casilla para tomar su foto. Si prefieres, tómalas sin orden y colócalas después."
@@ -194,6 +240,9 @@ export function PhotosStep({ draft, locked, ensureDraft, onChange }: Props) {
       >
         {sheetImage && (
           <div className="space-y-5">
+            {sheetImage.status === "done" && (
+              <PhotoCompare image={sheetImage} locked={locked} retouch={retouch} onChange={onChange} />
+            )}
             <div className="grid grid-cols-2 gap-2">
               {PHOTO_SLOTS.filter((s) => s.role !== sheetImage.shot_role).map((slot) => {
                 const taken = isSingleSlot(slot.role) && draft.images.some((i) => i.shot_role === slot.role && i.id !== sheetImage.id);
@@ -297,7 +346,10 @@ function PhotoTile({
   disabled: boolean;
   onOpen: () => void;
 }) {
-  const src = mediaUrl(image.cutout_web_key);
+  // What ships: the accepted ironed rendition, else the plain cutout. The stamp defeats the
+  // immutable cache when a cutout was redone in place.
+  const shipped = shippedKeys(image);
+  const src = mediaUrlStamped(shipped.web, image.ironed_status === "accepted" ? `v${image.ironed_version}` : `${image.bytes_web ?? ""}-${image.bg_provider ?? ""}`);
   return (
     <button
       type="button"
@@ -318,6 +370,21 @@ function PhotoTile({
       <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-gray-800 backdrop-blur">
         {label}
       </span>
+      {image.status === "done" && image.needs_review && (
+        <span className="absolute right-2 top-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+          Revisar recorte
+        </span>
+      )}
+      {image.status === "done" && !image.needs_review && image.ironed_status === "accepted" && (
+        <span className="absolute right-2 top-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-900">
+          Planchada
+        </span>
+      )}
+      {image.status === "done" && image.ironed_status === "ready" && (
+        <span className="absolute right-2 top-2 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-900">
+          Planchada lista
+        </span>
+      )}
     </button>
   );
 }
@@ -381,4 +448,32 @@ function useObjectUrl(blob: Blob | null) {
     [url],
   );
   return url;
+}
+
+/** Inline, non-blocking "analizando" hint; GSAP drives the entrance and the spinner. */
+function AnalysisIndicator() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.fromTo(
+          ref.current,
+          { opacity: 0, x: 8 },
+          { opacity: 1, x: 0, duration: 0.3, ease: "power2.out", clearProps: "transform,opacity" },
+        );
+        gsap.to("[data-ai-spinner]", { rotation: 360, duration: 1, repeat: -1, ease: "none" });
+      });
+      return () => mm.revert();
+    },
+    { scope: ref },
+  );
+
+  return (
+    <div ref={ref} className="flex shrink-0 items-center gap-2 text-sm font-medium text-gray-700" aria-live="polite">
+      <span data-ai-spinner className="block h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent" />
+      Analizando fotos…
+    </div>
+  );
 }

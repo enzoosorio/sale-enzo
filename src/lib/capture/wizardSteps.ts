@@ -36,6 +36,10 @@ export const FIELD_LABEL: Record<string, string> = {
   main_color_hex: "Color (se toma de la foto frontal)",
   condition_score: "Estado",
   price: "Precio",
+  tags: "Tags",
+  defects: "Defectos",
+  fits_like_min: "Calce (desde)",
+  fits_like_max: "Calce (hasta)",
   photos: "Al menos 2 fotos procesadas",
 };
 

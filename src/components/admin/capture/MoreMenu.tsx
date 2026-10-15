@@ -1,16 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Archive, ClipboardCopy, Download, Loader2, MoreHorizontal } from "lucide-react";
+import { Archive, ClipboardCopy, Download, Loader2, MoreHorizontal, Sparkles } from "lucide-react";
+import type { PhotoAnalysisState } from "@/hooks/usePhotoAnalysis";
 import type { DraftWithImages } from "@/types/staging";
 import { useDraftActions } from "./useDraftActions";
 
+interface Props {
+  draft: DraftWithImages;
+  /** Vision analysis shortcut; shared with the wizard so PhotosStep shows the same run. */
+  onAnalyzePhotos: () => void | Promise<void>;
+  photoState: PhotoAnalysisState;
+}
+
 /** Secondary actions, named for what they do. Publishing lives in the Revisar step. */
-export function MoreMenu({ draft }: { draft: DraftWithImages }) {
+export function MoreMenu({ draft, onAnalyzePhotos, photoState }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { pending, downloading, discard, downloadOriginals, copyMarketplace } = useDraftActions(draft);
   const canDiscard = draft.status !== "published" && draft.status !== "discarded";
+  const locked = draft.status === "published" || draft.status === "discarded";
+  const hasDonePhoto = draft.images.some((i) => i.status === "done" && i.original_key);
 
   useEffect(() => {
     if (!open) return;
@@ -43,6 +53,23 @@ export function MoreMenu({ draft }: { draft: DraftWithImages }) {
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-full z-40 mt-1 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
+          <button
+            type="button"
+            role="menuitem"
+            className={item}
+            disabled={locked || !hasDonePhoto || photoState === "analyzing"}
+            onClick={run(() => onAnalyzePhotos())}
+          >
+            {photoState === "analyzing" ? (
+              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+            ) : (
+              <Sparkles className="h-4 w-4 text-gray-500" />
+            )}
+            <span>
+              Analizar fotos con IA
+              <span className="block text-xs text-gray-500">Autocompleta marca, talla y detalles desde las fotos</span>
+            </span>
+          </button>
           <button type="button" role="menuitem" className={item} onClick={run(copyMarketplace)}>
             <ClipboardCopy className="h-4 w-4 text-gray-500" />
             <span>

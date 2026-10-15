@@ -4,6 +4,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { Sparkles } from "lucide-react";
 import { Section } from "@/components/admin/staging/fields";
+import { aiFieldProps } from "@/lib/capture/aiField";
 import { ChipSelect, DefectsEditor, Disclosure, NumberField, TextField } from "../controls";
 import type { StepProps } from "../types";
 
@@ -43,11 +44,12 @@ export function PriceStep({ draft, locked, tone, set, save, ensureDraft }: StepP
             label="Estado (de 10)"
             value={current}
             tone={tone("condition_score")}
+            {...aiFieldProps(draft, "condition_score", set)}
             disabled={locked}
             options={scores.map((n) => ({ value: n, label: String(n) }))}
             onChange={(v) => set("condition_score", v)}
           />
-          <NumberField label="Precio" prefix="S/" value={draft.price} tone={tone("price")} onSave={(v) => set("price", v)} disabled={locked} />
+          <NumberField label="Precio" prefix="S/" value={draft.price} tone={tone("price")} {...aiFieldProps(draft, "price", set)} onSave={(v) => set("price", v)} disabled={locked} />
           <DefectsEditor defects={draft.defects} disabled={locked} onChange={(d) => set("defects", d)} />
         </div>
       </Section>

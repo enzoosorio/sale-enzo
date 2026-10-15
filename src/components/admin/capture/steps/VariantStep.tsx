@@ -1,6 +1,7 @@
 "use client";
 
 import { Field, Section, SelectField } from "@/components/admin/staging/fields";
+import { aiFieldProps } from "@/lib/capture/aiField";
 import {
   FIT_LABELS,
   FITS,
@@ -39,17 +40,27 @@ export function VariantStep({ draft, locked, tone, set }: StepProps) {
     else delete next[key];
     set("metadata", next);
   };
+  // metadata is one draft field: its provenance and confidence cover every key in it.
+  const metaAi = aiFieldProps(draft, "metadata", set);
   const metaField = (key: MetadataKey) => (
-    <TextField key={key} label={META_LABEL[key]} value={metadata[key] ?? null} disabled={locked} onSave={(v) => setMeta(key, v)} />
+    <TextField
+      key={key}
+      label={META_LABEL[key]}
+      value={metadata[key] ?? null}
+      disabled={locked}
+      tone={metadata[key] && tone("metadata") === "uncertain" ? "uncertain" : "ok"}
+      onSave={(v) => setMeta(key, v)}
+      {...(metadata[key] ? metaAi : {})}
+    />
   );
 
   return (
     <div className="space-y-8">
       <Section title="Talla y calce">
         <div className="space-y-6">
-          <ChipSelect label="Talla" value={draft.size} tone={tone("size")} disabled={locked} options={SIZES.map((s) => ({ value: s, label: s }))} onChange={(v) => set("size", v)} />
-          <ChipSelect label="Género" value={draft.gender} tone={tone("gender")} disabled={locked} options={GENDERS.map((g) => ({ value: g, label: GENDER_LABELS[g] }))} onChange={(v) => set("gender", v)} />
-          <ChipSelect label="Fit" value={draft.fit} tone={tone("fit")} disabled={locked} options={FITS.map((f) => ({ value: f, label: FIT_LABELS[f] }))} onChange={(v) => set("fit", v)} />
+          <ChipSelect label="Talla" value={draft.size} tone={tone("size")} {...aiFieldProps(draft, "size", set)} disabled={locked} options={SIZES.map((s) => ({ value: s, label: s }))} onChange={(v) => set("size", v)} />
+          <ChipSelect label="Género" value={draft.gender} tone={tone("gender")} {...aiFieldProps(draft, "gender", set)} disabled={locked} options={GENDERS.map((g) => ({ value: g, label: GENDER_LABELS[g] }))} onChange={(v) => set("gender", v)} />
+          <ChipSelect label="Fit" value={draft.fit} tone={tone("fit")} {...aiFieldProps(draft, "fit", set)} disabled={locked} options={FITS.map((f) => ({ value: f, label: FIT_LABELS[f] }))} onChange={(v) => set("fit", v)} />
         </div>
       </Section>
 
@@ -73,8 +84,8 @@ export function VariantStep({ draft, locked, tone, set }: StepProps) {
 
       <Disclosure title="Más detalles" hint="Calce, tags y otros datos">
         <div className="grid grid-cols-2 gap-4">
-          <SelectField label="Le queda desde" value={draft.fits_like_min} options={SIZES.map((s) => ({ value: s, label: s }))} onChange={(v) => set("fits_like_min", v)} />
-          <SelectField label="hasta" value={draft.fits_like_max} options={SIZES.map((s) => ({ value: s, label: s }))} onChange={(v) => set("fits_like_max", v)} />
+          <SelectField label="Le queda desde" value={draft.fits_like_min} tone={tone("fits_like_min")} {...aiFieldProps(draft, "fits_like_min", set)} options={SIZES.map((s) => ({ value: s, label: s }))} onChange={(v) => set("fits_like_min", v)} />
+          <SelectField label="hasta" value={draft.fits_like_max} tone={tone("fits_like_max")} {...aiFieldProps(draft, "fits_like_max", set)} options={SIZES.map((s) => ({ value: s, label: s }))} onChange={(v) => set("fits_like_max", v)} />
         </div>
         <Field label="También unisex">
           <input
@@ -90,6 +101,8 @@ export function VariantStep({ draft, locked, tone, set }: StepProps) {
           label="Tags"
           hint="Separados por coma"
           value={draft.tags.join(", ")}
+          tone={tone("tags")}
+          {...aiFieldProps(draft, "tags", set)}
           disabled={locked}
           onSave={(v) => set("tags", (v ?? "").split(",").map((t) => t.trim().toLowerCase()).filter(Boolean).slice(0, 8))}
         />
